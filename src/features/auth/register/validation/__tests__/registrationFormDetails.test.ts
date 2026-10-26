@@ -196,7 +196,7 @@ describe('userDetailsSchema', () => {
     it('rejects false', () => {
       expect(
         fieldErrors({ ...validData, acceptTermsAndConditions: false }).acceptTermsAndConditions
-      ).toContain('You must accept the Terms and Conditions')
+      ).toContain('You must accept the Terms of Use')
     })
 
     it('accepts true', () => {

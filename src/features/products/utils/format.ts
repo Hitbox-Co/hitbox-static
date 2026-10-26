@@ -1,18 +1,22 @@
-import { ProductCategory, ProductRarity } from '../types/product'
+import { formatMoneyFromUsd, groupThousands } from '@/lib/currency'
+import { MarketplaceStatus, ProductCategory, ProductRarity } from '../types/product'
 
 /** Shown when a product has no images. */
 export const PRODUCT_PLACEHOLDER_IMAGE =
     'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&q=60'
 
-/** "149.99" (decimal-as-string from the API) → "$149.99". */
+/**
+ * "149.99" (USD decimal-as-string from the API) → the viewer's display currency:
+ * "$149.99" in the US, "₹12,524" in India. See `@/lib/currency` for how the
+ * region is resolved and why this is display-only.
+ */
 export function formatPrice(priceInDollars: string) {
-    const value = Number(priceInDollars)
-    if (Number.isNaN(value)) return `$${priceInDollars}`
-    return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+    return formatMoneyFromUsd(priceInDollars)
 }
 
+/** Points are a count, not money — always grouped Western, never converted. */
 export function formatRewardPoints(points: number) {
-    return `${points.toLocaleString('en-US')} pts`
+    return `${groupThousands(String(Math.round(points)))} pts`
 }
 
 const CATEGORY_LABELS: Record<ProductCategory, string> = {
@@ -36,6 +40,21 @@ export function formatCategory(category: ProductCategory) {
 /** "LEGENDARY" → "Legendary". */
 export function formatRarity(rarity: ProductRarity) {
     return rarity.charAt(0) + rarity.slice(1).toLowerCase()
+}
+
+/**
+ * The card badge for a product's curation status — the same mapping the
+ * marketplace feed applies server-side (`TRENDING_NOW` → HOT,
+ * `NEW_RELEASE` → NEW), so a product carries the same label wherever it appears.
+ *
+ * The detail screen has to derive it rather than receive it: discover and
+ * marketplace cards are handed a badge by their feed, but `GET /products/:id`
+ * returns the raw `marketplaceStatus`.
+ */
+export function formatMarketplaceBadge(status: MarketplaceStatus | null): string | null {
+    if (status === 'NEW_RELEASE') return 'NEW'
+    if (status === 'TRENDING_NOW') return 'HOT'
+    return null
 }
 
 export function formatDate(iso: string | null | undefined) {

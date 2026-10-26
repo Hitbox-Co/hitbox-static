@@ -1,6 +1,5 @@
-import { ChevronRight } from "lucide-react-native";
 import React from "react";
-import { Text, TouchableOpacity, View } from "react-native";
+import { Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 
 interface AboutSectionProps {
@@ -29,7 +28,7 @@ export default function AboutSection({ aboutText, rarity, supply, ownedPercentag
           </Text>
         </View>
 
-        <TouchableOpacity 
+        {/* <TouchableOpacity 
           className="mt-4 border border-zinc-800 bg-transparent rounded-full px-3 py-2 self-start flex-row items-center gap-1.5"
           onPress={() => console.log("Learn more clicked")}
         >
@@ -37,20 +36,20 @@ export default function AboutSection({ aboutText, rarity, supply, ownedPercentag
             Learn More About This Collection
           </Text>
           <ChevronRight size={10} color="#a1a1aa" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
 
       {/* Right Column: Rarity & Supply Card */}
       <View className="flex-[1] bg-[#110e16]/30 border border-white/5 rounded-[20px] p-3 justify-between">
         {/* Rarity row */}
-        <View className="flex-row items-center justify-between border-b border-white/5 pb-2.5">
+        {/* <View className="flex-row items-center justify-between border-b border-white/5 pb-2.5">
           <Text className="text-[10px] text-zinc-400 font-semibold">Rarity</Text>
+           
           <View className="flex-row items-center gap-1">
-            {/* Tiny purple diamond */}
             <View className="h-2 w-2 rounded-sm bg-[#a855f7] rotate-45" />
             <Text className="text-[10px] font-bold text-[#a855f7]">{rarity}</Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Supply details and ring chart */}
         <View className="flex-row items-center justify-between pt-3">

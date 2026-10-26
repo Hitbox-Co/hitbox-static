@@ -1,5 +1,5 @@
-import { Clock, Compass, Music, Tag } from "lucide-react-native";
-import React, { useMemo, useState } from "react";
+import { Clock, Music } from "lucide-react-native";
+import React, { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -11,9 +11,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import MainHeader from "@/components/mainHeader";
+import { useTabScrollReset } from "@/hooks/use-tab-scroll-reset";
 import { useCollectionStats } from "../api/getCollectionStats";
 import { useMyCollection } from "../api/getMyCollection";
-import CategoriesSection from "../components/CategoriesSection";
+import CategoriesSection, { DEFAULT_COLLECTION_CATEGORY } from "../components/CategoriesSection";
 import CollectionGrid from "../components/CollectionGrid";
 import CollectionProgress from "../components/CollectionProgress";
 import FilterHeader from "../components/FilterHeader";
@@ -21,14 +22,15 @@ import { toCollectionCard } from "../utils/mapCollectionItem";
 
 const FILTER_OPTIONS = [
   { label: "Artist", value: "Artist", icon: Music },
-  { label: "Brand", value: "Brand", icon: Tag },
-  { label: "Genre", value: "Genre", icon: Compass },
+  // Brand removed — there is no brand on a collection item to sort by.
+  // { label: "Genre", value: "Genre", icon: Compass },
   { label: "Latest", value: "Latest", icon: Clock },
 ];
 
 export default function CollectionScreen() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("Latest");
+  const [activeCategory, setActiveCategory] = useState(DEFAULT_COLLECTION_CATEGORY);
 
   const stats = useCollectionStats();
   const {
@@ -47,6 +49,16 @@ export default function CollectionScreen() {
 
   const progress = stats.data?.collectionProgress.percentage ?? 0;
 
+  const scrollRef = useRef<ScrollView>(null);
+  // Reopen the tab on the shelf itself, not wherever the user left it: scrolled
+  // back to the top, category chip back on "All", and the filter menu closed —
+  // a selected chip or an open dropdown carried across a tab switch both read
+  // as the screen having been left mid-interaction.
+  useTabScrollReset(scrollRef, () => {
+    setIsFilterOpen(false);
+    setActiveCategory(DEFAULT_COLLECTION_CATEGORY);
+  });
+
   return (
     <SafeAreaView
       // No bottom edge: the tab bar already reserves the safe area below.
@@ -54,7 +66,11 @@ export default function CollectionScreen() {
       className="flex-1 bg-background"
     >
       <ScrollView
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: 110,
+        }}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -68,10 +84,8 @@ export default function CollectionScreen() {
       >
         {/* Header */}
         <MainHeader
-          title="My Collection"
+          title="My Collections"
           subtitle="Welcome to your HitBox collection."
-          notificationCount={3}
-          onNotificationPress={() => console.log("Notifications")}
           className='px-4 py-2'
         />
 
@@ -86,7 +100,10 @@ export default function CollectionScreen() {
 
         {/* Categories */}
         <View className="mx-4 mt-6">
-          <CategoriesSection />
+          <CategoriesSection
+            selectedId={activeCategory}
+            onSelect={setActiveCategory}
+          />
         </View>
 
         {/* My Collections */}

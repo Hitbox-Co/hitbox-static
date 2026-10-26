@@ -30,7 +30,7 @@ export default function SSOCallback() {
             const tag = takePendingClaim();
             // Always land on the claim page when we know the tag; the claim
             // screen decides what to show based on the session it sees.
-            router.replace((tag ? `/(routes)/claim/${tag}` : '/(tabs)/discover') as never);
+            router.replace((tag ? `/claim/${tag}` : '/(tabs)/discover') as never);
         };
 
         const timer = setInterval(() => {

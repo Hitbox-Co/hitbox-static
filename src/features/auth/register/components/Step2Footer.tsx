@@ -17,7 +17,7 @@ export default function Step2Footer() {
 
             <Text className="text-center text-neutral-600 text-[11px] leading-6 px-6">
                 By continuing, you agree to HitBox’s{'\n'}
-                <Text className="text-neutral-400 underline">Terms of Service</Text> and{' '}
+                <Text className="text-neutral-400 underline">Terms of use</Text> and{' '}
                 <Text className="text-neutral-400 underline">Privacy Policy</Text>.
             </Text>
         </View>

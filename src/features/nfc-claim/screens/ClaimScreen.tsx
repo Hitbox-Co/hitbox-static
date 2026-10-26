@@ -36,7 +36,7 @@ function errorCodeOf(err: unknown): string | null {
 }
 
 /**
- * Entry point for a tapped tag (`/(routes)/claim/:tagId`) — the state machine
+ * Entry point for a tapped tag (`/claim/:tagId`) — the state machine
  * that decides which screen the user sees.
  *
  * On mount it **verifies the tag against the backend** with the public reads

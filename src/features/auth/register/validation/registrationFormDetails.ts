@@ -21,7 +21,7 @@ export const userDetailsSchema = z.object({
         message: 'You must accept the Privacy Policy',
     }),
     acceptTermsAndConditions: z.boolean().refine((val) => val === true, {
-        message: 'You must accept the Terms and Conditions',
+        message: 'You must accept the Terms of Use',
     }),
 })
 

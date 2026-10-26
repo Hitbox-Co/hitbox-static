@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import MainHeader from '@/components/mainHeader';
 import CollectionSection from '../components/CollectionSection';
+import { COLLECTION_HIGHLIGHTS } from '../data/collectionHighlights';
 import StatsCard from '../components/StatsCard';
 import UserHeroSection from '../components/UserHeroSection';
 // import VipBannerCard from '../components/VipBannerCard';
@@ -32,6 +33,9 @@ export default function ProfileScreen() {
         >
             <ScrollView
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                    paddingBottom: 110,
+                }}
             >
                 {/* HEADER BAR */}
                 <MainHeader 
@@ -50,8 +54,9 @@ export default function ProfileScreen() {
 
                 {/* COLLECTION HIGHLIGHTS CONTAINER */}
                 <CollectionSection
-                    data={collections}
-                    onViewCollection={() => console.log("View Collection")}
+                    data={COLLECTION_HIGHLIGHTS}
+                    // Expands this row rather than jumping to the collections tab.
+                    onViewCollection={() => router.push('/collection-highlights')}
                 />
 
                 {/* ACCOUNT LIST SECTION */}
@@ -93,34 +98,4 @@ function AccountRow({ icon, title, subtitle, isLast = false, onPress }: { icon: 
     )
 }
 
-const collections = [
-    {
-        id: "1",
-        title: "Pierce The Veil",
-        image:
-            "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=200",
-        count: 18,
-    },
-    {
-        id: "2",
-        title: "Warped Tour 2026",
-        image:
-            "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=200",
-        count: 11,
-    },
-    {
-        id: "3",
-        title: "PTV Funko Pop!",
-        image:
-            "https://images.unsplash.com/photo-1566753323558-f4e0952af115?q=80&w=200",
-        count: 3,
-    },
-    {
-        id: "4",
-        title: "blink-182",
-        image:
-            "https://images.unsplash.com/photo-1506157786151-b8491531f063?q=80&w=200",
-        count: 5,
-    },
-];
 

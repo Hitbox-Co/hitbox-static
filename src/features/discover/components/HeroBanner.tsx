@@ -1,8 +1,17 @@
+import { ArrowRight } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import React, { useEffect, useRef, useState } from 'react'
-import { Dimensions, ImageBackground, NativeScrollEvent, NativeSyntheticEvent, ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import {
+    Dimensions,
+    Image,
+    NativeScrollEvent,
+    NativeSyntheticEvent,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native'
 
-import { Badge } from '@/components/ui/badge'
 import { DiscoverProductItem } from '../types/discover'
 import { DISCOVER_PLACEHOLDER_IMAGE, formatRewardPoints } from '../utils/format'
 
@@ -20,33 +29,21 @@ interface HeroSlide {
 const SLIDER_DATA = [
     {
         id: 1,
-        title: "Warped Tour 2026",
-        subtitle: "Relive the moments. Own the legacy.",
+        title: "Pierce The Veil — Signature Series Poster",
+        subtitle: "Earn 12,500 pts with this drop.",
         uri: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200",
     },
     {
         id: 2,
-        title: "Retro Collection",
-        subtitle: "Vintage aesthetics, timeless pieces.",
+        title: "Neon Genesis — Limited Edition Drop",
+        subtitle: "Earn 10,000 pts with this drop.",
         uri: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200",
     },
     {
         id: 3,
-        title: "Summer Drop",
-        subtitle: "Fresh gear built for the heat.",
+        title: "Midnight Relics — Exclusive Collectible",
+        subtitle: "Earn 8,500 pts with this drop.",
         uri: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=1200",
-    },
-    {
-        id: 4,
-        title: "Festival Essentials",
-        subtitle: "Everything you need to stand out.",
-        uri: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200",
-    },
-    {
-        id: 5,
-        title: "Limited Edition Plates",
-        subtitle: "Rare vault collectables drop Friday.",
-        uri: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200",
     },
 ]
 
@@ -80,22 +77,21 @@ export default function HeroBanner({ items, onItemPress }: HeroBannerProps) {
                 x: nextIndex * CAROUSEL_WIDTH,
                 animated: true,
             })
-        }, 4000)
+        }, 4500)
 
         return () => clearInterval(timer)
     }, [activeIndex, slides.length])
 
-
     const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-        const scrollOffset = event.nativeEvent.contentOffset.x;
-        const currentIndex = Math.round(scrollOffset / CAROUSEL_WIDTH);
+        const scrollOffset = event.nativeEvent.contentOffset.x
+        const currentIndex = Math.round(scrollOffset / CAROUSEL_WIDTH)
         if (currentIndex !== activeIndex && currentIndex >= 0 && currentIndex < slides.length) {
-            setActiveIndex(currentIndex);
+            setActiveIndex(currentIndex)
         }
-    };
+    }
 
     return (
-        <View className="mt-5 h-52 mx-4 relative overflow-hidden rounded-xl">
+        <View className="mt-4 mx-4">
             <ScrollView
                 ref={scrollViewRef}
                 horizontal
@@ -107,73 +103,144 @@ export default function HeroBanner({ items, onItemPress }: HeroBannerProps) {
                 snapToInterval={CAROUSEL_WIDTH}
             >
                 {slides.map((item, slideIndex) => (
-                    <View key={item.id} style={{ width: CAROUSEL_WIDTH }} className="h-full">
-                        <ImageBackground
-                            source={{ uri: item.uri }}
-                            resizeMode="cover"
-                            imageStyle={{ borderRadius: 20 }}
-                            className="w-full h-full"
-                        >
-
-                            <View className="flex-1 bg-black/40 p-5 justify-between">
-
-                                <Badge variant="default" className="self-start bg-primary active:bg-primary">
-                                    <Text className="text-[10px] font-semibold tracking-wider text-white">
+                    <View
+                        key={item.id}
+                        style={{
+                            width: CAROUSEL_WIDTH,
+                            height: 200,
+                            borderRadius: 20,
+                            backgroundColor: "#13101C",
+                            borderWidth: 1,
+                            borderColor: "rgba(255, 255, 255, 0.08)",
+                        }}
+                        className="overflow-hidden p-4 flex-row justify-between items-center"
+                    >
+                        {/* Left Content Column */}
+                        <View className="flex-1 justify-between h-full pr-3 py-1">
+                            <View>
+                                {/* Featured Badge */}
+                                <View
+                                    style={{
+                                        alignSelf: "flex-start",
+                                        backgroundColor: "#7C3AED",
+                                        paddingHorizontal: 8,
+                                        paddingVertical: 3,
+                                        borderRadius: 6,
+                                    }}
+                                >
+                                    <Text className="text-[9px] font-extrabold tracking-wider text-white">
                                         FEATURED
                                     </Text>
-                                </Badge>
-
-                                
-                                <View className="mb-4">
-                                    <Text className="text-2xl font-bold text-white">
-                                        {item.title}
-                                    </Text>
-
-                                    <Text className="mt-2 text-sm text-gray-200">
-                                        {item.subtitle}
-                                    </Text>
-
-                                    <View className="min-w-[85px] max-w-[40%] mt-6 items-end justify-center shrink-0">
-                                        <TouchableOpacity
-                                            activeOpacity={0.8}
-                                            onPress={() => {
-                                                const product = featured[slideIndex]
-                                                if (product) onItemPress?.(product)
-                                            }}
-                                            className="bg-primary px-3 py-2 rounded-xl shadow-sm shadow-primary/30 w-full items-center justify-center"
-                                        >
-                                            <Text className="text-white font-bold text-xs" numberOfLines={1}>
-                                                Explore Collection
-                                            </Text>
-                                        </TouchableOpacity>
-                                    </View>
                                 </View>
+
+                                {/* Title */}
+                                <Text
+                                    numberOfLines={2}
+                                    style={{
+                                        fontSize: 17,
+                                        fontWeight: "800",
+                                        color: "#FFFFFF",
+                                        marginTop: 8,
+                                        lineHeight: 22,
+                                    }}
+                                >
+                                    {item.title}
+                                </Text>
+
+                                {/* Subtitle */}
+                                <Text
+                                    numberOfLines={1}
+                                    style={{
+                                        fontSize: 12,
+                                        color: "#A1A1AA",
+                                        marginTop: 4,
+                                    }}
+                                >
+                                    {item.subtitle}
+                                </Text>
                             </View>
-                        </ImageBackground>
+
+                            {/* Explore Button */}
+                            <TouchableOpacity
+                                activeOpacity={0.8}
+                                onPress={() => {
+                                    const product = featured[slideIndex]
+                                    if (product) onItemPress?.(product)
+                                }}
+                                style={{
+                                    alignSelf: "flex-start",
+                                    backgroundColor: "#7C3AED",
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 8,
+                                    borderRadius: 10,
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    shadowColor: "#7C3AED",
+                                    shadowOffset: { width: 0, height: 3 },
+                                    shadowOpacity: 0.35,
+                                    shadowRadius: 6,
+                                    elevation: 3,
+                                }}
+                            >
+                                <Text className="text-white font-bold text-xs mr-1.5">
+                                    Explore Collection
+                                </Text>
+                                <ArrowRight size={13} color="#FFFFFF" strokeWidth={2.5} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Right Poster Artwork */}
+                        <View
+                            style={{
+                                width: 110,
+                                height: 160,
+                                borderRadius: 12,
+                                overflow: "hidden",
+                                backgroundColor: "#1C1929",
+                                borderWidth: 1,
+                                borderColor: "rgba(255, 255, 255, 0.12)",
+                                shadowColor: "#000000",
+                                shadowOffset: { width: 0, height: 6 },
+                                shadowOpacity: 0.5,
+                                shadowRadius: 10,
+                                elevation: 6,
+                            }}
+                        >
+                            <Image
+                                source={{ uri: item.uri }}
+                                resizeMode="cover"
+                                className="w-full h-full"
+                            />
+                        </View>
                     </View>
                 ))}
             </ScrollView>
 
-            <View className="absolute bottom-2 left-0 right-0 flex-row justify-center pointer-events-none">
+            {/* Pagination Indicators */}
+            <View className="flex-row justify-center items-center mt-3">
                 {slides.map((_, index) => {
                     const isActive = index === activeIndex
                     return (
                         <MotiView
                             key={index}
                             animate={{
-                                width: isActive ? 24 : 8,
-                                backgroundColor: isActive ? "#A855F7" : "rgba(156, 163, 175, 1)", // primary violet color vs gray-500
+                                width: isActive ? 20 : 6,
+                                backgroundColor: isActive ? "#A855F7" : "rgba(255, 255, 255, 0.25)",
                             }}
                             transition={{
                                 type: "spring",
                                 damping: 15,
-                                stiffness: 180,
+                                stiffness: 200,
                             }}
-                            className="mx-1 h-2 rounded-full"
+                            style={{
+                                height: 6,
+                                borderRadius: 3,
+                                marginHorizontal: 3,
+                            }}
                         />
                     )
                 })}
             </View>
         </View>
     )
-}
+}

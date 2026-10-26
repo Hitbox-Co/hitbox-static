@@ -73,7 +73,7 @@ export async function promptEnableNfcIfNeeded(): Promise<void> {
 /**
  * Listen for tag taps while the Scan screen is open. Calls `onTag` with the
  * normalized tag id on every discovery. Returns a cleanup function that stops
- * scanning — scanning is scoped to `/(routes)/scan`, not the whole app.
+ * scanning — scanning is scoped to `/scan`, not the whole app.
  */
 export function startTagListener(onTag: (tagId: string) => void): () => void {
     let cancelled = false;

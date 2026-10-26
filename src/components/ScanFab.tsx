@@ -9,7 +9,7 @@ import { TabBarBaseHeight } from '@/constants/theme';
 
 /**
  * Routes where the button would be pointless or in the way. `usePathname()`
- * drops group segments, so `/(routes)/scan` arrives here as `/scan`.
+ * drops group segments, so `/scan` arrives here as `/scan`.
  */
 const HIDDEN_ON = [
     '/scan',            // already scanning
@@ -19,13 +19,27 @@ const HIDDEN_ON = [
     '/register',
     '/forget-password',
     '/sso-callback',
+    '/privacy-policy',  // long reads reached mid-sign-up — the button just covers text
+    '/terms-of-use',
 ];
 
-/** Routes that render the bottom tab bar, which the button has to clear. */
-const TAB_ROUTES = ['/discover', '/collections', '/marketplace', '/profile'];
+/**
+ * Routes that render the bottom tab bar, which the button has to clear — the
+ * four tabs plus the pushed screens that live inside `(tabs)/(details)`.
+ */
+const TAB_ROUTES = [
+    '/discover',
+    '/collections',
+    '/marketplace',
+    '/profile',
+    '/settings',
+    '/edit-profile',
+    '/artists',
+    '/notifications',
+];
 
 /**
- * Floating scan button — the app-wide entry point into `/(routes)/scan`.
+ * Floating scan button — the app-wide entry point into `/scan`.
  *
  * Rendered once in `src/app/_layout.tsx` as a sibling of the navigator, so it
  * survives every route change instead of being re-mounted per screen. It clears
@@ -56,7 +70,7 @@ export default function ScanFab() {
                 accessibilityRole="button"
                 accessibilityLabel="Scan an NFC tag"
                 activeOpacity={0.85}
-                onPress={() => router.push('/(routes)/scan')}
+                onPress={() => router.push('/scan')}
                 className="h-16 w-16 rounded-full bg-primary items-center justify-center border-2 border-white/50 shadow-lg shadow-primary/40"
             >
                 <ScanLine color="#FFFFFF" size={28} />

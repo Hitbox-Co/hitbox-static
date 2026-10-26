@@ -1,4 +1,3 @@
-import { Gem } from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
@@ -12,9 +11,7 @@ import { DiscoverProductItem } from "../types/discover";
 import { DISCOVER_PLACEHOLDER_IMAGE, formatRewardPoints } from "../utils/format";
 
 const { width } = Dimensions.get("window");
-
-// Responsive width
-const CARD_WIDTH = width * 0.3;
+const CARD_WIDTH = width * 0.34;
 
 interface ReleaseCardProps {
   item: DiscoverProductItem;
@@ -32,8 +29,14 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
-      style={{ width: CARD_WIDTH }}
-      className="mr-3 overflow-hidden rounded-2xl border border-zinc-800 bg-[#17171C]"
+      style={{
+        width: CARD_WIDTH,
+        backgroundColor: "#13101C",
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.08)",
+      }}
+      className="mr-3 overflow-hidden"
     >
       {/* Square Artwork */}
       <View
@@ -47,8 +50,18 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({
         />
 
         {showNewBadge && (
-          <View className="absolute left-2 top-2 rounded-full bg-violet-600 px-2 py-1">
-            <Text className="text-[9px] font-bold text-white">
+          <View
+            style={{
+              position: "absolute",
+              top: 8,
+              left: 8,
+              backgroundColor: "#7C3AED",
+              paddingHorizontal: 6,
+              paddingVertical: 2,
+              borderRadius: 4,
+            }}
+          >
+            <Text className="text-[9px] font-extrabold text-white">
               NEW
             </Text>
           </View>
@@ -59,25 +72,30 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({
       <View className="p-2.5">
         <Text
           numberOfLines={2}
-          className="text-[12px] font-bold text-white"
+          style={{
+            fontSize: 12,
+            fontWeight: "700",
+            color: "#FFFFFF",
+            lineHeight: 16,
+          }}
         >
           {item.name}
         </Text>
 
-        <View className="mt-2 flex-row items-center">
-          <Gem
-            size={11}
-            color="#A855F7"
-            fill="#A855F7"
-          />
-
-          <Text className="ml-1 text-[10px] font-semibold text-violet-400">
-            {formatRewardPoints(item.rewardPoints)}
-          </Text>
-        </View>
+        <Text
+          style={{
+            fontSize: 11,
+            fontWeight: "700",
+            color: "#A855F7",
+            marginTop: 4,
+          }}
+        >
+          {formatRewardPoints(item.rewardPoints)}
+        </Text>
       </View>
     </TouchableOpacity>
   );
 };
 
 export default ReleaseCard;
+

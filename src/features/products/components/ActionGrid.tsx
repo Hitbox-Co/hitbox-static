@@ -37,9 +37,16 @@ const ACTIONS = [
   },
 ];
 
-export default function ActionGrid() {
+interface ActionGridProps {
+  /** Opens the OS share sheet for this product. The other tiles are still UI-only. */
+  onShare?: () => void;
+}
+
+export default function ActionGrid({ onShare }: ActionGridProps) {
   return (
-    <View className="mt-6">
+    // No top margin: the parent owns the gap to the section above, so adding one
+    // here doubled it.
+    <View>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -48,11 +55,18 @@ export default function ActionGrid() {
       >
         {ACTIONS.map((action) => {
           const Icon = action.icon;
+          const isShare = action.id === "share";
           return (
             <TouchableOpacity
               key={action.id}
+              accessibilityRole="button"
+              accessibilityLabel={action.title}
               className="mr-3 w-[102px] bg-[#110e16]/30 border border-white/5 rounded-[20px] p-3 items-center justify-between h-[120px]"
-              onPress={() => console.log(`${action.title} pressed`)}
+              onPress={
+                isShare && onShare
+                  ? onShare
+                  : () => console.log(`${action.title} pressed`)
+              }
             >
               {/* Icon Container */}
               <View className="h-10 w-10 items-center justify-center rounded-full bg-[#a855f7]/10">

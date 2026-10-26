@@ -65,7 +65,7 @@ export default function UserHeroSection() {
                     {/* Tap the avatar to edit the profile */}
                     <TouchableOpacity
                         activeOpacity={0.85}
-                        onPress={() => router.push('/(routes)/edit-profile')}
+                        onPress={() => router.push('/edit-profile')}
                         className="relative"
                     >
                         <Avatar className="w-20 h-20 border border-black/40" alt={'Profile'}>

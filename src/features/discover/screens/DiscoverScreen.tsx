@@ -2,10 +2,11 @@ import { router } from "expo-router";
 import {
     ArrowRight,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
+    LayoutChangeEvent,
     RefreshControl,
     ScrollView,
     Text,
@@ -16,14 +17,19 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import MainHeader from "@/components/mainHeader";
 import MainSearchBar from "@/components/mainsearch";
+import { useTabScrollReset } from "@/hooks/use-tab-scroll-reset";
 import { useDiscoverFeed } from "../api/getDiscoverFeed";
-import CategoriesSection from "../components/CategoriesSection";
+import CategoriesSection, { DiscoverCategoryId } from "../components/CategoriesSection";
+import ComingSoonRow from "../components/ComingSoonRow";
 import HeroBanner from "../components/HeroBanner";
 import ReleaseCard from "../components/ReleaseCard";
 import SearchResultsSection from "../components/SearchResultsSection";
 import TrendingCard from "../components/TrendingCard";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { DiscoverProductItem } from "../types/discover";
+import { DiscoverProductItem, DiscoverSection } from "../types/discover";
+
+/** Breathing room left above a section title after a chip jump. */
+const SCROLL_GAP = 12;
 
 export default function DiscoverScreen() {
 
@@ -36,21 +42,62 @@ export default function DiscoverScreen() {
     // console.log("isLoading:", isLoading)
     // console.log("isError:", error)
 
+    const [activeCategory, setActiveCategory] = useState<DiscoverCategoryId>("trending");
+    const scrollRef = useRef<ScrollView>(null);
+    /**
+     * Each section reports its y offset within the scroll content as it lays out;
+     * a chip press then just scrolls there. Measuring on layout (rather than
+     * hardcoding heights) keeps it correct as sections grow, empty out, or get
+     * replaced by a placeholder.
+     */
+    const sectionY = useRef<Partial<Record<DiscoverCategoryId, number>>>({});
+
+    // Reopen the tab at the top. The chip highlight resets with it, otherwise
+    // the user lands on "Trending" with "Top Creators" still lit up.
+    useTabScrollReset(scrollRef, () => setActiveCategory("trending"));
+
+    const registerSection = (id: DiscoverCategoryId) => (event: LayoutChangeEvent) => {
+        sectionY.current[id] = event.nativeEvent.layout.y;
+    };
+
+    const handleCategorySelect = (id: DiscoverCategoryId) => {
+        setActiveCategory(id);
+        const y = sectionY.current[id];
+        // Undefined only while the feed is still loading and nothing has laid out.
+        if (y == null) return;
+        scrollRef.current?.scrollTo({ y: Math.max(0, y - SCROLL_GAP), animated: true });
+    };
+
     const handleProductPress = (item: DiscoverProductItem) => {
-        // Cards are lightweight — the detail screen fetches GET /products/:id
-        router.push(`/marketplace/${item.id}`);
+        // Cards are lightweight — the detail screen fetches GET /products/:id.
+        // Opens Discover's own copy of the detail route: pushing the
+        // marketplace one would switch the active tab to Marketplace.
+        router.push({ pathname: '/discover/[productId]', params: { productId: item.id } });
+    };
+
+    /**
+     * "See All" → the paginated view of that section
+     * (`GET /api/v1/discover/products?section=…`). `section` uses the API's
+     * snake_case values, not the chip ids.
+     */
+    const handleSeeAll = (section: DiscoverSection, title: string) => {
+        router.push({
+            pathname: '/(tabs)/discover/see-all',
+            params: { section, title },
+        });
     };
 
     return (
         <SafeAreaView
             // No bottom edge: the tab bar already reserves the safe area below.
             edges={["top", "left", "right"]}
-            className="flex-1 bg-black "
+            className="flex-1 bg-black"
         >
             <ScrollView
+                ref={scrollRef}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{
-                    paddingBottom: 0,
+                    paddingBottom: 110,
                 }}
                 refreshControl={
                     <RefreshControl
@@ -63,9 +110,7 @@ export default function DiscoverScreen() {
                 <MainHeader
                     title="Discover"
                     subtitle="Explore collections, creators and exclusive experiences."
-                    notificationCount={3}
-                    onNotificationPress={() => console.log("Notifications")}
-                    className='px-4 py-2'
+                    className='px-4 pt-1 pb-1'
                 />
 
                 {/* Search Bar — backed by GET /api/v1/discover/products?search= */}
@@ -74,15 +119,18 @@ export default function DiscoverScreen() {
                     onChangeText={setSearch}
                     placeholder="Search artists, albums..."
                     onVoicePress={() => console.log("Voice")}
-                    classname="my-2"
+                    classname="my-1"
                 />
 
                 {isSearching ? (
                     <SearchResultsSection search={debouncedSearch} onItemPress={handleProductPress} />
                 ) : (
                     <>
-                        <View className="mt-5 mx-4 flex-row items-center justify-between">
-                            <CategoriesSection />
+                        <View className="mt-2 mx-4 flex-row items-center justify-between">
+                            <CategoriesSection
+                                activeId={activeCategory}
+                                onSelect={handleCategorySelect}
+                            />
                         </View>
 
                         {/* HERO SECTION — featured (≤5) from the discover feed */}
@@ -108,10 +156,13 @@ export default function DiscoverScreen() {
                         {feed && (
                             <>
                                 {/* TRENDING — unitsSold desc */}
-                                {feed.trending.length > 0 && (
-                                    <>
-                                        <SectionHeader title="Trending Now" />
-                                        <View className="mt-4 mx-4">
+                                <View onLayout={registerSection("trending")}>
+                                    <SectionHeader
+                                        title="Trending Now"
+                                        onSeeAllPress={() => handleSeeAll('trending', 'Trending Now')}
+                                    />
+                                    <View className="mt-3 mx-4">
+                                        {feed.trending.length > 0 ? (
                                             <FlatList
                                                 horizontal
                                                 data={feed.trending}
@@ -125,15 +176,20 @@ export default function DiscoverScreen() {
                                                 )}
                                                 showsHorizontalScrollIndicator={false}
                                             />
-                                        </View>
-                                    </>
-                                )}
+                                        ) : (
+                                            <></>
+                                        )}
+                                    </View>
+                                </View>
 
                                 {/* TOP CREATORS — unitsSold desc */}
-                                {feed.topCreators.length > 0 && (
-                                    <>
-                                        <SectionHeader title="Top Creators" />
-                                        <View className="mt-4 mx-4">
+                                <View onLayout={registerSection("topCreators")}>
+                                    <SectionHeader
+                                        title="Top Creators"
+                                        onSeeAllPress={() => handleSeeAll('top_creators', 'Top Creators')}
+                                    />
+                                    <View className="mt-3 mx-4">
+                                        {feed.topCreators.length > 0 ? (
                                             <FlatList
                                                 horizontal
                                                 data={feed.topCreators}
@@ -148,15 +204,20 @@ export default function DiscoverScreen() {
                                                 ItemSeparatorComponent={() => <View className="w-4" />}
                                                 showsHorizontalScrollIndicator={false}
                                             />
-                                        </View>
-                                    </>
-                                )}
+                                        ) : (
+                                            <ComingSoonRow note="No creator picks yet — pull to refresh." />
+                                        )}
+                                    </View>
+                                </View>
 
                                 {/* NEW RELEASES — createdAt desc */}
-                                {feed.newReleases.length > 0 && (
-                                    <>
-                                        <SectionHeader title="Latest Releases" />
-                                        <View className="mt-4 mx-4 mb-4">
+                                <View onLayout={registerSection("newReleases")}>
+                                    <SectionHeader
+                                        title="Latest Releases"
+                                        onSeeAllPress={() => handleSeeAll('new_releases', 'Latest Releases')}
+                                    />
+                                    <View className="mt-3 mx-4 mb-4">
+                                        {feed.newReleases.length > 0 ? (
                                             <FlatList
                                                 horizontal
                                                 data={feed.newReleases}
@@ -170,9 +231,11 @@ export default function DiscoverScreen() {
                                                 ItemSeparatorComponent={() => <View className="w-4" />}
                                                 showsHorizontalScrollIndicator={false}
                                             />
-                                        </View>
-                                    </>
-                                )}
+                                        ) : (
+                                            <ComingSoonRow note="No new releases yet — pull to refresh." />
+                                        )}
+                                    </View>
+                                </View>
                             </>
                         )}
                     </>
@@ -186,19 +249,20 @@ export default function DiscoverScreen() {
 
 function SectionHeader({ title, onSeeAllPress }: { title: string; onSeeAllPress?: () => void }) {
     return (
-        <View className="mt-8 flex-row items-center justify-between mx-4">
-            <Text className="text-2xl font-bold text-white">
+        <View className="mt-6 flex-row items-center justify-between mx-4">
+            <Text className="text-xl font-extrabold text-white tracking-tight">
                 {title}
             </Text>
 
-            <TouchableOpacity className="flex-row items-center" onPress={onSeeAllPress}>
-                <Text className="mr-1 font-semibold text-violet-500">
+            <TouchableOpacity className="flex-row items-center" onPress={onSeeAllPress} activeOpacity={0.7}>
+                <Text className="mr-1 font-bold text-sm text-[#A855F7]">
                     See All
                 </Text>
 
                 <ArrowRight
-                    size={18}
-                    color="#8B5CF6"
+                    size={15}
+                    color="#A855F7"
+                    strokeWidth={2.5}
                 />
             </TouchableOpacity>
         </View>

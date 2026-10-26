@@ -1,6 +1,6 @@
 import { MotiView } from 'moti'
 import React from 'react'
-import { Image, Pressable, Text, View } from 'react-native'
+import { Image, Text, View } from 'react-native'
 
 export default function PromoBannerSection() {
     return (
@@ -26,9 +26,9 @@ export default function PromoBannerSection() {
                 <Text className="text-muted-foreground text-xs mt-1 leading-4">Trade securely with other collectors.</Text>
             </View>
 
-            <Pressable className="bg-primary px-4 py-2.5 rounded-xl self-start z-10 active:opacity-90">
+            {/* <Pressable className="bg-primary px-4 py-2.5 rounded-xl self-start z-10 active:opacity-90">
                 <Text className="text-primary-foreground font-semibold text-xs">Start Trading</Text>
-            </Pressable>
+            </Pressable> */}
         </MotiView>
     )
 }

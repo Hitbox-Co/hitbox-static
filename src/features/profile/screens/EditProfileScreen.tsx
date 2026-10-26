@@ -149,7 +149,12 @@ export default function EditProfileScreen() {
     }
 
     return (
-        <SafeAreaView className="flex-1 bg-background">
+        <SafeAreaView
+            // No bottom edge: these routes render inside (tabs), so the tab bar
+            // already reserves the safe area below.
+            edges={["top", "left", "right"]}
+            className="flex-1 bg-background"
+        >
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                 className="flex-1"

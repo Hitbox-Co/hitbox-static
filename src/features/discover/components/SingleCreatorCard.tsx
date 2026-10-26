@@ -22,7 +22,7 @@ export default function SingleCreatorCard({ item }: CreatorCardProps) {
     <TouchableOpacity
       activeOpacity={0.8}
       className="w-32 overflow-hidden rounded-3xl"
-      onPress={() => router.push(`/(routes)/artists/${item.id}`)}
+      onPress={() => router.push(`/artists/${item.id}`)}
     >
       <BlurView
         intensity={10}

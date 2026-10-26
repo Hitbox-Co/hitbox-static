@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import {
     CreditCard,
     Frame,
@@ -7,18 +8,20 @@ import {
     Shirt,
     ToyBrick,
 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import MainHeader from '@/components/mainHeader';
 import MainSearchBar from '@/components/mainsearch';
+import { useTabScrollReset } from '@/hooks/use-tab-scroll-reset';
 import { useMarketplaceFeed } from '../api/getMarketplaceFeed';
 import CategorySection, { CategoryTabId } from '../components/CategorySection';
 import ListingsResultsSection from '../components/ListingsResultsSection';
 import ListingsSection from '../components/ListingsSection';
 import PromoBannerSection from '../components/PromoBannerSection';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { MarketplaceSort } from '../types/marketplace';
 
 // Screen tabs → API `category` values (see api/routes.ts); 'all' omits the param
 const CATEGORIES: { id: CategoryTabId; icon: any; label: string }[] = [
@@ -42,16 +45,45 @@ const MarketPlaceScreen = () => {
 
     const { data: feed, isLoading, isError, refetch, isRefetching } = useMarketplaceFeed();
 
+    const scrollRef = useRef<ScrollView>(null);
+    // Reopen the tab on the main feed: top of the page, "All Items" selected and
+    // the search box cleared. Both have to go — `isBrowsing` above swaps the
+    // featured/new sections for the paginated results whenever a category or a
+    // search term is set, so leaving either behind means the tab reopens
+    // mid-search rather than on the listings page.
+    useTabScrollReset(scrollRef, () => {
+        setActiveCategory('all');
+        setSearch('');
+    });
+
+    /**
+     * "See All" → the paginated view of that section
+     * (`GET /api/v1/marketplace/listings`). The category tab is forwarded so the
+     * two stay consistent if these sections ever render under a filtered tab —
+     * today they only show on "All Items", where no category is sent.
+     */
+    const handleSeeAll = (sort: MarketplaceSort, title: string) => {
+        router.push({
+            pathname: '/(tabs)/marketplace/see-all',
+            params: {
+                sort,
+                title,
+                ...(activeCategory === 'all' ? {} : { category: activeCategory }),
+            },
+        });
+    };
+
     return (
         <SafeAreaView
             // No bottom edge: the tab bar already reserves the safe area below.
             edges={['top', 'left', 'right']}
-            className="flex-1 bg-background"
+            className="flex-1 bg-black"
         >
             <ScrollView
+                ref={scrollRef}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{
-                    paddingBottom: 24,
+                    paddingBottom: 110,
                 }}
                 refreshControl={
                     <RefreshControl
@@ -112,10 +144,20 @@ const MarketPlaceScreen = () => {
                         {feed && (
                             <>
                                 {/* --- FEATURED — curated, most-sold first --- */}
-                                <ListingsSection title="Featured Listings" items={feed.featured} />
+                                <ListingsSection
+                                    title="Featured Listings"
+                                    items={feed.featured}
+                                    // `popular` is the listings endpoint's most-sold-first sort,
+                                    // which is how the feed builds `featured`.
+                                    onSeeAllPress={() => handleSeeAll('popular', 'Featured Listings')}
+                                />
 
                                 {/* --- NEW LISTINGS — newest active products --- */}
-                                <ListingsSection title="New Listings" items={feed.newListings} />
+                                <ListingsSection
+                                    title="New Listings"
+                                    items={feed.newListings}
+                                    onSeeAllPress={() => handleSeeAll('newest', 'New Listings')}
+                                />
                             </>
                         )}
                     </>

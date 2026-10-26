@@ -7,13 +7,13 @@ interface TabSectionProps {
   tourId?: string | string[];
 }
 
-const TABS = ["Details", "History", "Offers (3)", "Listings (12)"];
+const TABS = ["Details", "History", "Offers", "Listings"];
 
 export default function TabSection({ renderActiveContent, tourId }: TabSectionProps) {
   const [activeTab, setActiveTab] = useState("Details");
 
   return (
-    <View className="mt-6">
+    <View className="mt-5">
       {/* Tabs Horizontal List */}
       <View className="border-b border-white/5">
         <ScrollView
@@ -47,7 +47,7 @@ export default function TabSection({ renderActiveContent, tourId }: TabSectionPr
       </View>
 
       {/* Tab Content Area */}
-      <View className="px-5 mt-5">
+      <View className="px-5 mt-4">
         {activeTab === "Details" ? (
           renderActiveContent()
         ) : activeTab === "History" ? (

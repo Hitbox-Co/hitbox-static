@@ -57,6 +57,9 @@ export default function SettingsScreen({ initialTab = 'menu' }: SettingsScreenPr
 
   return (
     <SafeAreaView
+      // No bottom edge: this route renders inside (tabs), so the tab bar
+      // already reserves the safe area below.
+      edges={["top", "left", "right"]}
       className="flex-1 bg-background"
     >
       {/* Header bar */}

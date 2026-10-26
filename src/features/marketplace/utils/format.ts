@@ -1,14 +1,19 @@
+import { formatMoneyFromUsd, groupThousands } from '@/lib/currency'
+
 /** Shown when a listing has no image yet (imageUrl is null). */
 export const MARKETPLACE_PLACEHOLDER_IMAGE =
     'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&q=60'
 
-/** "89.99" (decimal-as-string from the API) → "$89.99". */
+/**
+ * "89.99" (USD decimal-as-string from the API) → the viewer's display currency:
+ * "$89.99" in the US, "₹7,514" in India. See `@/lib/currency` for how the region
+ * is resolved and why this is display-only.
+ */
 export function formatPrice(priceInDollars: string) {
-    const value = Number(priceInDollars)
-    if (Number.isNaN(value)) return `$${priceInDollars}`
-    return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+    return formatMoneyFromUsd(priceInDollars)
 }
 
+/** Points are a count, not money — always grouped Western, never converted. */
 export function formatRewardPoints(points: number) {
-    return `${points.toLocaleString('en-US')} pts`
+    return `${groupThousands(String(Math.round(points)))} pts`
 }

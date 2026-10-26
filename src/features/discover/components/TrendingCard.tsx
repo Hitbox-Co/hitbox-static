@@ -1,5 +1,5 @@
-import { Gem } from "lucide-react-native";
-import React from "react";
+import { Heart } from "lucide-react-native";
+import React, { useState } from "react";
 import {
   Dimensions,
   Image,
@@ -12,9 +12,7 @@ import { DiscoverProductItem } from "../types/discover";
 import { DISCOVER_PLACEHOLDER_IMAGE, formatRewardPoints } from "../utils/format";
 
 const { width } = Dimensions.get("window");
-
-// Similar proportions to the design
-const CARD_WIDTH = width * 0.36;
+const CARD_WIDTH = width * 0.38;
 
 interface TrendingCardProps {
   item: DiscoverProductItem;
@@ -27,14 +25,22 @@ const TrendingCard: React.FC<TrendingCardProps> = ({
   index,
   onPress,
 }) => {
+  const [liked, setLiked] = useState(false);
+
   return (
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
-      style={{ width: CARD_WIDTH }}
-      className="mr-3 overflow-hidden rounded-[20px] border border-zinc-800 bg-[#111111]"
+      style={{
+        width: CARD_WIDTH,
+        backgroundColor: "#13101C",
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.08)",
+      }}
+      className="mr-3 overflow-hidden"
     >
-      {/* Image */}
+      {/* Artwork Image */}
       <View
         className="relative overflow-hidden bg-[#0E0E12]"
         style={{ aspectRatio: 1 }}
@@ -45,37 +51,63 @@ const TrendingCard: React.FC<TrendingCardProps> = ({
           resizeMode="cover"
         />
 
-        {/* Rank Badge */}
-        <View className="absolute left-2 top-2 h-6 w-6 items-center justify-center rounded-full bg-black/70">
-          <Text className="text-[10px] font-bold text-white">
-            {index}
-          </Text>
-        </View>
+
+        {/* Heart Wishlist Button Top Right */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={(e) => {
+            e.stopPropagation();
+            setLiked(!liked);
+          }}
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            width: 26,
+            height: 26,
+            borderRadius: 13,
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Heart
+            size={14}
+            color={liked ? "#EF4444" : "#FFFFFF"}
+            fill={liked ? "#EF4444" : "transparent"}
+            strokeWidth={2}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Info */}
-      <View className="px-3 py-3">
+      <View className="p-3">
         <Text
           numberOfLines={2}
-          className="text-[14px] font-bold text-white"
+          style={{
+            fontSize: 13,
+            fontWeight: "700",
+            color: "#FFFFFF",
+            lineHeight: 17,
+          }}
         >
           {item.name}
         </Text>
 
-        <View className="mt-2 flex-row items-center">
-          <Gem
-            size={12}
-            color="#A855F7"
-            fill="#A855F7"
-          />
-
-          <Text className="ml-1 text-[11px] font-semibold text-violet-400">
-            {formatRewardPoints(item.rewardPoints)}
-          </Text>
-        </View>
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: "700",
+            color: "#A855F7",
+            marginTop: 6,
+          }}
+        >
+          {formatRewardPoints(item.rewardPoints)}
+        </Text>
       </View>
     </TouchableOpacity>
   );
 };
 
 export default TrendingCard;
+

@@ -1,7 +1,15 @@
 import { router } from "expo-router";
 import { ArrowLeft, MoreHorizontal, SearchX, Share2 } from "lucide-react-native";
 import React from "react";
-import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  type AlertButton,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useProduct } from "@/features/products/api/getProduct";
@@ -13,11 +21,13 @@ import TourHeaderDetails from "@/features/products/components/TourHeaderDetails"
 import {
   formatCategory,
   formatDate,
+  formatMarketplaceBadge,
   formatPrice,
   formatRarity,
   formatRewardPoints,
   PRODUCT_PLACEHOLDER_IMAGE,
 } from "@/features/products/utils/format";
+import { shareProduct } from "@/features/products/utils/share";
 import { ApiRequestError } from "@/lib/api";
 
 
@@ -38,6 +48,41 @@ export default function TourScreen({ tourId }: TourScreenProps) {
   const soldPercentage = product && product.inventoryUnit > 0
     ? Math.min(100, Math.round((product.unitsSold / product.inventoryUnit) * 100))
     : 0;
+
+  /** Opens the OS share sheet — used by the nav icon and the Share Item tile. */
+  const handleShare = () => {
+    if (!product) return;
+    void shareProduct(product);
+  };
+
+  /**
+   * Overflow menu. Built from actions that actually exist rather than a menu of
+   * placeholders: verifying goes to the public authenticity check for this
+   * product's own tag, and help goes to the support screen.
+   */
+  const handleMore = () => {
+    if (!product) return;
+
+    const actions: AlertButton[] = [];
+
+    // Only products that carry an NFC tag can be verified.
+    if (product.tagId) {
+      actions.push({
+        text: "Verify authenticity",
+        onPress: () =>
+          router.push({
+            pathname: "/verify/[tagId]",
+            params: { tagId: product.tagId as string },
+          }),
+      });
+    }
+
+    actions.push({ text: "Share item", onPress: handleShare });
+    actions.push({ text: "Get help with this item", onPress: () => router.push("/support") });
+    actions.push({ text: "Cancel", style: "cancel" });
+
+    Alert.alert(product.name, undefined, actions, { cancelable: true });
+  };
 
   return (
     // flex-1 is required all the way down — without it the containers have
@@ -63,10 +108,24 @@ export default function TourScreen({ tourId }: TourScreenProps) {
           </TouchableOpacity>
 
           <View className="flex-row gap-2">
-            <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-black/40 border border-white/5 active:bg-black/60">
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Share this item"
+              // Nothing to share until the product has loaded.
+              disabled={!product}
+              onPress={handleShare}
+              className={`h-10 w-10 items-center justify-center rounded-full bg-black/40 border border-white/5 active:bg-black/60 ${product ? '' : 'opacity-40'}`}
+            >
               <Share2 size={16} color="white" />
             </TouchableOpacity>
-            <TouchableOpacity className="h-10 w-10 items-center justify-center rounded-full bg-black/40 border border-white/5 active:bg-black/60">
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="More actions for this item"
+              // Nothing to act on until the product has loaded.
+              disabled={!product}
+              onPress={handleMore}
+              className={`h-10 w-10 items-center justify-center rounded-full bg-black/40 border border-white/5 active:bg-black/60 ${product ? '' : 'opacity-40'}`}
+            >
               <MoreHorizontal size={18} color="white" />
             </TouchableOpacity>
           </View>
@@ -103,14 +162,17 @@ export default function TourScreen({ tourId }: TourScreenProps) {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               paddingTop: 64, // keeps content clear of the absolute nav header
-              paddingBottom: 60
+              // The tab bar already reserves its own space below; this is just
+              // breathing room under the last tile.
+              paddingBottom: 40,
             }}
             className="flex-1"
           >
             {/* Main Header Split Section */}
-            <View className="flex-row px-5 pt-4 pb-4 items-stretch justify-between bg-[#08060b]">
+            <View className="flex-row px-5 pt-2 pb-4 items-stretch justify-between bg-[#08060b]">
               <TourCard
                 image={product.images[0]?.url ?? PRODUCT_PLACEHOLDER_IMAGE}
+                badge={formatMarketplaceBadge(product.marketplaceStatus)}
               />
               <TourHeaderDetails
                 title={product.collection?.artist.name ?? product.name}
@@ -133,7 +195,9 @@ export default function TourScreen({ tourId }: TourScreenProps) {
             <TabSection
               tourId={tourId}
               renderActiveContent={() => (
-                <View className="gap-y-6">
+                // Single source of the gap between About and the action tiles —
+                // ActionGrid used to add its own mt-6 on top of this.
+                <View className="gap-y-5">
                   {/* About and stats section */}
                   <AboutSection
                     aboutText={product.description ?? 'No description available for this item yet.'}
@@ -143,7 +207,7 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   />
 
                   {/* Action grid (Experience, Rewards, List, etc) */}
-                  <ActionGrid />
+                  <ActionGrid onShare={handleShare} />
                 </View>
               )}
             />

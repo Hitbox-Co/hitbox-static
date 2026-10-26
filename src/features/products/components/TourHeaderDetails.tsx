@@ -1,15 +1,16 @@
 import {
-    Calendar,
-    DollarSign,
-    Gem,
-    Hash,
-    Package,
-    ShieldCheck,
-    Star,
-    Tag,
+  Calendar,
+  DollarSign,
+  Gem,
+  Hash,
+  Package,
+  Star,
+  Tag
 } from "lucide-react-native";
 import React from "react";
 import { Text, View } from "react-native";
+
+import { PRODUCT_HERO_HEIGHT } from "./TourCard";
 
 const PURPLE = "#a855f7";
 
@@ -85,11 +86,13 @@ export default function TourHeaderDetails({
   rewardPoints,
 }: TourHeaderDetailsProps) {
   return (
-    <View className="ml-5 flex-1 justify-between h-[288px] pt-0 pb-1">
+    // Matches the image exactly, so `justify-between` spreads the two blocks
+    // across the same height the hero row already has.
+    <View className="ml-5 flex-1 justify-between pt-0 pb-1" style={{ height: PRODUCT_HERO_HEIGHT }}>
       {/* Top Details Block */}
       <View className="gap-y-1">
         {/* Verification Badge */}
-        <View className="mb-1 flex-row items-center">
+        {/* <View className="mb-1 flex-row items-center">
           <ShieldCheck
             size={14}
             color={PURPLE}
@@ -97,7 +100,7 @@ export default function TourHeaderDetails({
           <Text className="ml-1.5 text-[9px] font-black uppercase tracking-wider text-[#a855f7]">
             VERIFIED & AUTHENTIC
           </Text>
-        </View>
+        </View> */}
 
         {/* Album / Band Name */}
         <Text className="text-[26px] font-black text-white leading-tight" numberOfLines={1}>
@@ -110,18 +113,18 @@ export default function TourHeaderDetails({
         </Text>
 
         {/* Item Subtitle */}
-        <Text className="mt-0.5 text-[13px] font-semibold text-zinc-300" numberOfLines={1}>
+        {/* <Text className="mt-0.5 text-[13px] font-semibold text-zinc-300" numberOfLines={1}>
           {itemSubtitle}
-        </Text>
+        </Text> */}
 
         {/* Description */}
-        <Text className="mt-2 text-[11px] leading-[17px] text-zinc-400 font-medium" numberOfLines={3}>
+        {/* <Text className="mt-2 text-[11px] leading-[17px] text-zinc-400 font-medium" numberOfLines={3}>
           {description}
-        </Text>
+        </Text> */}
       </View>
 
       {/* Bottom Specs Block */}
-      <View className="border-t border-white/5 pt-1.5">
+      <View className="border-t border-white/5 py-3 gap-y-1">
         <InfoRow
           icon={<Tag size={14} color={PURPLE} />}
           title="Item Type"

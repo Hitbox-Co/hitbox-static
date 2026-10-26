@@ -1,7 +1,7 @@
 import { useClerk } from '@clerk/clerk-expo'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { Bell, ChevronRight, Lock, LogOut, User } from 'lucide-react-native'
+import { Bell, ChevronRight, HandHelping, Lock, LogOut, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import React from 'react'
 import { Text, TouchableOpacity, View } from 'react-native'
@@ -39,7 +39,7 @@ export default function MenuSection({
                 <TouchableOpacity
                     onPress={() => {
                         setActiveTab('personal');
-                        router.push('/(routes)/edit-profile');
+                        router.push('/edit-profile');
                     }}
                     activeOpacity={0.7}
                     className="flex-row items-center justify-between p-4 border-b border-border/30"
@@ -76,7 +76,7 @@ export default function MenuSection({
                 <TouchableOpacity
                     onPress={() => setActiveTab('notifications')}
                     activeOpacity={0.7}
-                    className="flex-row items-center justify-between p-4"
+                    className="flex-row items-center justify-between p-4 border-b border-border/30"
                 >
                     <View className="flex-row items-center gap-4 flex-1">
                         <View className="w-9 h-9 rounded-xl bg-violet-600/10 items-center justify-center border border-violet-500/20">
@@ -85,6 +85,27 @@ export default function MenuSection({
                         <View className="flex-1">
                             <Text className="text-foreground text-sm font-bold">Notifications</Text>
                             <Text className="text-muted-foreground text-xs">Toggle push notifications and emails</Text>
+                        </View>
+                    </View>
+                    <ChevronRight size={18} color="#94a3b8" />
+                </TouchableOpacity>
+
+                {/* Support — leaves settings entirely, so it pushes a route
+                    rather than switching the local tab like the rows above. */}
+                <TouchableOpacity
+                    onPress={() => router.push('/support')}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="Support and contact us"
+                    className="flex-row items-center justify-between p-4 border-b border-border/30"
+                >
+                    <View className="flex-row items-center gap-4 flex-1">
+                        <View className="w-9 h-9 rounded-xl bg-violet-600/10 items-center justify-center border border-violet-500/20">
+                            <HandHelping size={18} color="#8b5cf6" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-foreground text-sm font-bold">Support</Text>
+                            <Text className="text-muted-foreground text-xs">Chat with us or contact the team by email</Text>
                         </View>
                     </View>
                     <ChevronRight size={18} color="#94a3b8" />

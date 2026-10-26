@@ -110,7 +110,7 @@ export default function VerifyScreen({ tagId }: { tagId: string }) {
                 {/* Unclaimed → offer to go claim it */}
                 {v && !v.claimed && (
                     <TouchableOpacity
-                        onPress={() => router.push(`/(routes)/claim/${tagId}` as never)}
+                        onPress={() => router.push(`/claim/${tagId}` as never)}
                         activeOpacity={0.85}
                         className="bg-primary rounded-xl h-14 flex-row gap-2 items-center justify-center mb-3"
                     >

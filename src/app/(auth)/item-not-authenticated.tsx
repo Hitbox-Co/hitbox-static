@@ -25,7 +25,7 @@ export default function ItemNotAuthenticated() {
     const { tagId } = useLocalSearchParams<{ tagId?: string }>();
 
     const onTryAgain = () => {
-        if (tagId) router.replace(`/(routes)/claim/${tagId}` as never);
+        if (tagId) router.replace(`/claim/${tagId}` as never);
         else router.back();
     };
 
