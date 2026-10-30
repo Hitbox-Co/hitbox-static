@@ -17,7 +17,8 @@ export interface MarketplaceListingItem {
     artistName: string | null
     /** Decimal serialized as string, e.g. "89.99". */
     priceInDollars: string
-    rewardPoints: number
+    /** No longer sent by the API; kept optional for older servers. */
+    rewardPoints?: number | null
     badge: MarketplaceBadge
 }
 

@@ -8,7 +8,7 @@ import {
     Smartphone,
     WifiOff
 } from 'lucide-react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { View as MotiView } from 'moti';
 import React from 'react';
 import {
@@ -21,13 +21,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ItemNotAuthenticated() {
-    // Set when we arrive here from a failed NFC tag lookup.
-    const { tagId } = useLocalSearchParams<{ tagId?: string }>();
-
-    const onTryAgain = () => {
-        if (tagId) router.replace(`/claim/${tagId}` as never);
-        else router.back();
-    };
+    // Reached by replacing the result screen after a tap that did not verify,
+    // so back lands on the scanner — where the user taps the tag again. (A tag's
+    // link works once, so the failed tap cannot be retried.)
+    const onTryAgain = () => router.back();
 
     return (
         <SafeAreaView className={`flex-1 bg-[#050507]`}>
@@ -71,12 +68,6 @@ export default function ItemNotAuthenticated() {
                             <Text className="text-neutral-200 font-semibold">NFC tag</Text> could not be read safely.
                         </Text>
 
-                        {tagId ? (
-                            <View className="mt-4 bg-[#0F0F13] border border-[#1F1F24] rounded-xl px-4 py-2.5">
-                                <Text className="text-[11px] text-neutral-500 font-medium uppercase tracking-wider">Scanned tag</Text>
-                                <Text className="text-neutral-200 text-sm font-bold tracking-wide">{tagId}</Text>
-                            </View>
-                        ) : null}
                     </MotiView>
                 </View>
 

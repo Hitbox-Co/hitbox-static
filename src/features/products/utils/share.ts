@@ -21,7 +21,12 @@ export function productShareMessage(product: Product) {
     const artist = product.collection?.artist.name
     const lines = [
         artist ? `${product.name} by ${artist}` : product.name,
-        `${formatRarity(product.rarity)} ${formatCategory(product.category)} · ${formatPrice(product.priceInDollars)}`,
+        // Rarity and price are optional on a drop; leave out what is missing
+        // rather than writing "null" or "undefined" into someone's message.
+        [
+            [formatRarity(product.rarity), formatCategory(product.category)].filter(Boolean).join(' '),
+            formatPrice(product.priceInDollars),
+        ].filter(Boolean).join(' · '),
         `Code ${product.productCode}`,
         '',
         productShareUrl(product.id),

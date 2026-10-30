@@ -8,7 +8,11 @@
     "scheme": "hitboxstatic",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "associatedDomains": [
+        "applinks:hitboxcollectibles.com",
+        "applinks:www.hitboxcollectibles.com"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -18,6 +22,17 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "hitboxcollectibles.com", "pathPrefix": "/verify" },
+            { "scheme": "https", "host": "www.hitboxcollectibles.com", "pathPrefix": "/verify" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
       "package": "com.anonymous.hitboxstatic"
     },
     "web": {

@@ -57,8 +57,9 @@ export default function TourScreen({ tourId }: TourScreenProps) {
 
   /**
    * Overflow menu. Built from actions that actually exist rather than a menu of
-   * placeholders: verifying goes to the public authenticity check for this
-   * product's own tag, and help goes to the support screen.
+   * placeholders: verifying opens the scanner in Verify mode (a tap URL works
+   * once, so an item is checked by tapping its tag, not by looking up an id),
+   * and help goes to the support screen.
    */
   const handleMore = () => {
     if (!product) return;
@@ -70,10 +71,7 @@ export default function TourScreen({ tourId }: TourScreenProps) {
       actions.push({
         text: "Verify authenticity",
         onPress: () =>
-          router.push({
-            pathname: "/verify/[tagId]",
-            params: { tagId: product.tagId as string },
-          }),
+          router.push({ pathname: "/scan", params: { mode: "verify" } }),
       });
     }
 
@@ -181,13 +179,13 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                 description={product.description ?? ''}
                 itemType={formatCategory(product.category)}
                 cardNo={`#${String(product.productCode).slice(-4)}`}
-                rarity={formatRarity(product.rarity)}
+                rarity={formatRarity(product.rarity) ?? '—'}
                 collection={product.collection?.name}
                 collectionSub={product.collection?.artist.name}
                 ownedSince={formatDate(product.releaseDate ?? product.createdAt) ?? undefined}
                 dateLabel="Released"
                 price={formatPrice(product.priceInDollars)}
-                rewardPoints={formatRewardPoints(product.rewardPoints)}
+                rewardPoints={formatRewardPoints(product.rewardPoints) ?? undefined}
               />
             </View>
 
@@ -201,7 +199,7 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   {/* About and stats section */}
                   <AboutSection
                     aboutText={product.description ?? 'No description available for this item yet.'}
-                    rarity={formatRarity(product.rarity)}
+                    rarity={formatRarity(product.rarity) ?? '—'}
                     supply={product.inventoryUnit}
                     ownedPercentage={soldPercentage}
                   />

@@ -106,12 +106,14 @@ export default function ListingsResultsSection({ category, search }: ListingsRes
                             <Text className="text-foreground text-xs font-extrabold">
                                 {formatPrice(item.priceInDollars)}
                             </Text>
-                            <View className="flex-row items-center">
-                                <Gem size={11} color="#A855F7" fill="#A855F7" />
-                                <Text className="ml-1 text-[10px] font-semibold text-violet-400">
-                                    {formatRewardPoints(item.rewardPoints)}
-                                </Text>
-                            </View>
+                            {item.rewardPoints != null && (
+                                <View className="flex-row items-center">
+                                    <Gem size={11} color="#A855F7" fill="#A855F7" />
+                                    <Text className="ml-1 text-[10px] font-semibold text-violet-400">
+                                        {formatRewardPoints(item.rewardPoints)}
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                     </View>
                 </Pressable>

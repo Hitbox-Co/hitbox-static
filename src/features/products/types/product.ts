@@ -53,12 +53,14 @@ export interface Product {
     category: ProductCategory
     genre: ProductGenre
     description: string | null
-    rewardPoints: number
+    /** Null when the API does not send points (it no longer does). */
+    rewardPoints: number | null
     state: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'
     marketplaceStatus: MarketplaceStatus | null
-    rarity: ProductRarity
-    /** Decimal serialized as string, e.g. "149.99". */
-    priceInDollars: string
+    /** Optional on the drop, so it can be null. */
+    rarity: ProductRarity | null
+    /** Decimal serialized as string, e.g. "149.99". Null when no price is set. */
+    priceInDollars: string | null
     inventoryUnit: number
     unitsSold: number
     /** NFC tag used for claiming. */

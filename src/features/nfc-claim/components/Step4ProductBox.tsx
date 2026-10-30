@@ -10,7 +10,7 @@ const PLACEHOLDER =
 
 export default function Step4ProductBox({ result }: { result?: ClaimResult }) {
     const product = result?.product
-    const ownerName = result?.owner?.displayName ?? result?.owner?.username ?? 'You'
+    const ownerName = result?.owner?.displayName ?? result?.owner?.handle ?? 'You'
     const claimedOn = result?.claimedAt
         ? new Date(result.claimedAt).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -75,7 +75,7 @@ export default function Step4ProductBox({ result }: { result?: ClaimResult }) {
                             {product?.name ?? 'Your Item'}
                         </Text>
                         <Text className="text-primary text-xs font-bold mt-0.5">
-                            {product?.productCode ?? '—'}
+                            {product?.groupCode ?? '—'}
                         </Text>
                     </View>
 
@@ -89,7 +89,7 @@ export default function Step4ProductBox({ result }: { result?: ClaimResult }) {
 
                         <Row icon={<ShieldCheck size={12} color="#737373" />} label="Status">
                             <Text className="text-emerald-500 text-xs font-bold">
-                                {product?.claimedStatus === 'CLAIMED' ? 'Owned' : (product?.claimedStatus ?? '—')}
+                                {result?.sku?.claimedStatus === 'CLAIMED' ? 'Owned' : (result?.sku?.claimedStatus ?? '—')}
                             </Text>
                         </Row>
 

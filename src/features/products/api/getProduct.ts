@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { useApi } from '@/lib/api'
-import { Product } from '../types/product'
+import { normalizeProduct } from './normalizeProduct'
 import { PRODUCT_ROUTES, productKeys } from './routes'
 
 /**
@@ -13,7 +13,7 @@ export function useProduct(id: string | undefined) {
 
     return useQuery({
         queryKey: productKeys.detail(id ?? ''),
-        queryFn: () => api.get<Product>(PRODUCT_ROUTES.byId(id!)),
+        queryFn: async () => normalizeProduct(await api.get<unknown>(PRODUCT_ROUTES.byId(id!))),
         enabled: !!id,
         staleTime: 1000 * 60 * 2,
     })
@@ -25,7 +25,7 @@ export function useProductByCode(productCode: string | undefined) {
 
     return useQuery({
         queryKey: productKeys.byCode(productCode ?? ''),
-        queryFn: () => api.get<Product>(PRODUCT_ROUTES.byCode(productCode!)),
+        queryFn: async () => normalizeProduct(await api.get<unknown>(PRODUCT_ROUTES.byCode(productCode!))),
         enabled: !!productCode,
         staleTime: 1000 * 60 * 2,
     })

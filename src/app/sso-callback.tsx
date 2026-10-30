@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
-import { takePendingClaim } from '@/lib/pending-claim';
 
 /**
  * Landing route for the Clerk OAuth redirect (hitboxstatic://sso-callback).
@@ -27,10 +26,7 @@ export default function SSOCallback() {
         const leave = () => {
             if (done) return;
             done = true;
-            const tag = takePendingClaim();
-            // Always land on the claim page when we know the tag; the claim
-            // screen decides what to show based on the session it sees.
-            router.replace((tag ? `/claim/${tag}` : '/(tabs)/discover') as never);
+            router.replace('/(tabs)/discover' as never);
         };
 
         const timer = setInterval(() => {

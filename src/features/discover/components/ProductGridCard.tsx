@@ -35,12 +35,14 @@ export default function ProductGridCard({
           {item.name}
         </Text>
 
-        <View className="mt-2 flex-row items-center">
-          <Gem size={12} color="#A855F7" fill="#A855F7" />
-          <Text className="ml-1 text-[11px] font-semibold text-violet-400">
-            {formatRewardPoints(item.rewardPoints)}
-          </Text>
-        </View>
+        {item.rewardPoints != null && (
+          <View className="mt-2 flex-row items-center">
+            <Gem size={12} color="#A855F7" fill="#A855F7" />
+            <Text className="ml-1 text-[11px] font-semibold text-violet-400">
+              {formatRewardPoints(item.rewardPoints)}
+            </Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );

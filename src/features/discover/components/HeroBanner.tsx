@@ -62,7 +62,10 @@ export default function HeroBanner({ items, onItemPress }: HeroBannerProps) {
         ? featured.map((item) => ({
             id: item.id,
             title: item.name,
-            subtitle: `Earn ${formatRewardPoints(item.rewardPoints)} with this drop.`,
+            subtitle: (() => {
+                const points = formatRewardPoints(item.rewardPoints)
+                return points ? `Earn ${points} with this drop.` : 'Explore this drop.'
+            })(),
             uri: item.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE,
         }))
         : SLIDER_DATA

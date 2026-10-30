@@ -94,16 +94,18 @@ const TrendingCard: React.FC<TrendingCardProps> = ({
           {item.name}
         </Text>
 
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "700",
-            color: "#A855F7",
-            marginTop: 6,
-          }}
-        >
-          {formatRewardPoints(item.rewardPoints)}
-        </Text>
+        {item.rewardPoints != null && (
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "700",
+              color: "#A855F7",
+              marginTop: 6,
+            }}
+          >
+            {formatRewardPoints(item.rewardPoints)}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );

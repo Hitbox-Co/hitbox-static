@@ -72,12 +72,14 @@ export default function SearchResultsSection({ search, onItemPress }: SearchResu
                         <Text numberOfLines={2} className="text-white text-sm font-bold">
                             {item.name}
                         </Text>
-                        <View className="mt-1 flex-row items-center">
-                            <Gem size={11} color="#A855F7" fill="#A855F7" />
-                            <Text className="ml-1 text-[11px] font-semibold text-violet-400">
-                                {formatRewardPoints(item.rewardPoints)}
-                            </Text>
-                        </View>
+                        {item.rewardPoints != null && (
+                            <View className="mt-1 flex-row items-center">
+                                <Gem size={11} color="#A855F7" fill="#A855F7" />
+                                <Text className="ml-1 text-[11px] font-semibold text-violet-400">
+                                    {formatRewardPoints(item.rewardPoints)}
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </TouchableOpacity>
             ))}

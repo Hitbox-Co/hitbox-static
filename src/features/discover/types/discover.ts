@@ -10,7 +10,8 @@ export interface DiscoverProductItem {
     name: string
     /** First product image; null if the product has none. */
     imageUrl: string | null
-    rewardPoints: number
+    /** No longer sent by the API; kept optional for older servers. */
+    rewardPoints?: number | null
 }
 
 /** GET /api/v1/discover — the whole screen in one round-trip. */

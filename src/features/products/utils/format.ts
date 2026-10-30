@@ -10,12 +10,20 @@ export const PRODUCT_PLACEHOLDER_IMAGE =
  * "$149.99" in the US, "₹12,524" in India. See `@/lib/currency` for how the
  * region is resolved and why this is display-only.
  */
-export function formatPrice(priceInDollars: string) {
+export function formatPrice(priceInDollars: string | null | undefined): string | undefined {
+    // No price is "nothing to show", not "$0" — Number(null) would be 0.
+    if (priceInDollars == null || priceInDollars === '') return undefined
     return formatMoneyFromUsd(priceInDollars)
 }
 
-/** Points are a count, not money — always grouped Western, never converted. */
-export function formatRewardPoints(points: number) {
+/**
+ * Points are a count, not money — always grouped Western, never converted.
+ * Null when there are none to show: the API stopped sending `rewardPoints` with
+ * the catalog restructure, and an item without points must render without the
+ * badge rather than crash the screen.
+ */
+export function formatRewardPoints(points: number | null | undefined): string | null {
+    if (typeof points !== 'number' || !Number.isFinite(points)) return null
     return `${groupThousands(String(Math.round(points)))} pts`
 }
 
@@ -37,8 +45,9 @@ export function formatCategory(category: ProductCategory) {
     return CATEGORY_LABELS[category] ?? category
 }
 
-/** "LEGENDARY" → "Legendary". */
-export function formatRarity(rarity: ProductRarity) {
+/** "LEGENDARY" → "Legendary". Null for a drop with no rarity set (the column is optional). */
+export function formatRarity(rarity: ProductRarity | null | undefined): string | null {
+    if (!rarity) return null
     return rarity.charAt(0) + rarity.slice(1).toLowerCase()
 }
 

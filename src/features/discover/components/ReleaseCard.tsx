@@ -82,16 +82,18 @@ const ReleaseCard: React.FC<ReleaseCardProps> = ({
           {item.name}
         </Text>
 
-        <Text
-          style={{
-            fontSize: 11,
-            fontWeight: "700",
-            color: "#A855F7",
-            marginTop: 4,
-          }}
-        >
-          {formatRewardPoints(item.rewardPoints)}
-        </Text>
+        {item.rewardPoints != null && (
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: "700",
+              color: "#A855F7",
+              marginTop: 4,
+            }}
+          >
+            {formatRewardPoints(item.rewardPoints)}
+          </Text>
+        )}
       </View>
     </TouchableOpacity>
   );

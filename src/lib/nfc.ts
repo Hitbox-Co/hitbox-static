@@ -1,13 +1,17 @@
 import { Alert, Platform } from 'react-native';
 import NfcManager, { NfcEvents, type TagEvent } from 'react-native-nfc-manager';
 
+import { readTagRecords, type TagReading } from './ndef-tap';
+import type { TapUrl } from './tap-url';
+
 /**
  * NFC helpers for the tap-to-claim flow.
  *
- * The tag id we send to the API is the chip's UID with all separators removed
- * and upper-cased — e.g. a tag read as "53:4A:70:C1:61:00:01" becomes
- * "534A70C1610001". That normalized string must match `Product.tagId` in the
- * backend exactly, so we normalize on every read.
+ * A chip is read for the URL it carries, never for its UID. On every tap the
+ * chip writes a fresh, single-use URL (`…/verify?b=&e=&c=`); we extract those
+ * three values and send them to the server, which does all the decrypting. The
+ * UID is deliberately not read: it is the anti-counterfeiting secret, and a
+ * flow that sent it would let anyone with a cloned UID pass.
  */
 
 let started = false;
@@ -22,11 +26,6 @@ export async function initNfc(): Promise<boolean> {
     } catch {
         return false;
     }
-}
-
-/** Strip separators/whitespace and upper-case → the canonical tag id. */
-export function normalizeTagId(raw?: string | null): string {
-    return (raw ?? '').replace(/[^0-9a-zA-Z]/g, '').toUpperCase();
 }
 
 export interface NfcStatus {
@@ -71,16 +70,75 @@ export async function promptEnableNfcIfNeeded(): Promise<void> {
 }
 
 /**
- * Listen for tag taps while the Scan screen is open. Calls `onTag` with the
- * normalized tag id on every discovery. Returns a cleanup function that stops
- * scanning — scanning is scoped to `/scan`, not the whole app.
+ * What one discovered tag came to: a tap URL, or the specific reason there is
+ * none. Android delivers the NDEF message read at discovery, so the chip's
+ * mirrored e/c for this very tap are already in it; iOS delivers the first NDEF
+ * message of the session (an empty list for a tag without NDEF).
  */
-export function startTagListener(onTag: (tagId: string) => void): () => void {
+export function readTag(tag: TagEvent | null | undefined): TagReading {
+    return readTagRecords(tag?.ndefMessage);
+}
+
+export interface TagListenerHandlers {
+    /** A chip with one of our tap URLs was read. Fires once per tap. */
+    onTap: (tap: TapUrl) => void;
+    /**
+     * A chip was read but gave no usable tap URL — blank, wrong link, a link
+     * that never changes. Says what is wrong with the tag, so the screen can too.
+     */
+    onProblem?: (reading: Exclude<TagReading, { kind: 'tap' }>) => void;
+}
+
+/** One physical tap can raise DiscoverTag more than once; the extras must not count. */
+const DUPLICATE_WINDOW_MS = 3000;
+
+/**
+ * The last tap's `e`, kept across listeners. A live chip's link changes on every
+ * tap, so the same `e` again — beyond the double-event window — means the chip
+ * is not counting, and the server would only refuse it as a replay.
+ */
+let lastSeen: { e: string; at: number } | null = null;
+
+/** Dev-only trace of what a read came to. Never prints e or c. */
+function traceRead(reading: TagReading) {
+    if (!__DEV__) return;
+    const detail =
+        reading.kind === 'tap'
+            ? `${reading.tap.u !== undefined ? 'u' : 'b'} tag`
+            : reading.kind === 'bad-url'
+                ? reading.reason
+                : '';
+    console.log(`[nfc] tag read: ${reading.kind} ${detail}`.trim());
+}
+
+/**
+ * Listen for tag taps while the Scan screen is focused. Returns a cleanup
+ * function that stops scanning — scanning is scoped to the Scan tab, not the
+ * whole app.
+ */
+export function startTagListener(handlers: TagListenerHandlers): () => void {
     let cancelled = false;
 
     NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag: TagEvent) => {
-        const id = normalizeTagId(tag?.id);
-        if (id && !cancelled) onTag(id);
+        if (cancelled) return;
+        const reading = readTag(tag);
+        traceRead(reading);
+
+        if (reading.kind !== 'tap') {
+            handlers.onProblem?.(reading);
+            return;
+        }
+
+        const { tap } = reading;
+        const now = Date.now();
+        if (lastSeen && tap.e === lastSeen.e) {
+            if (now - lastSeen.at < DUPLICATE_WINDOW_MS) return; // the same tap, twice
+            lastSeen = { e: tap.e, at: now };
+            handlers.onProblem?.({ kind: 'repeated' });
+            return;
+        }
+        lastSeen = { e: tap.e, at: now };
+        handlers.onTap(tap);
     });
 
     // Make sure the native stack is up before registering, otherwise the very

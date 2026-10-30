@@ -1,60 +1,78 @@
 # NFC tap-to-claim (frontend)
 
-Tap an NFC tag → read its UID → open the claim page → claim the product (or see
-who already owns it).
+Tap a tag → read the URL it carries → send three values to the server → show
+what comes back. **The app never decrypts anything and never holds a key.**
+
+## What a tag carries
+
+On every tap an NTAG 424 DNA chip writes a fresh, single-use URL:
+
+```
+https://hitboxcollectibles.com/verify?u=<UID, 14 hex>&e=<32 hex>&c=<16 hex>
+```
+
+| Param | Meaning |
+|---|---|
+| `u` | The chip's UID (14 hex), written once as plain text when the tag is programmed. Every chip has its own keys; `u` is only a lookup hint (the server also checks the UID inside `e`). |
+| `b` | Older batch-key tags carry this instead of `u`: the key set's short code (e.g. `786`) or its long `nks…` code. A lookup label, not a secret. Exactly one of `u` / `b`. |
+| `e` | Encrypted tag data. Opaque to the app. |
+| `c` | The tap's MAC. Opaque to the app. |
+
+The chip's counter rises on every tap, so **a URL is good for exactly one
+request**. The app therefore sends each tap once and keeps the answer
+(`useClaimTap` / `useVerifyTap`: one-shot queries keyed by `e`, no retry, no
+refetch). A network failure is answered with "tap again", never a resend.
 
 ## Flow
 
-1. **App open** ([`src/app/_layout.tsx`](../../app/_layout.tsx)) starts the NFC
-   stack, prompts to enable NFC if it's off (Android), and registers a global
-   tag listener.
-2. **Tap** — on any tag discovery the UID is normalized and the app routes to
-   `/(routes)/claim/<tagId>`. There's also a **Scan** screen
-   (`/(routes)/scan`) with a manual-entry fallback for testing without a tap.
-3. **Claim page** ([`ClaimScreen`](screens/ClaimScreen.tsx)) shows the tag data,
-   calls `POST /claim/:tagId`, and renders the outcome:
-   - `CLAIMED` → "Claimed! You now own it."
-   - `ALREADY_CLAIMED` → "Already claimed by &lt;name&gt;."
+```text
+Scan tab ── Claim mode ── signed in? ──no──▶ "Sign in to claim" (BEFORE the tap)
+   │                         │yes
+   │                         ▼
+   │               tap ▶ readTapUrl() ▶ /claim?b&e&c ▶ POST /api/v1/claim
+   │
+   └─ Verify mode ── tap ▶ /verify/check?u&e&c ▶ GET /api/v1/verify?u&e&c   (no login)
 
-## Tag id normalization
+App closed / link opened from outside ▶ /verify?u&e&c  (App Link / Universal Link)
+   signed in  → claim            signed out → "Sign in & claim" or "Just verify"
+```
 
-The UID is normalized before every API call: **separators stripped, upper-cased**
-(`normalizeTagId` in [`src/lib/nfc.ts`](../../lib/nfc.ts)). So a tag read as
-`53:4A:70:C1:61:00:01` is sent as **`534A70C1610001`**, which must match
-`Product.tagId` in the backend exactly.
+Results (`TapClaimScreen`): `CLAIMED` → success screen · `ALREADY_CLAIMED` →
+"you own this" / "claimed by <owner>" (owner is `null` when they keep it
+private) · `CLAIMED_BY_OTHER_JUST_NOW` · `UNAVAILABLE` · `verified: false` →
+the `/item-not-authenticated` help screen. The server never says *why* a tap
+failed (forged, replayed, retired…) and the app cannot show it.
+
+Verify (`TapVerifyScreen`) shows "Authentic", the product and the owner. It
+spends the tap's URL, so it offers no Claim button — claiming needs a fresh tap.
 
 ## Files
 
 | File | Purpose |
-|------|---------|
-| `src/lib/nfc.ts` | NFC init, normalize, enable-check/prompt, tag listener |
-| `src/lib/api.ts` | fetch wrapper (adds `ngrok-skip-browser-warning`), **auth-token seam** |
-| `src/features/nfc-claim/api.ts` | `claimTag` / `verifyTag` + response types |
-| `src/features/nfc-claim/screens/ScanScreen.tsx` | "hold near tag" + manual entry |
-| `src/features/nfc-claim/screens/ClaimScreen.tsx` | claim page (data + outcome) |
-| `src/app/(routes)/scan.tsx`, `.../claim/[tagId].tsx` | route wrappers |
+|---|---|
+| `src/lib/tap-url.ts` | `parseTapUrl` / `toTapUrl` — pure format check of `b`/`e`/`c`. Host must be hitboxcollectibles.com, path `/verify`. |
+| `src/lib/nfc.ts` | NFC init, enable prompt, `readTag(tag)`, `startTagListener` (reports a tap, or a problem with the tag) |
+| `src/lib/ndef-tap.ts` | pure NDEF → tap URL: URI record, absolute URI, Smart Poster; names what is wrong when it can't |
+| `api/routes.ts` | `CLAIM_ROUTES.claim`, `buildVerifyTapPath`, `claimKeys` |
+| `api/useClaimTap.ts`, `api/useVerifyTap.ts` | the one-shot requests |
+| `screens/ScanScreen.tsx` | Claim/Verify toggle, sign-in-before-tap, live listener, paste-a-link box |
+| `screens/TapClaimScreen.tsx` | claim outcome |
+| `screens/TapVerifyScreen.tsx` | authenticity result |
+| `screens/TapEntryScreen.tsx` | landing for a link opened from outside the app |
+| `src/app/(routes)/claim/index.tsx`, `verify/index.tsx`, `verify/check.tsx` | route wrappers (b/e/c arrive as params) |
 
-## ⚠️ Not wired yet: authentication
+## Running it
 
-`POST /claim/:tagId` requires a signed-in user. `getAuthToken()` in
-[`src/lib/api.ts`](../../lib/api.ts) is a **stub that returns `null`**, so the
-claim call will get **401 UNAUTHENTICATED** until Clerk (or a dev-auth header) is
-added. The claim screen shows a friendly "Sign-in required" state for that case.
-To finish: install `@clerk/clerk-expo`, wrap the app in `ClerkProvider`, and
-return `await getToken()` from `getAuthToken()`.
+`react-native-nfc-manager` is a native module: it does **not** run in Expo Go,
+and NFC needs real hardware. Build a dev client (`npm run android`). Emulators
+have no NFC radio — use the Scan screen's **paste a tag link** box.
 
-## Running it (physical Android device required)
+`EXPO_PUBLIC_API_URL` must be reachable from the phone.
 
-`react-native-nfc-manager` is a **native module** — it does **not** run in Expo
-Go, and NFC needs real hardware (not an emulator). Build a dev client:
+## Deep links
 
-```bash
-npx expo run:android    # builds + installs the dev build (autolinks NFC)
-```
-
-The Android NFC permission is already in `android/.../AndroidManifest.xml`, and
-the `react-native-nfc-manager` config plugin is in `app.json` (used if you
-re-run `npx expo prebuild`). Then: open the app → home → **"Scan NFC & Claim"** →
-tap your tag.
-
-`EXPO_PUBLIC_API_URL` (the ngrok URL) must point at the running backend.
+See AGENTS.md §8. In short: the chip's https link must be a **verified** App
+Link (Android) / Universal Link (iOS), which needs two files on
+hitboxcollectibles.com (`/.well-known/assetlinks.json` and
+`/.well-known/apple-app-site-association`); until they are served, a tap with
+the app closed opens the website instead.

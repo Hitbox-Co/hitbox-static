@@ -13,7 +13,13 @@ export function formatPrice(priceInDollars: string) {
     return formatMoneyFromUsd(priceInDollars)
 }
 
-/** Points are a count, not money — always grouped Western, never converted. */
-export function formatRewardPoints(points: number) {
+/**
+ * Points are a count, not money — always grouped Western, never converted.
+ * Null when there are none to show: the API stopped sending `rewardPoints` with
+ * the catalog restructure, and an item without points must render without the
+ * badge rather than crash the screen.
+ */
+export function formatRewardPoints(points: number | null | undefined): string | null {
+    if (typeof points !== 'number' || !Number.isFinite(points)) return null
     return `${groupThousands(String(Math.round(points)))} pts`
 }
