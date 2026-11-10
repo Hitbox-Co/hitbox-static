@@ -1,4 +1,4 @@
-import { Gem, SearchX } from 'lucide-react-native'
+import { SearchX, Star } from 'lucide-react-native'
 import React from 'react'
 import { ActivityIndicator, Image, Text, TouchableOpacity, View } from 'react-native'
 
@@ -21,7 +21,7 @@ export default function SearchResultsSection({ search, onItemPress }: SearchResu
     if (isLoading) {
         return (
             <View className="mt-12 items-center">
-                <ActivityIndicator size="large" color="#8B5CF6" />
+                <ActivityIndicator size="large" color="#2563eb" />
             </View>
         )
     }
@@ -29,9 +29,9 @@ export default function SearchResultsSection({ search, onItemPress }: SearchResu
     if (isError) {
         return (
             <View className="mt-12 items-center px-8">
-                <Text className="text-zinc-400 text-sm text-center">Search failed. Check your connection.</Text>
-                <TouchableOpacity onPress={() => refetch()} className="mt-3 bg-primary px-4 py-2 rounded-xl">
-                    <Text className="text-white font-semibold text-sm">Retry</Text>
+                <Text className="text-center font-syne text-sm text-[#6b7280]">Search failed. Check your connection.</Text>
+                <TouchableOpacity onPress={() => refetch()} className="mt-3 rounded-[30px] bg-[#111827] px-5 py-2">
+                    <Text className="font-syne-bold text-[13px] text-white">Retry</Text>
                 </TouchableOpacity>
             </View>
         )
@@ -42,8 +42,8 @@ export default function SearchResultsSection({ search, onItemPress }: SearchResu
     if (results.length === 0) {
         return (
             <View className="mt-12 items-center px-8">
-                <SearchX size={32} color="#52525b" />
-                <Text className="mt-3 text-zinc-400 text-sm text-center">
+                <SearchX size={32} color="#9ca3af" />
+                <Text className="mt-3 text-center font-syne text-sm text-[#6b7280]">
                     No products match “{search}”.
                 </Text>
             </View>
@@ -51,38 +51,39 @@ export default function SearchResultsSection({ search, onItemPress }: SearchResu
     }
 
     return (
-        <View className="mt-4 mx-4">
-            <Text className="text-zinc-500 text-xs font-semibold uppercase tracking-wider mb-3">
+        <View className="mx-5 mt-4">
+            <Text className="mb-3 font-syne-semibold text-[10px] uppercase tracking-wider text-[#6b7280]">
                 {data?.meta.total} result{data?.meta.total === 1 ? '' : 's'}
             </Text>
 
-            {results.map((item) => (
-                <TouchableOpacity
-                    key={item.id}
-                    activeOpacity={0.85}
-                    onPress={() => onItemPress?.(item)}
-                    className="flex-row items-center mb-3 rounded-2xl border border-zinc-800 bg-[#111111] p-3"
-                >
-                    <Image
-                        source={{ uri: item.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
-                        className="h-14 w-14 rounded-xl bg-[#0E0E12]"
-                        resizeMode="cover"
-                    />
-                    <View className="flex-1 ml-3">
-                        <Text numberOfLines={2} className="text-white text-sm font-bold">
-                            {item.name}
-                        </Text>
-                        {item.rewardPoints != null && (
-                            <View className="mt-1 flex-row items-center">
-                                <Gem size={11} color="#A855F7" fill="#A855F7" />
-                                <Text className="ml-1 text-[11px] font-semibold text-violet-400">
-                                    {formatRewardPoints(item.rewardPoints)}
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-                </TouchableOpacity>
-            ))}
+            {results.map((item) => {
+                const points = formatRewardPoints(item.rewardPoints)
+                return (
+                    <TouchableOpacity
+                        key={item.id}
+                        activeOpacity={0.85}
+                        onPress={() => onItemPress?.(item)}
+                        className="mb-3 flex-row items-center rounded border border-[#dbeafe] bg-white p-3"
+                    >
+                        <Image
+                            source={{ uri: item.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
+                            className="h-14 w-14 rounded bg-[#eef2ff]"
+                            resizeMode="cover"
+                        />
+                        <View className="ml-3 flex-1">
+                            <Text numberOfLines={2} className="font-syne-bold text-[13px] text-[#111827]">
+                                {item.name}
+                            </Text>
+                            {points && (
+                                <View className="mt-1 flex-row items-center gap-[3px]">
+                                    <Star size={10} color="#f5b301" fill="#f5b301" />
+                                    <Text className="font-syne-semibold text-[9.5px] text-[#2563eb]">{points}</Text>
+                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+                )
+            })}
         </View>
     )
 }
