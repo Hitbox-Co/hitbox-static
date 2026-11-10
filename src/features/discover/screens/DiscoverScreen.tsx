@@ -2,18 +2,18 @@ import { useAuth } from "@clerk/clerk-expo";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ChevronRight, Search, Trophy, X } from "lucide-react-native";
+import { ChevronRight, Trophy } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import {
     ActivityIndicator,
     FlatList,
+    Image,
     LayoutChangeEvent,
     NativeScrollEvent,
     NativeSyntheticEvent,
     RefreshControl,
     ScrollView,
     Text,
-    TextInput,
     TouchableOpacity,
     useWindowDimensions,
     View,
@@ -24,9 +24,8 @@ import { useTabScrollReset } from "@/hooks/use-tab-scroll-reset";
 import { useDiscoverFeed } from "../api/getDiscoverFeed";
 import DiscoverHero from "../components/DiscoverHero";
 import DiscoverProductCard from "../components/DiscoverProductCard";
-import SearchResultsSection from "../components/SearchResultsSection";
-import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { DiscoverProductItem, DiscoverSection } from "../types/discover";
+import { DISCOVER_PLACEHOLDER_IMAGE } from "../utils/format";
 
 /** Breathing room left above a section title after a chip jump. */
 const SCROLL_GAP = 12;
@@ -49,11 +48,6 @@ export default function DiscoverScreen() {
     const { unreadCount } = useNotifications();
     const isFocused = useIsFocused();
 
-    const [searchOpen, setSearchOpen] = useState(false);
-    const [search, setSearch] = useState("");
-    const debouncedSearch = useDebouncedValue(search.trim());
-    const isSearching = debouncedSearch.length > 0;
-
     const { data: feed, isLoading, isError, refetch, isRefetching } = useDiscoverFeed();
 
     const [activeChip, setActiveChip] = useState<ChipId>("all");
@@ -73,12 +67,8 @@ export default function DiscoverScreen() {
         setOverHero((prev) => (prev === next ? prev : next));
     };
 
-    // Reopen the tab at the top, with the chip highlight and search reset too.
-    useTabScrollReset(scrollRef, () => {
-        setActiveChip("all");
-        setSearchOpen(false);
-        setSearch("");
-    });
+    // Reopen the tab at the top, with the chip highlight reset too.
+    useTabScrollReset(scrollRef, () => setActiveChip("all"));
 
     const registerSection = (id: ChipId) => (event: LayoutChangeEvent) => {
         sectionY.current[id] = event.nativeEvent.layout.y;
@@ -115,16 +105,8 @@ export default function DiscoverScreen() {
         });
     };
 
-    const openSearch = () => {
-        setSearchOpen(true);
-        // Bring the field into view — it sits just under the hero.
-        scrollToSection("all");
-    };
-
-    const closeSearch = () => {
-        setSearchOpen(false);
-        setSearch("");
-    };
+    // Search lives on its own page (Figma "Search · Discover").
+    const openSearch = () => router.push('/(tabs)/discover/search');
 
     // Figma sizes: carousel cards 170 wide / 150 tall artwork; grid is two square cards.
     const carouselCardWidth = 170;
@@ -134,7 +116,7 @@ export default function DiscoverScreen() {
         <View className="flex-1 bg-white">
             {/* Rendered only while focused: tab screens stay mounted, and this one
                 must not hold the status bar style while another tab is showing. */}
-            {isFocused && <StatusBar style={overHero && !isSearching ? "light" : "dark"} />}
+            {isFocused && <StatusBar style={overHero ? "light" : "dark"} />}
 
             <ScrollView
                 ref={scrollRef}
@@ -168,35 +150,9 @@ export default function DiscoverScreen() {
                     locations={[0, 0.4, 1]}
                     style={{ paddingTop: 12 }}
                 >
-                    <View onLayout={registerSection("all")}>
-                        {searchOpen && (
-                            <View className="mx-5 mb-4 h-11 flex-row items-center gap-2 rounded border border-[#dbeafe] bg-[#f3f6ff] px-3">
-                                <Search size={16} color="#6b7280" />
-                                <TextInput
-                                    autoFocus
-                                    value={search}
-                                    onChangeText={setSearch}
-                                    placeholder="Search drops and collectibles"
-                                    placeholderTextColor="#9ca3af"
-                                    returnKeyType="search"
-                                    className="h-full flex-1 font-syne text-[13px] text-[#111827]"
-                                />
-                                <TouchableOpacity
-                                    accessibilityRole="button"
-                                    accessibilityLabel="Close search"
-                                    hitSlop={10}
-                                    onPress={closeSearch}
-                                >
-                                    <X size={16} color="#6b7280" />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
+                    <View onLayout={registerSection("all")} />
 
-                    {isSearching ? (
-                        <SearchResultsSection search={debouncedSearch} onItemPress={handleProductPress} />
-                    ) : (
-                        <>
+                    <>
                             <LeaderboardBanner />
 
                             {/* Category chips — jump to a section of the feed */}
@@ -288,27 +244,41 @@ export default function DiscoverScreen() {
                                     {/* TOP CREATORS — unitsSold desc */}
                                     <View onLayout={registerSection("topCreators")} className="gap-[14px]">
                                         <SectionHeading
-                                            title="Top creators"
+                                            title="Meet the creators"
+                                            actionLabel="Explore"
                                             onViewAll={() => handleSeeAll("top_creators", "Top Creators")}
                                         />
                                         {feed.topCreators.length > 0 ? (
-                                            <FlatList
-                                                horizontal
-                                                data={feed.topCreators}
-                                                keyExtractor={(item) => item.id}
-                                                renderItem={({ item }) => (
-                                                    <DiscoverProductCard
-                                                        item={item}
-                                                        width={carouselCardWidth}
-                                                        imageHeight={150}
-                                                        onPress={() => handleProductPress(item)}
-                                                    />
-                                                )}
-                                                ItemSeparatorComponent={() => <View className="w-3" />}
-                                                showsHorizontalScrollIndicator={false}
-                                                contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 6 }}
-                                                className="grow-0"
-                                            />
+                                            <View className="gap-[18px]">
+                                                {/* Banner artwork (Figma: 183 tall, full width) */}
+                                                <Image
+                                                    source={require("@/assets/images/onboarding-hero.jpg")}
+                                                    resizeMode="cover"
+                                                    style={{
+                                                        width,
+                                                        height: 183,
+                                                        shadowColor: "#1a4db2",
+                                                        shadowOffset: { width: 0, height: 3 },
+                                                        shadowOpacity: 0.14,
+                                                        shadowRadius: 10,
+                                                    }}
+                                                />
+                                                {/* One bubble per top-creator pick, from the feed */}
+                                                <ScrollView
+                                                    horizontal
+                                                    showsHorizontalScrollIndicator={false}
+                                                    contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+                                                    className="grow-0"
+                                                >
+                                                    {feed.topCreators.map((item) => (
+                                                        <CreatorBubble
+                                                            key={item.id}
+                                                            item={item}
+                                                            onPress={() => handleProductPress(item)}
+                                                        />
+                                                    ))}
+                                                </ScrollView>
+                                            </View>
                                         ) : (
                                             <EmptyNote text="No creator picks yet — pull to refresh." />
                                         )}
@@ -338,8 +308,7 @@ export default function DiscoverScreen() {
                                     </View>
                                 </View>
                             )}
-                        </>
-                    )}
+                    </>
                 </LinearGradient>
             </ScrollView>
         </View>
@@ -347,58 +316,114 @@ export default function DiscoverScreen() {
 }
 
 /**
- * Leaderboard banner from the Figma. There is no leaderboard endpoint yet, so
- * it is a labelled placeholder: not tappable, and the Figma's "#1–10" rank pill
- * reads "Soon" rather than showing a made-up rank.
+ * Leaderboard banner, as in the Figma. **Mock content for now**: there is no
+ * leaderboard endpoint, so the "#1–10" range is fixed text and the banner does
+ * not navigate anywhere yet. Wire both to real data once the backend has one.
  */
+const LEADERBOARD_MOCK = {
+    title: "Leaderboard",
+    subtitle: "See top collectors this week",
+    range: "#1–10",
+};
+
 function LeaderboardBanner() {
     return (
         <LinearGradient
-            colors={["#4bf489", "#3bf69c"]}
+            // Figma: ~175° gradient, flat green until about half way, then a
+            // slightly minty tint toward the bottom edge.
+            colors={["#4bf489", "#4bf489", "#3bf69c", "#3bf69c"]}
+            locations={[0, 0.533, 0.667, 1]}
             start={{ x: 0.45, y: 0 }}
             end={{ x: 0.55, y: 1 }}
             style={{
                 height: 72,
-                marginHorizontal: 20,
+                // Figma sets the card 6px from the left edge, 375 wide.
+                marginLeft: 6,
+                marginRight: 9,
                 marginBottom: 27,
                 borderRadius: 4,
                 paddingHorizontal: 16,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "space-between",
+                overflow: "hidden",
             }}
         >
             <View className="flex-1 flex-row items-center gap-3">
                 <View className="size-11 items-center justify-center rounded bg-[rgba(89,135,102,0.09)]">
-                    <Trophy size={22} color="#0b3d22" />
+                    <Trophy size={22} color="#ffffff" />
                 </View>
                 <View className="flex-1 gap-[3px]">
-                    <Text className="font-syne-bold text-[10px] text-[#040404]">Leaderboard</Text>
+                    <Text className="font-syne-bold text-[10px] text-[#040404]">{LEADERBOARD_MOCK.title}</Text>
                     <Text numberOfLines={1} className="font-syne text-[11px] text-[rgba(67,42,42,0.67)]">
-                        Top collectors this week
+                        {LEADERBOARD_MOCK.subtitle}
                     </Text>
                 </View>
             </View>
-            <View className="h-[23px] justify-center rounded border border-[rgba(255,48,48,0.2)] bg-white/15 px-[10px]">
-                <Text className="font-syne-semibold text-[10px] text-[#040404]">Soon</Text>
+            <View className="h-7 flex-row items-center gap-[6px]">
+                <View className="h-[23px] w-[53px] items-center justify-center rounded border border-[rgba(255,48,48,0.2)] bg-white/15">
+                    <Text className="font-syne-semibold text-[10px] text-[#040404]">{LEADERBOARD_MOCK.range}</Text>
+                </View>
+                <View className="size-7 items-center justify-center rounded bg-[#4dea86]">
+                    <ChevronRight size={12} color="#040404" />
+                </View>
             </View>
         </LinearGradient>
     );
 }
 
-function SectionHeading({ title, onViewAll }: { title: string; onViewAll?: () => void }) {
+/**
+ * Round creator avatar from the Figma. The feed's "top creators" are products,
+ * so the portrait is the product image and the caption its name; the Figma's
+ * "12 drops" line is dropped because there is no count to show.
+ */
+function CreatorBubble({ item, onPress }: { item: DiscoverProductItem; onPress: () => void }) {
+    return (
+        <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={item.name}
+            activeOpacity={0.8}
+            onPress={onPress}
+            className="w-[72px] items-center gap-[6px]"
+        >
+            <LinearGradient
+                colors={["#3b82f6", "#2563eb"]}
+                style={{ width: 56, height: 56, borderRadius: 28, padding: 2 }}
+            >
+                <Image
+                    source={{ uri: item.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
+                    resizeMode="cover"
+                    style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "#eef2ff" }}
+                />
+            </LinearGradient>
+            <Text numberOfLines={2} className="text-center font-syne-bold text-[10.25px] leading-[13px] text-[#111827]">
+                {item.name}
+            </Text>
+        </TouchableOpacity>
+    );
+}
+
+function SectionHeading({
+    title,
+    onViewAll,
+    actionLabel = "View all",
+}: {
+    title: string;
+    onViewAll?: () => void;
+    actionLabel?: string;
+}) {
     return (
         <View className="flex-row items-center justify-between px-5">
             <Text className="font-orbitron text-[20px] text-black">{title}</Text>
             <TouchableOpacity
                 accessibilityRole="button"
-                accessibilityLabel={`View all ${title}`}
+                accessibilityLabel={`${actionLabel} ${title}`}
                 className="flex-row items-center gap-[3px]"
                 activeOpacity={0.7}
                 hitSlop={8}
                 onPress={onViewAll}
             >
-                <Text className="font-syne-semibold text-[10.25px] text-[#3b82f6]">View all</Text>
+                <Text className="font-syne-semibold text-[10.25px] text-[#3b82f6]">{actionLabel}</Text>
                 <ChevronRight size={12} color="#3b82f6" />
             </TouchableOpacity>
         </View>

@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient'
-import { ArrowUpRight, Bell, Search, Star } from 'lucide-react-native'
+import { ArrowUpRight, Bell, Heart, Search, Star } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import React, { useEffect, useState } from 'react'
 import { Image, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native'
@@ -50,6 +50,7 @@ export default function DiscoverHero({
 
     const featured = items ?? []
     const [index, setIndex] = useState(0)
+    const [liked, setLiked] = useState(false)
     const active = featured.length > 0 ? featured[Math.min(index, featured.length - 1)] : undefined
 
     // Auto-advance, restarting whenever the user picks a dot.
@@ -132,6 +133,22 @@ export default function DiscoverHero({
                 </View>
             </View>
 
+            {/* Save/like — Figma puts it at the right edge, just under the header. */}
+            <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={liked ? 'Remove from saved' : 'Save featured drop'}
+                activeOpacity={0.7}
+                hitSlop={10}
+                onPress={() => setLiked((v) => !v)}
+                style={{ position: 'absolute', right: 25, top: insets.top + 62 }}
+            >
+                <Heart
+                    size={19}
+                    color={liked ? '#f43f5e' : '#fda4af'}
+                    fill={liked ? '#f43f5e' : '#fda4af'}
+                />
+            </TouchableOpacity>
+
             {/* Featured caption */}
             <View className="absolute bottom-5 left-5 right-5 gap-2">
                 <View className="self-start rounded border border-[rgba(229,255,80,0.4)] bg-[rgba(188,255,71,0.15)] px-[10px] py-[5px]">
@@ -175,12 +192,12 @@ export default function DiscoverHero({
                             accessibilityLabel={active ? `View ${active.name}` : 'Explore drops'}
                             activeOpacity={0.85}
                             onPress={() => (active ? onItemPress?.(active) : onExplore?.())}
-                            className="h-[42px] w-[154px] flex-row items-center justify-center gap-2 rounded border border-white/15 bg-[#1b2030]"
+                            className="h-[42px] w-[153px] flex-row items-center justify-center gap-2 rounded-[30px] border border-[#2563eb] bg-[#2563eb]"
                         >
-                            <Text className="font-syne-medium text-[12.5px] text-white">
+                            <Text className="font-syne-bold text-[13px] text-white">
                                 {active ? 'View Drop' : 'Explore'}
                             </Text>
-                            <ArrowUpRight size={15} color="#fff" />
+                            <ArrowUpRight size={16} color="#fff" />
                         </TouchableOpacity>
                     </View>
                 </MotiView>
