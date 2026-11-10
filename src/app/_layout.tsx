@@ -5,6 +5,18 @@ import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
+import {
+  Orbitron_700Bold,
+  Orbitron_900Black,
+} from '@expo-google-fonts/orbitron';
+import {
+  Syne_400Regular,
+  Syne_500Medium,
+  Syne_600SemiBold,
+  Syne_700Bold,
+  Syne_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/syne';
 import { PortalHost } from '@rn-primitives/portal';
 import { initCurrency } from '@/lib/currency';
 import '../global.css';
@@ -26,6 +38,20 @@ function RootNavigator() {
   // inside the spinner the user is already waiting on, and self-limits to 4s so
   // a slow GPS fix can't hold up launch.
   const [currencyReady, setCurrencyReady] = React.useState(false);
+
+  // Syne is the body typeface; Orbitron is the display face the Figma uses for
+  // headlines, the wordmark and small caps labels. Held behind the same spinner
+  // so no screen paints in the system font first; a load error falls through to
+  // the system font rather than leaving the user on the spinner.
+  const [fontsLoaded, fontError] = useFonts({
+    Orbitron_700Bold,
+    Orbitron_900Black,
+    Syne_400Regular,
+    Syne_500Medium,
+    Syne_600SemiBold,
+    Syne_700Bold,
+    Syne_800ExtraBold,
+  });
 
   // The app stayed up: forget any earlier automatic retries, so a later,
   // unrelated failure gets its full budget. (A failing tree is torn down before
@@ -49,7 +75,7 @@ function RootNavigator() {
 
   // Wait for Clerk to restore the session before evaluating route guards,
   // otherwise signed-in users get bounced to public routes on cold start.
-  if (!isLoaded || !currencyReady) {
+  if (!isLoaded || !currencyReady || !(fontsLoaded || fontError)) {
     return (
       <View className="flex-1 items-center justify-center bg-[#08060b]">
         <ActivityIndicator size="large" color="#6C5CE7" />

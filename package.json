@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "dependencies": {
     "@clerk/clerk-expo": "^2.19.31",
+    "@expo-google-fonts/orbitron": "^0.4.2",
+    "@expo-google-fonts/syne": "^0.4.2",
     "@expo/ui": "~56.0.23",
     "@hookform/resolvers": "^5.4.0",
     "@rn-primitives/accordion": "^1.4.0",

@@ -9,6 +9,17 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      // Syne ships one file per weight, so each weight is its own family name.
+      fontFamily: {
+        // Display face (Figma: headlines, wordmark, section labels).
+        orbitron: ["Orbitron_700Bold"],
+        "orbitron-black": ["Orbitron_900Black"],
+        syne: ["Syne_400Regular"],
+        "syne-medium": ["Syne_500Medium"],
+        "syne-semibold": ["Syne_600SemiBold"],
+        "syne-bold": ["Syne_700Bold"],
+        "syne-extrabold": ["Syne_800ExtraBold"],
+      },
       colors: {
         background: {
           DEFAULT: "var(--background)",

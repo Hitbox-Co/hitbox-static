@@ -1,47 +1,56 @@
-import React from 'react';
-import { ImageBackground, ScrollView, View } from 'react-native';
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React, { useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import SignInPopup from '@/components/auth/SignInPopup';
 import Step2ActionCtx from '../components/Step2ActionCtx';
 import Step2Footer from '../components/Step2Footer';
 import Step2Header from '../components/Step2Header';
 import Step2Perks from '../components/Step2Perks';
 
+/**
+ * Sign up / login entry — the light "Y2K" layout from the UX-DESIGN Figma file
+ * (HitBox · Sign up / Login). Unlike the rest of the app this screen is white,
+ * so it pins dark status-bar icons while it is mounted.
+ */
 export default function Step2Screen() {
+    // "Continue with Email" and the "Sign in" link share one popup, opened
+    // straight on the email form — there is no separate login screen to visit.
+    const [signInOpen, setSignInOpen] = useState(false);
+
     return (
-        <View className="flex-1 bg-background">
-            {/* Background Graphic pattern for depth */}
-            <ImageBackground
-                source={{ uri: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=600&auto=format&fit=crop' }}
-                className="absolute inset-0 opacity-20 justify-end"
-                resizeMode="cover"
-            />
+        <View className="flex-1 bg-white">
+            <StatusBar style="dark" />
 
             <SafeAreaView className="flex-1">
-                {/* Navigation Indicator Header */}
-                {/* <StepProgressHeader currentStep={2} onBackPress={() => router.back()} /> */}
-
-                {/* Step 2 Registration Flow */}
                 <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40 }}
+                    contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32 }}
                 >
-                    {/* Logo Title Stack */}
+                    {/* Brand + Skip, welcome headline */}
                     <Step2Header />
 
-                    {/* Value Perks Grid */}
+                    {/* Benefits card */}
                     <Step2Perks />
 
-                    {/* Action CTAs Flow */}
-                    <Step2ActionCtx />
+                    {/* Sign-up buttons */}
+                    <Step2ActionCtx onEmail={() => setSignInOpen(true)} />
 
-                    {/* Footer Area */}
-                    <Step2Footer />
-
+                    {/* OR divider, sign-in link, legal */}
+                    <Step2Footer onSignIn={() => setSignInOpen(true)} />
                 </ScrollView>
-
             </SafeAreaView>
+
+            <SignInPopup
+                light
+                initialMethod="email"
+                open={signInOpen}
+                onOpenChange={setSignInOpen}
+                title="Sign in with Email"
+                onSignedIn={() => router.replace('/(tabs)/discover')}
+            />
         </View>
     );
 }
-

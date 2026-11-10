@@ -2,15 +2,12 @@ import { useSSO } from '@clerk/clerk-expo'
 import * as Linking from 'expo-linking'
 import { router } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
-import { ChevronRight, Mail, Phone } from 'lucide-react-native'
-import { MotiView } from 'moti'
+import { ArrowRight, Mail } from 'lucide-react-native'
 import React, { useState } from 'react'
 import { ActivityIndicator, Text, View } from 'react-native'
 
 import { AppleSvg } from '@/components/icons/AppleIcon'
-import { FacebookSvg } from '@/components/icons/FacebookIcon'
 import { GoogleSvg } from '@/components/icons/GoogleIcon'
-import PhoneNumberLogin from '../../login/components/PhoneNumberLogin'
 import { getClerkErrorMessage, useWarmUpBrowser } from '../../utils/clerk'
 import { AnimatedButton } from './AnimatedButton'
 
@@ -18,12 +15,63 @@ WebBrowser.maybeCompleteAuthSession()
 
 type SSOStrategy = 'oauth_google' | 'oauth_apple' | 'oauth_facebook'
 
-export default function Step2ActionCtx() {
+/**
+ * The three entry buttons from the Figma sign-up screen. Each is a 234×48 pill,
+ * centred, with its icon pinned left and an arrow pinned right while the label
+ * sits in the middle.
+ */
+function PillButton({
+    label,
+    onPress,
+    icon,
+    loading,
+    tone,
+    accessibilityLabel,
+}: {
+    label: string
+    onPress: () => void
+    icon?: React.ReactNode
+    loading?: boolean
+    tone: 'dark' | 'blue' | 'outline'
+    accessibilityLabel?: string
+}) {
+    const surface =
+        tone === 'dark'
+            ? 'bg-[#111827]'
+            : tone === 'blue'
+                ? 'bg-[#2563eb] border border-[#2563eb]'
+                : 'border border-[#2563eb]'
+    const onDark = tone !== 'outline'
+
+    return (
+        <View className="items-center">
+            <View className="w-[234px]" accessibilityLabel={accessibilityLabel} accessibilityRole="button">
+                <AnimatedButton
+                    onPress={onPress}
+                    className={`h-12 flex-row items-center justify-center rounded-[30px] ${surface}`}
+                >
+                    {icon && <View className="absolute left-4 w-5 items-center">{icon}</View>}
+                    <Text
+                        className={`${tone === 'outline' ? 'font-syne-semibold text-[12.5px] text-[#111827]' : 'font-syne-bold text-[13px] text-white'}`}
+                    >
+                        {label}
+                    </Text>
+                    <View className="absolute right-4">
+                        {loading
+                            ? <ActivityIndicator size="small" color={onDark ? '#fff' : '#111827'} />
+                            : <ArrowRight size={17} color={onDark ? '#fff' : '#111827'} />}
+                    </View>
+                </AnimatedButton>
+            </View>
+        </View>
+    )
+}
+
+export default function Step2ActionCtx({ onEmail }: { onEmail: () => void }) {
     useWarmUpBrowser()
 
     const { startSSOFlow } = useSSO()
     const [pendingStrategy, setPendingStrategy] = useState<SSOStrategy | null>(null)
-    const [isPhoneDialogOpen, setIsPhoneDialogOpen] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     // SSO covers both sign-up and sign-in: new users get an account created
@@ -34,17 +82,12 @@ export default function Step2ActionCtx() {
         setError(null)
 
         try {
-            const redirectUrl = Linking.createURL('/')
-            // console.log('SSO redirectUrl:', redirectUrl)
-
             const { createdSessionId, setActive } = await startSSOFlow({
                 strategy,
                 // No hardcoded scheme: resolves to exp://<host> in Expo Go and
                 // hitboxstatic:// in dev/production builds.
-                redirectUrl,
+                redirectUrl: Linking.createURL('/'),
             })
-
-            // console.log(createdSessionId)
 
             if (createdSessionId && setActive) {
                 await setActive({ session: createdSessionId })
@@ -60,92 +103,49 @@ export default function Step2ActionCtx() {
     }
 
     return (
-        <View className="space-y-3 flex gap-2">
-            <Text className="text-neutral-400 text-xs font-semibold uppercase tracking-wider mb-2">
-                Create Your Account
+        <View className="mt-6 gap-3">
+            <Text className="font-orbitron text-[8px] tracking-[0.4px] text-[#2563eb]">
+                CREATE YOUR ACCOUNT
             </Text>
 
-            {/* Google Button */}
-            <AnimatedButton
-                onPress={() => handleSSO('oauth_google')}
-                className="flex-row items-center bg-foreground h-12 rounded-2xl px-4"
-            >
-                <MotiView
-                    from={{ rotate: '0deg' }}
-                    animate={{ rotate: '0deg' }}
-                    className="w-6 items-center"
-                >
-                    <GoogleSvg />
-                </MotiView>
-                <Text className="flex-1 text-black font-semibold text-center text-[15px]">Continue with Google</Text>
-                {pendingStrategy === 'oauth_google'
-                    ? <ActivityIndicator size="small" color="#000" />
-                    : <ChevronRight size={18} color="#000" opacity={0.3} />}
-            </AnimatedButton>
+            <View className="gap-4">
+                {/* Email + password sign-up form (Clerk email-code) */}
+                <PillButton
+                    tone="dark"
+                    label="Create your Account"
+                    onPress={() => router.push('/(auth)/register/details')}
+                />
 
-            {/* Apple Button */}
-            <AnimatedButton
-                onPress={() => handleSSO('oauth_apple')}
-                className="flex-row items-center bg-foreground h-12 rounded-2xl px-4"
-            >
-                <View className="w-6 items-center"><AppleSvg /></View>
-                <Text className="flex-1 text-black font-semibold text-center text-[15px]">Continue with Apple</Text>
-                {pendingStrategy === 'oauth_apple'
-                    ? <ActivityIndicator size="small" color="#000" />
-                    : <ChevronRight size={18} color="#000" opacity={0.3} />}
-            </AnimatedButton>
+                <PillButton
+                    tone="blue"
+                    label="Continue"
+                    accessibilityLabel="Continue with Apple"
+                    icon={<AppleSvg color="#ffffff" />}
+                    loading={pendingStrategy === 'oauth_apple'}
+                    onPress={() => handleSSO('oauth_apple')}
+                />
 
-            {/* Facebook Button */}
-            <AnimatedButton
-                onPress={() => handleSSO('oauth_facebook')}
-                className="flex-row items-center bg-neutral-900/80 border border-neutral-800 h-12 rounded-2xl px-4"
-            >
-                <View className="w-6 items-center"><FacebookSvg /></View>
-                <Text className="flex-1 text-white font-semibold text-center text-[15px]">Continue with Facebook</Text>
-                {pendingStrategy === 'oauth_facebook'
-                    ? <ActivityIndicator size="small" color="#fff" />
-                    : <ChevronRight size={18} color="#fff" opacity={0.3} />}
-            </AnimatedButton>
+                <PillButton
+                    tone="outline"
+                    label="Continue with Google"
+                    icon={<GoogleSvg />}
+                    loading={pendingStrategy === 'oauth_google'}
+                    onPress={() => handleSSO('oauth_google')}
+                />
 
-            {/* Email Button → details form (Clerk email-code sign-up) */}
-            <AnimatedButton
-                onPress={() => router.push('/(auth)/register/details')}
-                className="flex-row items-center bg-neutral-900/80 border border-neutral-800 h-12 rounded-2xl px-4"
-            >
-                <View className="w-6 items-center"><Mail size={20} color="#fff" /></View>
-                <Text className="flex-1 text-white font-semibold text-center text-[15px]">Continue with Email</Text>
-                <ChevronRight size={18} color="#fff" opacity={0.3} />
-            </AnimatedButton>
-
-            {error && (
-                <Text className="text-red-500 text-xs font-medium text-center">{error}</Text>
-            )}
-
-            {/* Divider text markup */}
-            <View className="flex-row items-center my-4 space-x-3">
-                <View className="flex-1 h-[1px] bg-neutral-800" />
-                <Text className="text-neutral-500 text-xs font-bold uppercase tracking-widest">OR</Text>
-                <View className="flex-1 h-[1px] bg-neutral-800" />
+                {/* Email sign-in: straight to the email form in a popup. */}
+                <PillButton
+                    tone="outline"
+                    label="Continue with Email"
+                    icon={<Mail size={19} color="#111827" />}
+                    onPress={onEmail}
+                />
             </View>
 
-            {/* Phone Button → shared Clerk SMS dialog (signs up new numbers) */}
-            <AnimatedButton
-                onPress={() => setIsPhoneDialogOpen(true)}
-                className="flex-row items-center bg-neutral-900/80 border border-neutral-800 py-3.5 rounded-2xl px-4 h-14"
-            >
-                <View className="w-6 items-center"><Phone size={20} color="#fff" /></View>
-                <View className="flex-1 items-center">
-                    <Text className="text-white font-semibold text-[15px]">Continue with Phone Number</Text>
-                    <Text className="text-neutral-500 text-[11px] mt-0.5">We'll send you a verification code</Text>
-                </View>
-                <ChevronRight size={18} color="#fff" opacity={0.3} />
-            </AnimatedButton>
 
-            <PhoneNumberLogin
-                isPhoneDialogOpen={isPhoneDialogOpen}
-                setIsPhoneDialogOpen={setIsPhoneDialogOpen}
-                showTrigger={false}
-            />
+            {error && (
+                <Text className="text-center font-syne-medium text-xs text-red-500">{error}</Text>
+            )}
         </View>
     )
 }

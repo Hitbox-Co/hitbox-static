@@ -16,10 +16,23 @@ import { getClerkErrorMessage, isAccountNotFound } from '@/features/auth/utils/c
 export default function PopupEmailForm({
     onSuccess,
     onForgotPassword,
+    light = false,
 }: {
     onSuccess: () => void;
     onForgotPassword: () => void;
+    /** White-card styling for the light sign-up screen. */
+    light?: boolean;
 }) {
+    // Light variant follows the sign-up screen: Syne, #dbeafe borders, a dark pill CTA.
+    const label = light
+        ? 'font-syne-semibold text-[10px] uppercase tracking-wider text-[#6b7280]'
+        : 'text-neutral-400 text-xs font-semibold uppercase tracking-wider';
+    const field = (hasError: boolean) => light
+        ? `bg-[#f3f6ff] border ${hasError ? 'border-red-500' : 'border-[#dbeafe]'} h-12 px-4 rounded text-[#111827] font-syne text-sm`
+        : `bg-neutral-900 border ${hasError ? 'border-red-500' : 'border-neutral-800'} h-14 px-4 rounded-2xl text-white text-base`;
+    const placeholder = light ? '#9ca3af' : '#525252';
+    const link = light ? 'font-syne-bold text-xs text-[#2563eb]' : 'text-primary text-xs font-semibold';
+
     const [showPassword, setShowPassword] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
 
@@ -64,7 +77,7 @@ export default function PopupEmailForm({
         <View className="gap-y-4">
             {/* Email Input */}
             <View className="gap-y-2">
-                <Text className="text-neutral-400 text-xs font-semibold uppercase tracking-wider">
+                <Text className={label}>
                     Email Address
                 </Text>
                 <Controller
@@ -72,9 +85,9 @@ export default function PopupEmailForm({
                     name="email"
                     render={({ field: { onChange, onBlur, value } }) => (
                         <TextInput
-                            className={`bg-neutral-900 border ${errors.email ? 'border-red-500' : 'border-neutral-800'} h-14 px-4 rounded-2xl text-white text-base`}
+                            className={field(!!errors.email)}
                             placeholder="Enter your email"
-                            placeholderTextColor="#525252"
+                            placeholderTextColor={placeholder}
                             keyboardType="email-address"
                             autoCapitalize="none"
                             autoComplete="email"
@@ -93,11 +106,11 @@ export default function PopupEmailForm({
             {/* Password Input */}
             <View className="gap-y-2">
                 <View className="flex-row justify-between items-center">
-                    <Text className="text-neutral-400 text-xs font-semibold uppercase tracking-wider">
+                    <Text className={label}>
                         Password
                     </Text>
                     <TouchableOpacity onPress={onForgotPassword}>
-                        <Text className="text-primary text-xs font-semibold">Forgot Password?</Text>
+                        <Text className={link}>Forgot Password?</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -105,11 +118,11 @@ export default function PopupEmailForm({
                     control={control}
                     name="password"
                     render={({ field: { onChange, onBlur, value } }) => (
-                        <View className={`relative flex-row items-center justify-between bg-neutral-900 border ${errors.password ? 'border-red-500' : 'border-neutral-800'} h-14 px-4 rounded-2xl w-full`}>
+                        <View className={`relative flex-row items-center justify-between w-full ${field(!!errors.password)}`}>
                             <TextInput
-                                className="flex-1 text-white text-base h-full pr-10"
+                                className={`flex-1 h-full pr-10 ${light ? 'text-[#111827] font-syne text-sm' : 'text-white text-base'}`}
                                 placeholder="Enter your password"
-                                placeholderTextColor="#525252"
+                                placeholderTextColor={placeholder}
                                 secureTextEntry={!showPassword}
                                 autoCapitalize="none"
                                 autoComplete="current-password"
@@ -141,13 +154,15 @@ export default function PopupEmailForm({
             )}
 
             <TouchableOpacity
-                className="bg-primary h-14 items-center justify-center rounded-2xl w-full mt-2 shadow-lg shadow-primary/20"
+                className={light
+                    ? 'bg-[#111827] h-12 items-center justify-center rounded-[30px] w-full mt-2'
+                    : 'bg-primary h-14 items-center justify-center rounded-2xl w-full mt-2 shadow-lg shadow-primary/20'}
                 disabled={isSubmitting}
                 onPress={handleSubmit(onSubmit)}
             >
                 {isSubmitting
                     ? <ActivityIndicator size="small" color="#FFFFFF" />
-                    : <Text className="text-white font-bold text-base">Sign In</Text>}
+                    : <Text className={light ? 'font-syne-bold text-[13px] text-white' : 'text-white font-bold text-base'}>Sign In</Text>}
             </TouchableOpacity>
         </View>
     );

@@ -1,42 +1,32 @@
-import { Gift, ShieldCheck, Users } from 'lucide-react-native'
+import { Gift, ShieldCheck, UsersRound, type LucideIcon } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import React from 'react'
 import { Text, View } from 'react-native'
 
+const PERKS: { Icon: LucideIcon; title: string; body: string }[] = [
+    { Icon: ShieldCheck, title: '100% Verified', body: 'Authentic ownership you can trust' },
+    { Icon: Gift, title: 'Unlock Rewards', body: 'Access exclusive rewards & drops' },
+    { Icon: UsersRound, title: 'Join Community', body: 'Connect with fellow collectors' },
+]
+
 export default function Step2Perks() {
     return (
         <MotiView
-            from={{ opacity: 0, scale: 0.95 }}
+            from={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex-row bg-neutral-900/60 border border-neutral-800 rounded-3xl p-4 mb-8 justify-between items-start backdrop-blur-md"
+            className="mt-5 gap-3 rounded border border-[#dbeafe] bg-[#f3f6ff] p-[14px]"
         >
-            <View className="flex-1 items-center px-1">
-                <View className="p-2 bg-primary/10 rounded-full mb-2">
-                    <ShieldCheck size={25} color="#a855f7" />
+            {PERKS.map(({ Icon, title, body }) => (
+                <View key={title} className="flex-row items-center gap-3">
+                    <View className="size-[34px] items-center justify-center rounded border border-[#dbeafe] bg-white">
+                        <Icon size={19} color="#2563eb" />
+                    </View>
+                    <View className="flex-1 gap-[3px]">
+                        <Text className="font-syne-bold text-[13px] text-[#111827]">{title}</Text>
+                        <Text className="font-syne text-[11.5px] leading-4 text-[#6b7280]">{body}</Text>
+                    </View>
                 </View>
-                <Text className="text-white text-[12px] font-bold text-center">100% Verified</Text>
-                <Text className="text-neutral-500 text-[10px] text-center mt-1 leading-3">Authentic ownership you can trust</Text>
-            </View>
-
-            <View className="w-[1px] h-12 bg-neutral-800 self-center" />
-
-            <View className="flex-1 items-center px-1">
-                <View className="p-2 bg-primary/10 rounded-full mb-2">
-                    <Gift size={25} color="#a855f7" />
-                </View>
-                <Text className="text-white text-[12px] font-bold text-center">Unlock Rewards</Text>
-                <Text className="text-neutral-500 text-[10px] text-center mt-1 leading-3">Access exclusive rewards & drops</Text>
-            </View>
-
-            <View className="w-[1px] h-12 bg-neutral-800 self-center" />
-
-            <View className="flex-1 items-center px-1">
-                <View className="p-2 bg-primary/10 rounded-full mb-2">
-                    <Users size={25} color="#a855f7" />
-                </View>
-                <Text className="text-white text-[12px] font-bold text-center">Join Community</Text>
-                <Text className="text-neutral-500 text-[10px] text-center mt-1 leading-3">Connect with creators & collectors</Text>
-            </View>
+            ))}
         </MotiView>
     )
 }

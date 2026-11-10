@@ -27,6 +27,14 @@ interface SignInPopupProps {
      * save…) — nothing navigates.
      */
     onSignedIn?: () => void;
+    /**
+     * Which pane to open on. `'email'` skips the options list and lands straight
+     * on the email + password form (used by the sign-up screen's "Continue with
+     * Email"). Default `'options'`.
+     */
+    initialMethod?: Method;
+    /** White card matching the light sign-up screen. Default is the dark card. */
+    light?: boolean;
 }
 
 const METHOD_TITLES: Record<Exclude<Method, 'options'>, string> = {
@@ -54,8 +62,10 @@ export default function SignInPopup({
     title = 'Sign in to continue',
     description = 'Sign in to your HitBox account to continue where you left off.',
     onSignedIn,
+    initialMethod = 'options',
+    light = false,
 }: SignInPopupProps) {
-    const [method, setMethod] = useState<Method>('options');
+    const [method, setMethod] = useState<Method>(initialMethod);
     const { isSignedIn } = useAuth();
 
     // Kept in a ref so the "already signed in" effect below doesn't re-run every
@@ -74,7 +84,7 @@ export default function SignInPopup({
         if (firedRef.current) return;
         firedRef.current = true;
         onOpenChange(false);
-        setMethod('options');
+        setMethod(initialMethod);
         onSignedInRef.current?.();
     };
 
@@ -93,20 +103,24 @@ export default function SignInPopup({
         onOpenChange(next);
         if (!next) {
             // After the exit animation, so the body doesn't visibly swap first.
-            setTimeout(() => setMethod('options'), 200);
+            setTimeout(() => setMethod(initialMethod), 200);
         }
     };
 
     /** Links that genuinely need a full screen (register, password reset). */
     const leaveTo = (pathname: string) => {
         onOpenChange(false);
-        setMethod('options');
+        setMethod(initialMethod);
         router.push(pathname as never);
     };
 
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogContent className="bg-background opacity-100 border w-[350px] border-primary p-6 rounded-3xl max-w-lg mx-auto shadow-xl shadow-primary">
+            <DialogContent
+                className={light
+                    ? 'bg-white opacity-100 border w-[350px] border-[#dbeafe] p-6 rounded-lg max-w-lg mx-auto shadow-xl shadow-black/20'
+                    : 'bg-background opacity-100 border w-[350px] border-primary p-6 rounded-3xl max-w-lg mx-auto shadow-xl shadow-primary'}
+            >
                 <DialogHeader className="mb-2">
                     {method === 'options' ? (
                         <>
@@ -120,19 +134,22 @@ export default function SignInPopup({
                                     }}
                                 />
                             </View>
-                            <DialogTitle className="text-white text-xl font-bold mt-2">{title}</DialogTitle>
-                            <Text className="text-neutral-400 text-xs mt-1 pr-6">{description}</Text>
+                            <DialogTitle className={light ? 'font-syne-bold text-xl text-[#111827] mt-2' : 'text-white text-xl font-bold mt-2'}>{title}</DialogTitle>
+                            <Text className={light ? 'font-syne text-xs text-[#6b7280] mt-1 pr-6' : 'text-neutral-400 text-xs mt-1 pr-6'}>{description}</Text>
                         </>
                     ) : (
                         <View className="flex-row items-center gap-x-2">
-                            <TouchableOpacity
-                                className="active:opacity-60"
-                                hitSlop={12}
-                                onPress={() => setMethod('options')}
-                            >
-                                <ChevronLeft size={22} color="#FFFFFF" />
-                            </TouchableOpacity>
-                            <DialogTitle className="text-white text-xl font-bold">
+                            {/* Opened straight on the form: there is no options list to go back to. */}
+                            {initialMethod !== 'email' && (
+                                <TouchableOpacity
+                                    className="active:opacity-60"
+                                    hitSlop={12}
+                                    onPress={() => setMethod('options')}
+                                >
+                                    <ChevronLeft size={22} color={light ? '#111827' : '#FFFFFF'} />
+                                </TouchableOpacity>
+                            )}
+                            <DialogTitle className={light ? 'font-syne-bold text-xl text-[#111827]' : 'text-white text-xl font-bold'}>
                                 {METHOD_TITLES[method]}
                             </DialogTitle>
                         </View>
@@ -185,6 +202,7 @@ export default function SignInPopup({
 
                     {method === 'email' && (
                         <PopupEmailForm
+                            light={light}
                             onSuccess={finish}
                             onForgotPassword={() => leaveTo('/(auth)/forget-password')}
                         />
