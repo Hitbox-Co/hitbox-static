@@ -155,7 +155,8 @@ export default function RegistrationDetailsForm() {
                 }
             }
 
-            router.replace('/(tabs)/profile')
+            // New account → welcome/onboarding, which hands on to Discover.
+            router.replace('/(auth)/onboarding' as never)
         } catch (err) {
             setApiError(getClerkErrorMessage(err))
         } finally {

@@ -52,7 +52,7 @@ export default function EmailLogin({
                 await setActive({ session: attempt.createdSessionId });
                 setIsEmailDialogOpen(false);
                 resetEmailForm();
-                router.replace('/(tabs)/discover');
+                router.replace('/(auth)/onboarding' as never);
             } else {
                 // e.g. MFA / additional verification configured in Clerk
                 setApiError('Additional verification is required to sign in.');

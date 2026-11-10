@@ -1,7 +1,7 @@
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack, type ErrorBoundaryProps } from 'expo-router';
+import { router, Stack, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
@@ -19,6 +19,7 @@ import {
 } from '@expo-google-fonts/syne';
 import { PortalHost } from '@rn-primitives/portal';
 import { initCurrency } from '@/lib/currency';
+import { takeOnboarding } from '@/lib/onboarding-gate';
 import '../global.css';
 
 const queryClient = new QueryClient({
@@ -72,6 +73,30 @@ function RootNavigator() {
       cancelled = true;
     };
   }, []);
+
+  // A sign-up screen armed the onboarding flag and a session has just gone
+  // active (signed out → signed in): show onboarding. Done here, not in each
+  // form, because an OAuth deep link or an unmounting screen can overrule a
+  // form's own `router.replace`. Cold start with a stored session is not a
+  // transition, so it never triggers.
+  const pathname = usePathname();
+  const pathnameRef = React.useRef(pathname);
+  pathnameRef.current = pathname;
+  const wasSignedIn = React.useRef<boolean | null>(null);
+  React.useEffect(() => {
+    if (!isLoaded) return;
+    const was = wasSignedIn.current;
+    wasSignedIn.current = !!isSignedIn;
+    if (was === false && isSignedIn && takeOnboarding()) {
+      // After the form's own navigation has settled; skip if it already got there.
+      const timer = setTimeout(() => {
+        if (!pathnameRef.current.includes('onboarding')) {
+          router.replace('/(auth)/onboarding' as never);
+        }
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoaded, isSignedIn]);
 
   // Wait for Clerk to restore the session before evaluating route guards,
   // otherwise signed-in users get bounced to public routes on cold start.

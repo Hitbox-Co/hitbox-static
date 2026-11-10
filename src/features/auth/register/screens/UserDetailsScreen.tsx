@@ -1,14 +1,19 @@
 import { router } from 'expo-router'
 import { ChevronLeft } from 'lucide-react-native'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { ImageBackground, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { armOnboarding } from '@/lib/onboarding-gate'
 import RegistrationDetailsForm from '../components/RegistrationDetailsForm'
 
 
 
 export default function UserDetailsScreen() {
+    // Finishing registration lands on onboarding (see onboarding-gate).
+    useEffect(() => {
+        armOnboarding()
+    }, [])
 
     return (
         <View className="flex-1 bg-background">

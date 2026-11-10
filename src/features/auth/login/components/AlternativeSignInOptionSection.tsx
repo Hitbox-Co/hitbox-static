@@ -36,7 +36,7 @@ export default function AlternativeSignInOptionSection() {
 
             if (createdSessionId && setActive) {
                 await setActive({ session: createdSessionId })
-                router.replace('/(tabs)/discover')
+                router.replace('/(auth)/onboarding' as never)
             }
             // No createdSessionId means the user cancelled or needs extra steps
             // (e.g. MFA) — nothing to do here.

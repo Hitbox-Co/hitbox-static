@@ -1,8 +1,13 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { BlurView } from "expo-blur";
-import { LinearGradient } from "expo-linear-gradient";
 import { router, Tabs, usePathname } from "expo-router";
-import { Box, Compass, Handbag, ScanQrCode, User } from "lucide-react-native";
+import {
+  House,
+  Layers,
+  ScanLine,
+  ShoppingBag,
+  UserRound,
+} from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import {
   Platform,
@@ -60,28 +65,31 @@ type NestedTab = keyof typeof NESTED_TABS;
 const isGated = (name: string): name is GatedTab => name in GATED_TABS;
 const isNested = (name: string): name is NestedTab => name in NESTED_TABS;
 
+// Order, labels and icons follow the Figma "Floating navigation": Scan is the
+// last item, not a raised centre button.
 const TAB_ITEMS = [
-  { key: "discover", label: "Discover", Icon: Compass },
-  { key: "collections", label: "My Collections", Icon: Box },
-  { key: "scan", label: "Scan", Icon: ScanQrCode },
-  { key: "marketplace", label: "Marketplace", Icon: Handbag },
-  { key: "profile", label: "Profile", Icon: User },
+  { key: "discover", label: "Discover", a11y: "Discover", Icon: House },
+  { key: "collections", label: "My Collection", a11y: "My Collections", Icon: Layers },
+  { key: "marketplace", label: "Market", a11y: "Marketplace", Icon: ShoppingBag },
+  { key: "profile", label: "Profile", a11y: "Profile", Icon: UserRound },
+  // The a11y label is the stable selector UI tests use for the scan tab.
+  { key: "scan", label: "Scan", a11y: "Scan NFC Tag", Icon: ScanLine },
 ] as const;
-
-type TabKey = (typeof TAB_ITEMS)[number]["key"];
 
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
 
-interface LiquidGlassTabBarProps extends TabBarProps {
+interface FloatingTabBarProps extends TabBarProps {
   onGatedTabPress: (name: GatedTab) => void;
 }
 
-function LiquidGlassTabBar({
+const ACTIVE = "#42526c";
+const INACTIVE = "#6b7280";
+
+function FloatingTabBar({
   state,
-  descriptors,
   navigation,
   onGatedTabPress,
-}: LiquidGlassTabBarProps) {
+}: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const { isSignedIn } = useAuth();
   const pathname = usePathname();
@@ -89,168 +97,102 @@ function LiquidGlassTabBar({
   pathnameRef.current = pathname;
 
   const currentRouteName = state.routes[state.index]?.name ?? "";
-  const bottomInset = Math.max(insets.bottom, 10);
 
   return (
     <View
       pointerEvents="box-none"
-      style={[
-        styles.tabBarWrapper,
-        {
-          bottom: bottomInset,
-        },
-      ]}
+      style={[styles.tabBarWrapper, { paddingBottom: insets.bottom }]}
     >
-      {/* Liquid Glass Pill Container */}
-      <View style={styles.glassContainer}>
-        <BlurView
-          intensity={Platform.OS === "ios" ? 75 : 95}
-          tint="dark"
-          style={[
-            StyleSheet.absoluteFill,
-            { borderRadius: 40, overflow: "hidden" },
-          ]}
-        />
-        {/* Specular glass highlight gradient overlay */}
-        <LinearGradient
-          colors={[
-            "rgba(255, 255, 255, 0.12)",
-            "rgba(255, 255, 255, 0.02)",
-            "rgba(0, 0, 0, 0.35)",
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={[StyleSheet.absoluteFill, { borderRadius: 40 }]}
-        />
+      {/* Frosted white bar: 57% white over a blur, #dbeafe hairline, 40px top corners. */}
+      <BlurView
+        intensity={Platform.OS === "ios" ? 60 : 90}
+        tint="light"
+        style={[StyleSheet.absoluteFill, styles.glass]}
+      />
+      <View style={styles.tabButtonsRow}>
+        {TAB_ITEMS.map((tab) => {
+          const route = state.routes.find(
+            (r) =>
+              r.name === tab.key ||
+              r.name === `${tab.key}/index` ||
+              r.name.startsWith(tab.key)
+          );
+          const routeTargetName = route?.name ?? tab.key;
 
-        <View style={styles.tabButtonsRow}>
-          {TAB_ITEMS.map((tab) => {
-            const route = state.routes.find(
-              (r) =>
-                r.name === tab.key ||
-                r.name === `${tab.key}/index` ||
-                r.name.startsWith(tab.key)
-            );
-            const routeKey = route?.key ?? tab.key;
-            const routeTargetName = route?.name ?? tab.key;
+          const isFocused =
+            currentRouteName === tab.key ||
+            currentRouteName === `${tab.key}/index` ||
+            currentRouteName.startsWith(tab.key);
 
-            const isFocused =
-              currentRouteName === tab.key ||
-              currentRouteName === `${tab.key}/index` ||
-              currentRouteName.startsWith(tab.key);
+          const { label, a11y, Icon } = tab;
 
-            const { label, Icon } = tab;
-            const isScan = tab.key === "scan";
-
-            const onPress = () => {
-              if (isGated(tab.key) && !isSignedIn) {
-                onGatedTabPress(tab.key);
-                return;
-              }
-
-              if (isNested(tab.key)) {
-                const { pathname: tabPath, root } = NESTED_TABS[tab.key];
-                if (pathnameRef.current.startsWith(`${tabPath}/`)) {
-                  router.dismissTo(root);
-                  return;
-                }
-              }
-
-              if (route) {
-                const event = navigation.emit({
-                  type: "tabPress",
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-
-                if (!isFocused && !event.defaultPrevented) {
-                  navigation.navigate(routeTargetName);
-                }
-              } else {
-                navigation.navigate(tab.key as any);
-              }
-            };
-
-            const onLongPress = () => {
-              if (route) {
-                navigation.emit({
-                  type: "tabLongPress",
-                  target: route.key,
-                });
-              }
-            };
-
-            if (isScan) {
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  accessibilityRole="button"
-                  accessibilityState={isFocused ? { selected: true } : {}}
-                  accessibilityLabel="Scan NFC Tag"
-                  activeOpacity={0.85}
-                  onPress={onPress}
-                  onLongPress={onLongPress}
-                  style={styles.scanTabButton}
-                >
-                  {/* Elevated glowing scan action button */}
-                  <View style={styles.scanGlowWrapper}>
-                    <LinearGradient
-                      colors={["#A855F7", "#7C3AED", "#6D28D9"]}
-                      start={{ x: 0.2, y: 0 }}
-                      end={{ x: 0.8, y: 1 }}
-                      style={styles.scanGradientCircle}
-                    >
-                      <ScanQrCode color="#FFFFFF" size={24} strokeWidth={2.2} />
-                    </LinearGradient>
-                  </View>
-                  <Text style={styles.scanLabel}>Scan</Text>
-                </TouchableOpacity>
-              );
+          const onPress = () => {
+            if (isGated(tab.key) && !isSignedIn) {
+              onGatedTabPress(tab.key);
+              return;
             }
 
-            const activeColor = "#A855F7";
-            const inactiveColor = "#9CA3AF";
-            const iconColor = isFocused ? activeColor : "#E4E4E7";
+            if (isNested(tab.key)) {
+              const { pathname: tabPath, root } = NESTED_TABS[tab.key];
+              if (pathnameRef.current.startsWith(`${tabPath}/`)) {
+                router.dismissTo(root);
+                return;
+              }
+            }
 
-            return (
-              <TouchableOpacity
-                key={tab.key}
-                accessibilityRole="button"
-                accessibilityState={isFocused ? { selected: true } : {}}
-                accessibilityLabel={label}
-                activeOpacity={0.7}
-                onPress={onPress}
-                onLongPress={onLongPress}
-                style={styles.tabButton}
+            if (route) {
+              const event = navigation.emit({
+                type: "tabPress",
+                target: route.key,
+                canPreventDefault: true,
+              });
+
+              if (!isFocused && !event.defaultPrevented) {
+                navigation.navigate(routeTargetName);
+              }
+            } else {
+              navigation.navigate(tab.key as any);
+            }
+          };
+
+          const onLongPress = () => {
+            if (route) {
+              navigation.emit({
+                type: "tabLongPress",
+                target: route.key,
+              });
+            }
+          };
+
+          const color = isFocused ? ACTIVE : INACTIVE;
+
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              accessibilityLabel={a11y}
+              activeOpacity={0.7}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={styles.tabButton}
+            >
+              <Icon color={color} size={21} strokeWidth={isFocused ? 2 : 1.75} />
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.tabLabel,
+                  {
+                    color,
+                    fontFamily: isFocused ? "Syne_700Bold" : "Syne_500Medium",
+                  },
+                ]}
               >
-                <View
-                  style={[
-                    styles.iconContainer,
-                    isFocused && styles.iconContainerActive,
-                  ]}
-                >
-                  <Icon
-                    color={iconColor}
-                    size={24}
-                    strokeWidth={isFocused ? 2.2 : 1.8}
-                  />
-                </View>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.tabLabel,
-                    {
-                      color: isFocused ? activeColor : inactiveColor,
-                      fontWeight: isFocused ? "700" : "500",
-                    },
-                  ]}
-                >
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -270,7 +212,7 @@ export default function TabLayout() {
       <Tabs
         backBehavior="history"
         tabBar={(props: any) => (
-          <LiquidGlassTabBar
+          <FloatingTabBar
             {...props}
             onGatedTabPress={handleGatedTabPress}
           />
@@ -340,103 +282,47 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  // Docked to the bottom edge, 10px in from each side (371 of 390 in the Figma).
   tabBarWrapper: {
     position: "absolute",
-    left: 12,
-    right: 12,
-    alignItems: "center",
-    // Ambient liquid glass drop shadow
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.65,
-    shadowRadius: 24,
-    elevation: 16,
-  },
-  glassContainer: {
-    width: "100%",
-    height: 74,
-    borderRadius: 40,
-    overflow: "visible",
+    left: 10,
+    right: 10,
+    bottom: 0,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.14)",
-    borderTopColor: "rgba(255, 255, 255, 0.26)",
-    // iOS gets a real gaussian blur from BlurView, so the fill can stay
-    // translucent and let the frosted effect show. Android's BlurView is far
-    // weaker — at 0.72 the content scrolling behind stayed fully legible
-    // through the bar — so the opacity has to come from the fill instead.
+    borderBottomWidth: 0,
+    borderColor: "#dbeafe",
+    overflow: "hidden",
+    // iOS gets a real gaussian blur from BlurView, so the Figma's 57% white
+    // fill works as-is. Android's BlurView is far weaker, so the content
+    // scrolling behind would stay legible through it — the opacity has to come
+    // from the fill instead.
     backgroundColor: Platform.select({
-      ios: "rgba(16, 12, 24, 0.72)",
-      default: "rgba(13, 11, 20, 0.96)",
+      ios: "rgba(255, 255, 255, 0.57)",
+      default: "rgba(255, 255, 255, 0.92)",
     }),
+  },
+  glass: {
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    overflow: "hidden",
   },
   tabButtonsRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-around",
-    height: "100%",
-    paddingHorizontal: 6,
+    height: 64,
+    paddingHorizontal: 9,
   },
   tabButton: {
     flex: 1,
+    height: 60,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 2,
-  },
-  iconContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 32,
-    height: 32,
-  },
-  // Ringed badge on the selected tab. Width/height 32 with radius 16 makes the
-  // circle, so it stays aligned with the unfocused tabs rather than nudging the
-  // row — only the outline and tint appear.
-  iconContainerActive: {
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "rgba(168, 85, 247, 0.55)",
-    backgroundColor: "rgba(168, 85, 247, 0.14)",
+    gap: 3,
   },
   tabLabel: {
-    fontSize: 10.5,
-    marginTop: 2.5,
-    textAlign: "center",
-  },
-  scanTabButton: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "flex-end",
-    paddingBottom: 4,
-    marginTop: -22,
-  },
-  scanGlowWrapper: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "rgba(147, 51, 234, 0.28)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "rgba(168, 85, 247, 0.45)",
-    shadowColor: "#8B5CF6",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.9,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  scanGradientCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scanLabel: {
-    fontSize: 10.5,
-    marginTop: 3,
-    color: "#9CA3AF",
-    fontWeight: "600",
+    fontSize: 9.5,
     textAlign: "center",
   },
 });
-

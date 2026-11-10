@@ -1,6 +1,6 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 
@@ -18,6 +18,9 @@ const MAX_WAIT_MS = 15_000;
 
 export default function SSOCallback() {
     const { isLoaded, isSignedIn } = useAuth();
+    // Read at leave-time by the polling timer, which would otherwise see a stale value.
+    const isSignedInRef = useRef(false);
+    isSignedInRef.current = !!isSignedIn;
 
     useEffect(() => {
         let done = false;
@@ -26,7 +29,9 @@ export default function SSOCallback() {
         const leave = () => {
             if (done) return;
             done = true;
-            router.replace('/(tabs)/discover' as never);
+            // Signed in → welcome/onboarding. A timeout (no session) still lands on
+            // Discover: onboarding is for someone who has just signed in.
+            router.replace((isSignedInRef.current ? '/(auth)/onboarding' : '/(tabs)/discover') as never);
         };
 
         const timer = setInterval(() => {

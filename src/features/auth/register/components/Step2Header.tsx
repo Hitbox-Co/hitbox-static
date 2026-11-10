@@ -4,6 +4,8 @@ import { MotiView } from 'moti'
 import React from 'react'
 import { Image, Text, TouchableOpacity, View } from 'react-native'
 
+import { disarmOnboarding } from '@/lib/onboarding-gate'
+
 /**
  * Brand row + welcome copy — also carries the **Skip** escape hatch.
  * `src/app/index.tsx` sends every signed-out cold start here, so without it a
@@ -33,7 +35,11 @@ export default function Step2Header() {
                     accessibilityLabel="Skip sign up and browse"
                     activeOpacity={0.7}
                     hitSlop={12}
-                    onPress={() => router.push('/(tabs)/discover')}
+                    onPress={() => {
+                        // Browsing as a guest: a later sign-in elsewhere is not a sign-up here.
+                        disarmOnboarding()
+                        router.push('/(tabs)/discover')
+                    }}
                     className="h-10 flex-row items-center gap-1"
                 >
                     <Text className="font-syne-semibold text-xs text-[#6b7280]">Skip for now</Text>

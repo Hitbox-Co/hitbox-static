@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import SignInPopup from '@/components/auth/SignInPopup';
+import { armOnboarding } from '@/lib/onboarding-gate';
 import Step2ActionCtx from '../components/Step2ActionCtx';
 import Step2Footer from '../components/Step2Footer';
 import Step2Header from '../components/Step2Header';
@@ -19,6 +20,12 @@ export default function Step2Screen() {
     // "Continue with Email" and the "Sign in" link share one popup, opened
     // straight on the email form — there is no separate login screen to visit.
     const [signInOpen, setSignInOpen] = useState(false);
+
+    // Anyone who signs up or in from this screen lands on onboarding; the root
+    // layout acts on this the moment their session goes active (see onboarding-gate).
+    useEffect(() => {
+        armOnboarding();
+    }, []);
 
     return (
         <View className="flex-1 bg-white">
@@ -49,7 +56,7 @@ export default function Step2Screen() {
                 open={signInOpen}
                 onOpenChange={setSignInOpen}
                 title="Sign in with Email"
-                onSignedIn={() => router.replace('/(tabs)/discover')}
+                onSignedIn={() => router.replace('/(auth)/onboarding' as never)}
             />
         </View>
     );

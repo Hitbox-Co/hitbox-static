@@ -91,7 +91,8 @@ export default function Step2ActionCtx({ onEmail }: { onEmail: () => void }) {
 
             if (createdSessionId && setActive) {
                 await setActive({ session: createdSessionId })
-                router.replace('/(tabs)/discover')
+                // Fresh sign-in → welcome/onboarding, which hands on to Discover.
+                router.replace('/(auth)/onboarding' as never)
             }
             // No createdSessionId → user cancelled or extra steps are required.
         } catch (err) {

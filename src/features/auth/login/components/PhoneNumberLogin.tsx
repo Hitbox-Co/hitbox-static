@@ -126,7 +126,7 @@ export default function PhoneNumberLogin({
                 setIsCountryPickerOpen(false);
                 resetPhoneForm();
                 resetOtpForm();
-                router.replace('/(tabs)/discover');
+                router.replace('/(auth)/onboarding' as never);
             } else {
                 setApiError('Verification is incomplete. Please try again.');
             }
