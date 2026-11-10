@@ -126,7 +126,9 @@ export default function SignInPopup({
                         <>
                             <View className="flex items-center justify-center w-full">
                                 <Image
-                                    source={require("@/assets/images/HitBoxLogo.png")}
+                                    source={light
+                                        ? require("@/assets/images/HitBoxLogo-dark.png")
+                                        : require("@/assets/images/HitBoxLogo-white.png")}
                                     resizeMode="contain"
                                     style={{
                                         width: 40,

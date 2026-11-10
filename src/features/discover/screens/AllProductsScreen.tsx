@@ -1,18 +1,21 @@
-import { router } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { router, useIsFocused } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { ArrowLeft } from "lucide-react-native";
 import React from "react";
 import {
     ActivityIndicator,
     FlatList,
+    Image,
     RefreshControl,
     Text,
     TouchableOpacity,
+    useWindowDimensions,
     View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useDiscoverProductsInfinite } from "../api/getDiscoverProductsInfinite";
-import ProductGridCard from "../components/ProductGridCard";
+import DiscoverProductCard from "../components/DiscoverProductCard";
 import { DiscoverProductItem, DiscoverSection } from "../types/discover";
 
 interface AllProductsScreenProps {
@@ -22,13 +25,18 @@ interface AllProductsScreenProps {
 }
 
 /**
- * "See All" for a Discover section — `GET /api/v1/discover/products?section=…`,
- * paginated 20 at a time.
+ * "View all" for a Discover section — `GET /api/v1/discover/products?section=…`,
+ * paginated 20 at a time. Styled to match the light Discover/Search screens
+ * from the Figma (brand header, Orbitron heading, product cards).
  *
  * Cards stay lightweight here too: tapping one opens Discover's own
  * `discover/[productId]`, which fetches the full `GET /products/:id`.
  */
 export default function AllProductsScreen({ section, title }: AllProductsScreenProps) {
+    const isFocused = useIsFocused();
+    const { width } = useWindowDimensions();
+    const cardWidth = (width - 40 - 12) / 2;
+
     const {
         data,
         isLoading,
@@ -53,48 +61,47 @@ export default function AllProductsScreen({ section, title }: AllProductsScreenP
             // No bottom edge: this route lives under (tabs), and the tab bar
             // already reserves the safe area below.
             edges={["top", "left", "right"]}
-            className="flex-1 bg-black"
+            className="flex-1 bg-white"
         >
-            {/* Header */}
-            <View className="flex-row items-center px-4 pb-3 pt-2">
+            {isFocused && <StatusBar style="dark" />}
+
+            {/* Navigation: back · brand · (spacer keeps the brand centred) */}
+            <View className="h-14 flex-row items-center justify-between border-b border-[#dbeafe] px-5">
                 <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel="Go back"
-                    hitSlop={12}
-                    className="-ml-1 p-1 active:opacity-60"
                     onPress={() => router.back()}
+                    className="size-9 items-center justify-center rounded bg-[#eff6ff]"
                 >
-                    <ChevronLeft size={24} color="#FFFFFF" />
+                    <ArrowLeft size={18} color="#111827" />
                 </TouchableOpacity>
-
-                <View className="ml-1 flex-1">
-                    <Text className="text-xl font-black text-white" numberOfLines={1}>
-                        {title ?? "All Products"}
-                    </Text>
-                    {total > 0 && (
-                        <Text className="text-xs text-zinc-500">
-                            {total} item{total === 1 ? "" : "s"}
-                        </Text>
-                    )}
+                <View className="flex-row items-center gap-[7px]">
+                    <Image
+                        source={require("@/assets/images/HitBoxLogo-dark.png")}
+                        resizeMode="contain"
+                        style={{ width: 22, height: 22 }}
+                    />
+                    <Text className="font-orbitron text-[15px] text-black">HitBox</Text>
                 </View>
+                <View className="size-9" />
             </View>
 
             {isLoading && (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="#8B5CF6" />
+                    <ActivityIndicator size="large" color="#2563eb" />
                 </View>
             )}
 
             {isError && !isLoading && (
                 <View className="flex-1 items-center justify-center px-8">
-                    <Text className="text-center text-sm text-zinc-400">
+                    <Text className="text-center font-syne text-sm text-[#6b7280]">
                         Couldn&apos;t load these products. Check your connection.
                     </Text>
                     <TouchableOpacity
                         onPress={() => refetch()}
-                        className="mt-3 rounded-xl bg-primary px-4 py-2"
+                        className="mt-3 rounded-[30px] bg-[#111827] px-5 py-2"
                     >
-                        <Text className="text-sm font-semibold text-white">Retry</Text>
+                        <Text className="font-syne-bold text-[13px] text-white">Retry</Text>
                     </TouchableOpacity>
                 </View>
             )}
@@ -105,16 +112,42 @@ export default function AllProductsScreen({ section, title }: AllProductsScreenP
                     keyExtractor={(item) => item.id}
                     numColumns={2}
                     renderItem={({ item }) => (
-                        <ProductGridCard item={item} onPress={() => openProduct(item)} />
+                        <DiscoverProductCard
+                            item={item}
+                            width={cardWidth}
+                            imageHeight={cardWidth}
+                            onPress={() => openProduct(item)}
+                        />
                     )}
-                    columnWrapperStyle={{ gap: 12, paddingHorizontal: 16 }}
-                    contentContainerStyle={{ gap: 12, paddingBottom: 32, paddingTop: 4 }}
+                    ListHeaderComponent={
+                        <View className="gap-1 pb-1">
+                            <View className="flex-row items-center justify-between">
+                                <Text numberOfLines={1} className="flex-1 font-orbitron text-[22px] text-[#111827]">
+                                    {title ?? "All Products"}
+                                </Text>
+                                <Text className="font-orbitron text-[10px] text-[#3b82f6]">{"//"}</Text>
+                            </View>
+                            {total > 0 && (
+                                <Text className="font-syne text-[11px] text-[#6b7280]">
+                                    {total} item{total === 1 ? "" : "s"}
+                                </Text>
+                            )}
+                        </View>
+                    }
+                    columnWrapperStyle={{ gap: 12 }}
+                    contentContainerStyle={{
+                        gap: 12,
+                        paddingHorizontal: 20,
+                        paddingTop: 20,
+                        // Room under the last row for the floating tab bar.
+                        paddingBottom: 128,
+                    }}
                     showsVerticalScrollIndicator={false}
                     refreshControl={
                         <RefreshControl
                             refreshing={isRefetching && !isFetchingNextPage}
                             onRefresh={refetch}
-                            tintColor="#8B5CF6"
+                            tintColor="#2563eb"
                         />
                     }
                     // Paginate as the user reaches the end; the button below is the
@@ -125,7 +158,7 @@ export default function AllProductsScreen({ section, title }: AllProductsScreenP
                     }}
                     ListEmptyComponent={
                         <View className="mt-24 items-center px-8">
-                            <Text className="text-center text-sm text-zinc-400">
+                            <Text className="text-center font-syne text-sm text-[#6b7280]">
                                 Nothing here yet. Pull to refresh.
                             </Text>
                         </View>
@@ -136,12 +169,12 @@ export default function AllProductsScreen({ section, title }: AllProductsScreenP
                                 onPress={() => fetchNextPage()}
                                 disabled={isFetchingNextPage}
                                 activeOpacity={0.8}
-                                className="mx-4 items-center justify-center rounded-full border border-zinc-800 py-3"
+                                className="h-12 items-center justify-center rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
                             >
                                 {isFetchingNextPage ? (
-                                    <ActivityIndicator size="small" color="#A78BFA" />
+                                    <ActivityIndicator size="small" color="#2563eb" />
                                 ) : (
-                                    <Text className="text-xs font-bold text-violet-400">Load More</Text>
+                                    <Text className="font-syne-bold text-[13px] text-[#2563eb]">Load More</Text>
                                 )}
                             </TouchableOpacity>
                         ) : null

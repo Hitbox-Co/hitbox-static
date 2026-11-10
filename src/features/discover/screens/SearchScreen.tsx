@@ -100,11 +100,11 @@ export default function SearchScreen() {
                 </TouchableOpacity>
                 <View className="flex-row items-center gap-[7px]">
                     <Image
-                        source={require("@/assets/images/HitBoxLogo.png")}
-                        resizeMode="cover"
-                        style={{ width: 22, height: 22, borderRadius: 5 }}
+                        source={require("@/assets/images/HitBoxLogo-dark.png")}
+                        resizeMode="contain"
+                        style={{ width: 22, height: 22 }}
                     />
-                    <Text className="font-orbitron text-[15px] text-[#183570]">HitBox</Text>
+                    <Text className="font-orbitron text-[15px] text-black">HitBox</Text>
                 </View>
                 <View className="size-9" />
             </View>

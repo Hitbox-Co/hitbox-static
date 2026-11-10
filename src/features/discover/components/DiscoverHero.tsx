@@ -88,9 +88,9 @@ export default function DiscoverHero({
                 <View className="h-11 flex-row items-center justify-between px-5">
                     <View className="flex-row items-center gap-[7px]">
                         <Image
-                            source={require('@/assets/images/HitBoxLogo.png')}
-                            resizeMode="cover"
-                            style={{ width: 26, height: 26, borderRadius: 6 }}
+                            source={require('@/assets/images/HitBoxLogo-white.png')}
+                            resizeMode="contain"
+                            style={{ width: 26, height: 26 }}
                         />
                         <Text className="font-orbitron text-[14px] text-white">HitBox</Text>
                     </View>

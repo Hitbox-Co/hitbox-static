@@ -21,13 +21,13 @@ export default function Step2Header() {
             {/* Brand row. 52 high to match the Figma navigation bar. */}
             <View className="h-[52px] flex-row items-center justify-between">
                 <View className="flex-row items-center gap-2">
-                    {/* The logo file is white-on-black, so it reads as a black tile on this white screen. */}
+                    {/* Transparent black mark, for light backgrounds. */}
                     <Image
-                        source={require('@/assets/images/HitBoxLogo.png')}
-                        resizeMode="cover"
-                        style={{ width: 28, height: 28, borderRadius: 6 }}
+                        source={require('@/assets/images/HitBoxLogo-dark.png')}
+                        resizeMode="contain"
+                        style={{ width: 28, height: 28 }}
                     />
-                    <Text className="font-orbitron text-[15px] text-[#183570]">HitBox</Text>
+                    <Text className="font-orbitron text-[15px] text-black">HitBox</Text>
                 </View>
 
                 <TouchableOpacity
