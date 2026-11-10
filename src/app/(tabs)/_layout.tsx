@@ -1,5 +1,7 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { BlurView } from "expo-blur";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { LinearGradient } from "expo-linear-gradient";
 import { router, Tabs, usePathname } from "expo-router";
 import {
   House,
@@ -82,6 +84,20 @@ interface FloatingTabBarProps extends TabBarProps {
   onGatedTabPress: (name: GatedTab) => void;
 }
 
+/**
+ * True only on iOS 26+ with the native glass module present. Guarded because a
+ * dev build made before `expo-glass-effect` was added would throw on the call;
+ * the frosted fallback is used in that case.
+ */
+const HAS_LIQUID_GLASS = (() => {
+  if (Platform.OS !== "ios") return false;
+  try {
+    return isLiquidGlassAvailable();
+  } catch {
+    return false;
+  }
+})();
+
 const ACTIVE = "#42526c";
 const INACTIVE = "#6b7280";
 
@@ -103,12 +119,37 @@ function FloatingTabBar({
       pointerEvents="box-none"
       style={[styles.tabBarWrapper, { paddingBottom: insets.bottom }]}
     >
-      {/* Frosted white bar: 57% white over a blur, #dbeafe hairline, 40px top corners. */}
-      <BlurView
-        intensity={Platform.OS === "ios" ? 60 : 90}
-        tint="light"
-        style={[StyleSheet.absoluteFill, styles.glass]}
-      />
+      {HAS_LIQUID_GLASS ? (
+        // iOS 26+: the real system Liquid Glass — live refraction of whatever
+        // scrolls underneath, with Apple's own highlights and edge.
+        <GlassView
+          glassEffectStyle="regular"
+          colorScheme="light"
+          style={[StyleSheet.absoluteFill, styles.glass]}
+        />
+      ) : (
+        <>
+          {/* No system glass here (Android, iOS < 26): a frosted approximation —
+              blur, a milky tint, and a specular sheen that is brightest at the
+              top edge and fades out, like light catching curved glass. */}
+          <BlurView
+            intensity={Platform.OS === "ios" ? 60 : 90}
+            tint="light"
+            style={[StyleSheet.absoluteFill, styles.glass]}
+          />
+          <LinearGradient
+            colors={[
+              "rgba(255,255,255,0.75)",
+              "rgba(255,255,255,0.18)",
+              "rgba(255,255,255,0.05)",
+            ]}
+            locations={[0, 0.45, 1]}
+            style={[StyleSheet.absoluteFill, styles.glass]}
+            pointerEvents="none"
+          />
+          <View pointerEvents="none" style={styles.topHighlight} />
+        </>
+      )}
       <View style={styles.tabButtonsRow}>
         {TAB_ITEMS.map((tab) => {
           const route = state.routes.find(
@@ -297,11 +338,23 @@ const styles = StyleSheet.create({
     // iOS gets a real gaussian blur from BlurView, so the Figma's 57% white
     // fill works as-is. Android's BlurView is far weaker, so the content
     // scrolling behind would stay legible through it — the opacity has to come
-    // from the fill instead.
-    backgroundColor: Platform.select({
-      ios: "rgba(255, 255, 255, 0.57)",
-      default: "rgba(255, 255, 255, 0.92)",
-    }),
+    // from the fill instead. Real Liquid Glass supplies its own material, so
+    // it gets no fill at all.
+    backgroundColor: HAS_LIQUID_GLASS
+      ? "transparent"
+      : Platform.select({
+          ios: "rgba(255, 255, 255, 0.57)",
+          default: "rgba(255, 255, 255, 0.92)",
+        }),
+  },
+  // 1px bright rim along the curved top edge of the fallback glass.
+  topHighlight: {
+    position: "absolute",
+    top: 0,
+    left: 24,
+    right: 24,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.9)",
   },
   glass: {
     borderTopLeftRadius: 40,

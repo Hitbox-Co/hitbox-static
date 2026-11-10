@@ -2,7 +2,7 @@ import { useAuth } from "@clerk/clerk-expo";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ChevronRight, Search, X } from "lucide-react-native";
+import { ChevronRight, Search, Trophy, X } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import {
     ActivityIndicator,
@@ -197,6 +197,8 @@ export default function DiscoverScreen() {
                         <SearchResultsSection search={debouncedSearch} onItemPress={handleProductPress} />
                     ) : (
                         <>
+                            <LeaderboardBanner />
+
                             {/* Category chips — jump to a section of the feed */}
                             <ScrollView
                                 horizontal
@@ -341,6 +343,46 @@ export default function DiscoverScreen() {
                 </LinearGradient>
             </ScrollView>
         </View>
+    );
+}
+
+/**
+ * Leaderboard banner from the Figma. There is no leaderboard endpoint yet, so
+ * it is a labelled placeholder: not tappable, and the Figma's "#1–10" rank pill
+ * reads "Soon" rather than showing a made-up rank.
+ */
+function LeaderboardBanner() {
+    return (
+        <LinearGradient
+            colors={["#4bf489", "#3bf69c"]}
+            start={{ x: 0.45, y: 0 }}
+            end={{ x: 0.55, y: 1 }}
+            style={{
+                height: 72,
+                marginHorizontal: 20,
+                marginBottom: 27,
+                borderRadius: 4,
+                paddingHorizontal: 16,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+            }}
+        >
+            <View className="flex-1 flex-row items-center gap-3">
+                <View className="size-11 items-center justify-center rounded bg-[rgba(89,135,102,0.09)]">
+                    <Trophy size={22} color="#0b3d22" />
+                </View>
+                <View className="flex-1 gap-[3px]">
+                    <Text className="font-syne-bold text-[10px] text-[#040404]">Leaderboard</Text>
+                    <Text numberOfLines={1} className="font-syne text-[11px] text-[rgba(67,42,42,0.67)]">
+                        Top collectors this week
+                    </Text>
+                </View>
+            </View>
+            <View className="h-[23px] justify-center rounded border border-[rgba(255,48,48,0.2)] bg-white/15 px-[10px]">
+                <Text className="font-syne-semibold text-[10px] text-[#040404]">Soon</Text>
+            </View>
+        </LinearGradient>
     );
 }
 
