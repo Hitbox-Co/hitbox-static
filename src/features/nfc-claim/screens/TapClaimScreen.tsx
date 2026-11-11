@@ -1,15 +1,14 @@
 import { useAuth } from '@clerk/clerk-expo';
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { View as MotiView } from 'moti';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
 import SignInPopup from '@/components/auth/SignInPopup';
 import type { TapUrl } from '@/lib/tap-url';
 import { classifyClaimFailure } from '../api/claimErrors';
 import { useClaimTap } from '../api/useClaimTap';
+import NfcShell from '../components/NfcShell';
+import OwnedProvenance from '../components/OwnedProvenance';
 import { NoticeCard, ProductBox, Row, ownerNameOf } from '../components/TapCards';
 import { ClaimResult } from '../types/claim';
 import SucessfulClaimScreen from './SucessfulClaimScreen';
@@ -19,8 +18,9 @@ import SucessfulClaimScreen from './SucessfulClaimScreen';
  * in (the Scan screen asks before they tap), the URL is sent to the server once,
  * and whatever comes back is shown:
  *
- *   CLAIMED                    → SucessfulClaimScreen
- *   ALREADY_CLAIMED            → "you own this" / "claimed by <owner>"
+ *   CLAIMED                    → SucessfulClaimScreen ("It's officially yours")
+ *   ALREADY_CLAIMED (by you)   → OwnedProvenance
+ *   ALREADY_CLAIMED (other)    → "claimed by <owner>"
  *   CLAIMED_BY_OTHER_JUST_NOW  → someone beat you by a moment
  *   UNAVAILABLE                → authentic, but frozen right now
  *   verified: false            → the "couldn't validate" help screen
@@ -45,52 +45,54 @@ export default function TapClaimScreen({ tap }: { tap: TapUrl }) {
         return <SucessfulClaimScreen result={result} />;
     }
 
+    if (result?.verified && result.outcome === 'ALREADY_CLAIMED' && result.claimedByYou) {
+        return <OwnedProvenance result={result} />;
+    }
+
     return (
-        <SafeAreaView className="flex-1 bg-[#050507]">
-            <StatusBar barStyle="light-content" />
-            <ScrollView className="px-5 pt-3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-                <MotiView from={{ opacity: 0, translateY: 10 }} animate={{ opacity: 1, translateY: 0 }} className="items-center my-2 mb-6">
-                    <Image source={require('@/assets/images/HitBoxLogo.png')} contentFit="contain" style={{ width: 40, height: 40 }} />
-                </MotiView>
-
-                {isLoaded && !signedIn && (
-                    <NoticeCard
-                        tone="warn"
-                        title="Sign in to claim"
-                        body="Sign in first. This tag's link works once, so it is only sent when you are ready."
-                    />
-                )}
-
-                {signedIn && claim.isPending && (
-                    <View className="items-center mt-16">
-                        <ActivityIndicator size="large" color="#208AEF" />
-                        <Text className="text-neutral-300 mt-4 text-base font-medium">Verifying this item…</Text>
-                    </View>
-                )}
-
-                {claim.isError && <ClaimFailureNotice error={claim.error} />}
-
-                {result?.verified && result.outcome !== 'CLAIMED' && <Outcome result={result} />}
-            </ScrollView>
-
-            <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-5 mb-2">
-                {isLoaded && !signedIn && (
+        <NfcShell
+            withTabBar={false}
+            footer={
+                <View className="gap-3 px-5 pb-2 pt-2">
+                    {isLoaded && !signedIn && (
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            onPress={() => setAskSignIn(true)}
+                            activeOpacity={0.85}
+                            className="h-12 items-center justify-center rounded-[30px] bg-[#111827]"
+                        >
+                            <Text className="font-syne-bold text-[13px] text-white">Sign in</Text>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
-                        onPress={() => setAskSignIn(true)}
+                        accessibilityRole="button"
+                        onPress={() => router.back()}
                         activeOpacity={0.85}
-                        className="bg-primary rounded-xl h-14 items-center justify-center mb-3"
+                        className="h-12 items-center justify-center rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
                     >
-                        <Text className="text-white text-base font-bold">Sign in</Text>
+                        <Text className="font-syne-bold text-[13px] text-[#2563eb]">Done</Text>
                     </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                    onPress={() => router.back()}
-                    activeOpacity={0.85}
-                    className="bg-transparent border border-[#2A2A32] rounded-xl h-14 items-center justify-center"
-                >
-                    <Text className="text-neutral-200 text-base font-bold">Done</Text>
-                </TouchableOpacity>
-            </MotiView>
+                </View>
+            }
+        >
+            {isLoaded && !signedIn && (
+                <NoticeCard
+                    tone="warn"
+                    title="Sign in to claim"
+                    body="Sign in first. This tag's link works once, so it is only sent when you are ready."
+                />
+            )}
+
+            {signedIn && claim.isPending && (
+                <View className="mt-16 items-center">
+                    <ActivityIndicator size="large" color="#2563eb" />
+                    <Text className="mt-4 font-syne-medium text-base text-[#6b7280]">Verifying this item…</Text>
+                </View>
+            )}
+
+            {claim.isError && <ClaimFailureNotice error={claim.error} />}
+
+            {result?.verified && result.outcome !== 'CLAIMED' && <Outcome result={result} />}
 
             <SignInPopup
                 open={askSignIn}
@@ -99,7 +101,7 @@ export default function TapClaimScreen({ tap }: { tap: TapUrl }) {
                 description="Sign in to claim this item and add it to your collection."
                 // Nothing to resume: useClaimTap is enabled the moment the session lands.
             />
-        </SafeAreaView>
+        </NfcShell>
     );
 }
 
@@ -136,7 +138,7 @@ function ClaimFailureNotice({ error }: { error: unknown }) {
     }
 }
 
-/** Every outcome except a fresh claim, which has its own celebratory screen. */
+/** Every outcome except a fresh claim and your own item, which have their own screens. */
 function Outcome({ result }: { result: ClaimResult }) {
     const ownerName = ownerNameOf(result.owner);
 
@@ -156,15 +158,11 @@ function Outcome({ result }: { result: ClaimResult }) {
         );
     }
 
-    // ALREADY_CLAIMED — by you, or by someone else (who may keep it private).
+    // ALREADY_CLAIMED by someone else (who may keep it private).
     return (
-        <NoticeCard
-            tone={result.claimedByYou ? 'good' : 'warn'}
-            title={result.claimedByYou ? 'You already own this item' : 'Already claimed'}
-            body={result.message}
-        >
-            <View className="w-full bg-[#0F0F13] border border-[#1F1F24] rounded-xl p-4 mb-4">
-                <Row label="Owner" value={result.claimedByYou ? `${ownerName ?? 'You'} (you)` : (ownerName ?? 'Private collector')} />
+        <NoticeCard tone="warn" title="Already claimed" body={result.message}>
+            <View className="mb-4 w-full rounded border border-[#dbeafe] bg-white px-4">
+                <Row label="Owner" value={ownerName ?? 'Private collector'} />
                 {result.claimedAt ? <Row label="Claimed" value={new Date(result.claimedAt).toLocaleString()} /> : null}
             </View>
             <ProductBox product={result.product} serial={result.sku.serialNumber} />

@@ -1,10 +1,9 @@
 import { useAuth } from '@clerk/clerk-expo';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
-import { AlertTriangle, BadgeCheck, Link2, Nfc, ShieldCheck } from 'lucide-react-native';
-import { View as MotiView } from 'moti';
+import { AlertTriangle, ArrowUpRight } from 'lucide-react-native';
+import { MotiView } from 'moti';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Image, ScrollView, StatusBar, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import SignInPopup from '@/components/auth/SignInPopup';
 import {
@@ -15,6 +14,8 @@ import {
 } from '@/lib/nfc';
 import { describeTagProblem, type TagReading } from '@/lib/ndef-tap';
 import { parseTapUrl, tapIdentity, type TapUrl } from '@/lib/tap-url';
+import { ActionPillButton, NfcScanGraphic } from '../components/NfcGraphics';
+import NfcShell from '../components/NfcShell';
 
 type Action = 'claim' | 'verify';
 
@@ -28,12 +29,16 @@ export function goToTap(action: Action, tap: TapUrl) {
     router.push({ pathname, params: { ...tapIdentity(tap), e: tap.e, c: tap.c } } as never);
 }
 
+const STEPS = ['1 · Tap', '2 · Verify', '3 · Reveal'];
+
 /**
- * NFC section — the in-app entry point for claiming and verifying.
+ * NFC section — the in-app entry point for claiming and verifying, in the light
+ * layout from the UX-DESIGN Figma ("NFC — Ready to authenticate").
  *
  * Reads the URL a tag carries (never its UID) by tapping — a foreground
  * listener, live only while this screen is focused — or from a pasted link, then
- * routes to Claim or Verify.
+ * routes to Claim or Verify. The Claim / Verify buttons at the bottom choose
+ * what a tap does; with a link pasted, pressing one also submits it.
  *
  * Claim needs a session, and a tag's URL works once, so Claim asks the user to
  * sign in BEFORE they tap rather than after: a tap made while signed out could
@@ -85,167 +90,178 @@ export default function ScanScreen() {
         return () => stop();
     }, [listening, onTap, onProblem]);
 
-    const tapFromPaste = parseTapUrl(pasted);
-    const submitPaste = () => {
-        if (!tapFromPaste) {
+    const submitPaste = (chosen: Action) => {
+        const tap = parseTapUrl(pasted);
+        if (!tap) {
             setPasteError(true);
             return;
         }
         setPasteError(false);
-        if (action === 'claim' && !signedIn) {
+        if (chosen === 'claim' && !signedIn) {
             setAskSignIn(true);
             return;
         }
-        goToTap(action, tapFromPaste);
+        goToTap(chosen, tap);
     };
 
-    return (
-        <SafeAreaView
-            // No bottom edge: these routes render inside (tabs), so the tab bar
-            // already reserves the safe area below.
-            edges={['top', 'left', 'right']}
-            className="flex-1 bg-[#050507]"
-        >
-            <StatusBar barStyle="light-content" />
-            <ScrollView className="px-5 pt-3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
-                <MotiView from={{ opacity: 0, translateY: 10 }} animate={{ opacity: 1, translateY: 0 }} className="items-center my-2">
-                    <View className="flex items-center justify-center w-full mb-5">
-                        <Image
-                            source={require('@/assets/images/HitBoxLogo.png')}
-                            resizeMode="contain"
-                            style={{ width: 50, height: 50 }}
-                        />
-                    </View>
-                    <Text className="text-neutral-500 text-[11px] font-bold uppercase tracking-widest mt-1">
-                        NFC claim &amp; verify
-                    </Text>
-                </MotiView>
+    /** Picks the action; with a link in the box, it also sends it. */
+    const onChoose = (chosen: Action) => {
+        setAction(chosen);
+        setProblem(null);
+        if (pasted.trim()) submitPaste(chosen);
+    };
 
-                {/* Claim / Verify toggle — decides where a tap takes you */}
-                <View className="flex-row bg-[#0F0F13] border border-[#1F1F24] rounded-2xl p-1.5 mt-4 mb-6">
-                    {(['claim', 'verify'] as Action[]).map((a) => {
-                        const active = action === a;
-                        return (
-                            <TouchableOpacity
-                                key={a}
-                                onPress={() => {
-                                    setAction(a);
-                                    setProblem(null);
-                                }}
-                                activeOpacity={0.85}
-                                className={`flex-1 h-11 rounded-xl flex-row items-center justify-center gap-1.5 ${active ? 'bg-primary' : 'bg-transparent'}`}
-                            >
-                                {a === 'claim'
-                                    ? <BadgeCheck color={active ? '#FFF' : '#71717A'} size={16} />
-                                    : <ShieldCheck color={active ? '#FFF' : '#71717A'} size={16} />}
-                                <Text className={`font-bold text-sm ${active ? 'text-white' : 'text-neutral-500'}`}>
-                                    {a === 'claim' ? 'Claim' : 'Verify'}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
+    const nfcOff = !!status?.supported && !status.enabled;
+    const nfcMissing = !!status && !status.supported;
+
+    // One line under the heading: what the screen is doing right now.
+    const statusText = needsSignIn
+        ? 'SIGN IN TO START'
+        : nfcMissing
+            ? 'NFC UNAVAILABLE · PASTE A LINK'
+            : nfcOff
+                ? 'NFC IS OFF · TAP TO TURN ON'
+                : 'SCANNING · WAITING FOR TAP';
+    const live = listening && !nfcMissing && !nfcOff;
+
+    return (
+        <NfcShell>
+            <Text className="px-5 py-1 font-orbitron text-[8px] tracking-[0.4px] text-[#2563eb]">
+                NFC CLAIM &amp; VERIFY
+            </Text>
+
+            {/* Steps */}
+            <View className="flex-row gap-2 px-5 py-[9px]">
+                {STEPS.map((step, i) => (
+                    <View
+                        key={step}
+                        className={`flex-1 items-center rounded border py-[10px] ${i === 0 ? 'border-[#bfdbfe] bg-[#eff6ff]' : 'border-[#dbeafe] bg-[#f3f6ff]'
+                            }`}
+                    >
+                        <Text
+                            className={`text-[10px] ${i === 0 ? 'font-syne-bold text-[#2563eb]' : 'font-syne-semibold text-[#6b7280]'}`}
+                        >
+                            {step}
+                        </Text>
+                    </View>
+                ))}
+            </View>
+
+            {/* Tap card */}
+            <MotiView
+                from={{ opacity: 0, translateY: 10 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                className="mx-5 items-center gap-6 rounded border border-[#dbeafe] bg-white px-6 py-7"
+                style={{
+                    shadowColor: '#3b82f6',
+                    shadowOffset: { width: 0, height: 8 },
+                    shadowOpacity: 0.13,
+                    shadowRadius: 12,
+                    elevation: 4,
+                }}
+            >
+                <NfcScanGraphic active={live} />
+
+                <View className="w-full items-center gap-2">
+                    <Text className="text-center font-orbitron-black text-[26px] leading-[30px] tracking-[-0.6px] text-[#111827]">
+                        {needsSignIn ? 'Sign in to claim' : action === 'claim' ? 'Tap to claim' : 'Tap to verify'}
+                    </Text>
+                    <Text className="text-center font-syne text-[13px] leading-[20px] text-[#6b7280]">
+                        {needsSignIn
+                            ? "A tag's link works once, so sign in first, then tap."
+                            : "Hold the top of your phone against the collectible's NFC tag"}
+                    </Text>
                 </View>
 
-                {/* Tap prompt — or, for Claim while signed out, the sign-in prompt */}
-                <View className="items-center">
-                    <MotiView
-                        from={{ opacity: 0.4, scale: 0.9 }}
-                        animate={{ opacity: needsSignIn ? 0.4 : 1, scale: needsSignIn ? 0.95 : 1.06 }}
-                        transition={{ type: 'timing', duration: 900, loop: !needsSignIn, repeatReverse: true }}
-                        className="bg-[#0C1B2E] p-8 rounded-full border"
-                        style={{ borderColor: '#208AEF' }}
+                {needsSignIn ? (
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        onPress={() => setAskSignIn(true)}
+                        activeOpacity={0.85}
+                        className="h-11 items-center justify-center rounded-[30px] bg-[#111827] px-8"
                     >
-                        <Nfc color="#208AEF" size={64} />
-                    </MotiView>
+                        <Text className="font-syne-bold text-[13px] text-white">Sign in</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        accessibilityRole={nfcOff ? 'button' : 'text'}
+                        disabled={!nfcOff}
+                        onPress={() => void promptEnableNfcIfNeeded()}
+                        className="flex-row items-center justify-center gap-2"
+                    >
+                        <View className="size-[18px] items-center justify-center">
+                            <MotiView
+                                from={{ opacity: 0.35 }}
+                                animate={{ opacity: live ? 1 : 0.35 }}
+                                transition={{ type: 'timing', duration: 800, loop: live, repeatReverse: true }}
+                                className="size-[6px] rounded-full bg-[#2563eb]"
+                            />
+                        </View>
+                        <Text className="font-syne-bold text-[11px] tracking-[0.5px] text-[#2563eb]">{statusText}</Text>
+                    </TouchableOpacity>
+                )}
 
-                    {needsSignIn ? (
-                        <>
-                            <Text className="text-white text-2xl font-black tracking-tight mt-7 mb-2">Sign in to claim</Text>
-                            <Text className="text-[14px] text-neutral-400 text-center font-medium leading-5 px-6">
-                                A tag&apos;s link works once, so sign in first, then tap.
-                            </Text>
-                            <TouchableOpacity
-                                onPress={() => setAskSignIn(true)}
-                                activeOpacity={0.85}
-                                className="bg-primary rounded-xl h-12 px-8 items-center justify-center mt-5"
-                            >
-                                <Text className="text-white font-bold text-[15px]">Sign in</Text>
-                            </TouchableOpacity>
-                        </>
-                    ) : (
-                        <>
-                            <Text className="text-white text-2xl font-black tracking-tight mt-7 mb-2">
-                                {action === 'claim' ? 'Tap to claim' : 'Tap to verify'}
-                            </Text>
-                            <Text className="text-[14px] text-neutral-400 text-center font-medium leading-5 px-6">
-                                Hold the top-back of your phone against the collectible&apos;s NFC tag.
-                            </Text>
-                        </>
-                    )}
-
-                    {problem && !needsSignIn && (
-                        <View className="w-full bg-[#2A1414] border border-[#7A1C1C] rounded-xl p-4 mt-6">
-                            <View className="flex-row items-center">
-                                <AlertTriangle color="#FF3B30" size={18} />
-                                <Text className="text-white font-bold text-[15px] ml-2 flex-1">
-                                    {describeTagProblem(problem).title}
-                                </Text>
-                            </View>
-                            <Text className="text-neutral-300 text-[13px] leading-5 mt-2">
-                                {describeTagProblem(problem).hint}
+                {problem && !needsSignIn && (
+                    <View className="w-full rounded border border-[#fecaca] bg-[#fef2f2] p-4">
+                        <View className="flex-row items-center gap-2">
+                            <AlertTriangle color="#dc2626" size={16} />
+                            <Text className="flex-1 font-syne-bold text-[13px] text-[#111827]">
+                                {describeTagProblem(problem).title}
                             </Text>
                         </View>
-                    )}
-
-                    {status && !status.supported && (
-                        <Text className="text-amber-400 font-semibold text-[13px] text-center mt-4 px-6">
-                            NFC isn&apos;t available on this build/device — paste a tag link below.
+                        <Text className="mt-2 font-syne text-xs leading-[18px] text-[#6b7280]">
+                            {describeTagProblem(problem).hint}
                         </Text>
-                    )}
-                    {status?.supported && !status.enabled && (
-                        <TouchableOpacity onPress={() => void promptEnableNfcIfNeeded()} className="mt-4">
-                            <Text className="text-primary font-bold text-[15px]">NFC is off — turn it on</Text>
-                        </TouchableOpacity>
-                    )}
-                </View>
-
-                {/* Paste a tag link — works without a physical tap (emulator, testing) */}
-                <View className="bg-[#0F0F13] border border-[#1F1F24] rounded-2xl p-4 mt-8">
-                    <Text className="text-[12px] text-neutral-400 font-medium uppercase tracking-wider mb-2">
-                        Or paste a tag link
-                    </Text>
-                    <View className="flex-row items-center bg-[#08060b] border border-[#26262E] rounded-xl px-3 h-14">
-                        <Link2 color="#71717A" size={18} />
-                        <TextInput
-                            value={pasted}
-                            onChangeText={(text) => {
-                                setPasted(text);
-                                setPasteError(false);
-                            }}
-                            placeholder="https://hitboxcollectibles.com/verify?u=…"
-                            placeholderTextColor="#525252"
-                            autoCapitalize="none"
-                            autoCorrect={false}
-                            className="flex-1 text-white text-base ml-2"
-                        />
                     </View>
-                    {pasteError && (
-                        <Text className="text-red-400 text-[13px] font-medium mt-2">
-                            That isn&apos;t a HitBox tag link.
-                        </Text>
-                    )}
+                )}
 
-                    <TouchableOpacity
-                        onPress={submitPaste}
-                        disabled={!pasted.trim()}
-                        activeOpacity={0.85}
-                        className={`h-13 py-3.5 rounded-xl flex-row items-center justify-center gap-1.5 mt-3 ${pasted.trim() ? 'bg-primary' : 'bg-[#1A1A22]'}`}
-                    >
-                        {action === 'claim' ? <BadgeCheck color="#FFF" size={17} /> : <ShieldCheck color="#FFF" size={17} />}
-                        <Text className="text-white font-bold text-sm">{action === 'claim' ? 'Claim' : 'Verify'}</Text>
-                    </TouchableOpacity>
+                {/* Divider */}
+                <View className="w-full flex-row items-center gap-3">
+                    <View className="h-px flex-1 bg-[#dbeafe]" />
+                    <Text className="font-syne-semibold text-[11px] tracking-[1.2px] text-[#6b7280]">OR PASTE A TAG LINK</Text>
+                    <View className="h-px flex-1 bg-[#dbeafe]" />
                 </View>
-            </ScrollView>
+
+                {/* Works without a physical tap (emulator, testing) */}
+                <View className="w-full">
+                    <TextInput
+                        value={pasted}
+                        onChangeText={(text) => {
+                            setPasted(text);
+                            setPasteError(false);
+                        }}
+                        placeholder="https://hitboxcollectibles.com/verify?u=…"
+                        placeholderTextColor="#9ca3af"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        returnKeyType="go"
+                        onSubmitEditing={() => pasted.trim() && onChoose(action)}
+                        className={`rounded border bg-[#f3f6ff] px-4 py-[13px] font-syne text-[13px] text-[#111827] ${pasteError ? 'border-[#dc2626]' : 'border-[#dbeafe]'
+                            }`}
+                    />
+                    {pasteError && (
+                        <Text className="mt-2 font-syne-medium text-xs text-[#dc2626]">That isn&apos;t a HitBox tag link.</Text>
+                    )}
+                </View>
+
+                <View className="w-full flex-row items-center gap-[10px]">
+                    <ActionPillButton
+                        label="Claim"
+                        selected={action === 'claim'}
+                        onPress={() => onChoose('claim')}
+                        icon={<ArrowUpRight size={15} color={action === 'claim' ? '#fff' : '#111827'} />}
+                    />
+                    <ActionPillButton
+                        label="Verify"
+                        selected={action === 'verify'}
+                        onPress={() => onChoose('verify')}
+                    />
+                </View>
+            </MotiView>
+
+            <Text className="px-5 pt-5 text-center font-syne text-[10px] leading-[15px] text-[#6b7280]">
+                Move your phone slowly · remove thick cases · try again
+            </Text>
 
             <SignInPopup
                 open={askSignIn}
@@ -254,6 +270,6 @@ export default function ScanScreen() {
                 description="Sign in to claim items and add them to your collection."
                 // Signed in → the listener starts by itself; nothing else to resume.
             />
-        </SafeAreaView>
+        </NfcShell>
     );
 }

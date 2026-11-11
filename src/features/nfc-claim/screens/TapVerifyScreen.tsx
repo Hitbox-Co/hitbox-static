@@ -1,12 +1,11 @@
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { View as MotiView } from 'moti';
+import { MotiView } from 'moti';
 import React, { useEffect } from 'react';
-import { ActivityIndicator, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
 import type { TapUrl } from '@/lib/tap-url';
 import { useVerifyTap } from '../api/useVerifyTap';
+import NfcShell from '../components/NfcShell';
 import { GenuineBanner, NoticeCard, ProductBox, Row, ownerNameOf } from '../components/TapCards';
 import { TapVerified } from '../types/claim';
 
@@ -28,51 +27,52 @@ export default function TapVerifyScreen({ tap }: { tap: TapUrl }) {
     }, [result]);
 
     return (
-        <SafeAreaView className="flex-1 bg-[#050507]">
-            <StatusBar barStyle="light-content" />
-            <ScrollView className="px-5 pt-3" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
-                <MotiView from={{ opacity: 0, translateY: 10 }} animate={{ opacity: 1, translateY: 0 }} className="items-center my-2 mb-2">
-                    <Image source={require('@/assets/images/HitBoxLogo.png')} contentFit="contain" style={{ width: 50, height: 50 }} />
-                    <Text className="text-neutral-500 text-[11px] font-bold uppercase tracking-widest mt-3">Authenticity check</Text>
-                </MotiView>
-
-                {verify.isPending && (
-                    <View className="items-center mt-16">
-                        <ActivityIndicator size="large" color="#208AEF" />
-                        <Text className="text-neutral-300 mt-4 text-base font-medium">Verifying this item…</Text>
-                    </View>
-                )}
-
-                {verify.isError && (
-                    <NoticeCard
-                        tone="bad"
-                        title="Couldn't reach HitBox"
-                        body="We couldn't confirm that tap. Check your connection, then hold your phone to the tag again."
-                    />
-                )}
-
-                {result?.verified && <Authentic result={result} />}
-            </ScrollView>
-
-            <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} className="mx-5 mb-2">
-                {result?.verified && !result.claimed && (
+        <NfcShell
+            withTabBar={false}
+            footer={
+                <View className="gap-3 px-5 pb-2 pt-2">
+                    {result?.verified && !result.claimed && (
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            onPress={() => router.replace('/scan' as never)}
+                            activeOpacity={0.85}
+                            className="h-12 items-center justify-center rounded-[30px] bg-[#111827]"
+                        >
+                            <Text className="font-syne-bold text-[13px] text-white">Claim it: tap the tag again</Text>
+                        </TouchableOpacity>
+                    )}
                     <TouchableOpacity
-                        onPress={() => router.replace('/scan' as never)}
+                        accessibilityRole="button"
+                        onPress={() => router.back()}
                         activeOpacity={0.85}
-                        className="bg-primary rounded-xl h-14 items-center justify-center mb-3"
+                        className="h-12 items-center justify-center rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
                     >
-                        <Text className="text-white text-base font-bold">Claim it: tap the tag again</Text>
+                        <Text className="font-syne-bold text-[13px] text-[#2563eb]">Done</Text>
                     </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                    onPress={() => router.back()}
-                    activeOpacity={0.85}
-                    className="bg-transparent border border-[#2A2A32] rounded-xl h-14 items-center justify-center"
-                >
-                    <Text className="text-neutral-200 text-base font-bold">Done</Text>
-                </TouchableOpacity>
-            </MotiView>
-        </SafeAreaView>
+                </View>
+            }
+        >
+            <Text className="px-5 pb-2 pt-1 font-orbitron text-[8px] tracking-[0.4px] text-[#2563eb]">
+                AUTHENTICITY CHECK
+            </Text>
+
+            {verify.isPending && (
+                <View className="mt-16 items-center">
+                    <ActivityIndicator size="large" color="#2563eb" />
+                    <Text className="mt-4 font-syne-medium text-base text-[#6b7280]">Verifying this item…</Text>
+                </View>
+            )}
+
+            {verify.isError && (
+                <NoticeCard
+                    tone="bad"
+                    title="Couldn't reach HitBox"
+                    body="We couldn't confirm that tap. Check your connection, then hold your phone to the tag again."
+                />
+            )}
+
+            {result?.verified && <Authentic result={result} />}
+        </NfcShell>
     );
 }
 
@@ -85,10 +85,10 @@ function Authentic({ result }: { result: TapVerified }) {
             : 'Owned by another collector.';
 
     return (
-        <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} className="mt-4">
+        <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }}>
             <NoticeCard tone="good" title="Authentic" body={ownerLine}>
                 <GenuineBanner label="GENUINE HITBOX PRODUCT" />
-                <View className="w-full bg-[#0F0F13] border border-[#1F1F24] rounded-xl p-4 mb-4">
+                <View className="mb-4 w-full rounded border border-[#dbeafe] bg-white px-4">
                     <Row label="Item" value={result.sku.skuCode} />
                     <Row label="Status" value={result.claimed ? 'Claimed' : 'Unclaimed'} />
                     <Row label="Owner" value={result.claimed ? (ownerName ?? 'Private') : '— unclaimed —'} />

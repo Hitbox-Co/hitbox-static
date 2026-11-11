@@ -1,52 +1,56 @@
 import { Image } from 'expo-image';
 import { AlertTriangle, Award, CheckCircle2, Info, ScanLine, ShieldCheck } from 'lucide-react-native';
-import { View as MotiView } from 'moti';
+import { MotiView } from 'moti';
 import React from 'react';
 import { Text, View } from 'react-native';
 
 import { formatMoneyFromUsd } from '@/lib/currency';
 import { ClaimOwner, TapProduct } from '../types/claim';
 
-/** Pieces shared by the claim and verify result screens. */
+/** Pieces shared by the claim and verify result screens (light, per the Figma). */
 
 export function ownerNameOf(owner: ClaimOwner | null): string | null {
     return owner?.displayName ?? owner?.handle ?? null;
 }
 
+/** "ULTRA_RARE" / "RARE" → "ULTRA RARE" / "RARE", or null for a drop with no rarity. */
+export function rarityLabelOf(rarity: string | null | undefined): string | null {
+    return rarity ? rarity.replace(/_/g, ' ').toUpperCase() : null;
+}
+
 export function Row({ label, value }: { label: string; value: string }) {
     return (
-        <View className="flex-row items-center py-2">
-            <Text className="text-[13px] text-neutral-500 font-medium w-28">{label}</Text>
-            <Text className="text-[14px] text-neutral-100 font-semibold flex-1 text-right" numberOfLines={1}>{value}</Text>
+        <View className="h-[37px] flex-row items-center justify-between border-b border-[#dbeafe]">
+            <Text className="font-syne text-xs text-[#6b7280]">{label}</Text>
+            <Text numberOfLines={1} className="ml-4 shrink font-syne-medium text-xs text-[#111827]">{value}</Text>
         </View>
     );
 }
 
 /** The product a tap resolved to: image, name, code, price and rarity. */
 export function ProductBox({ product, serial }: { product: TapProduct; serial?: number }) {
+    const rarity = rarityLabelOf(product.rarity);
     return (
-        <View className="w-full bg-[#0F0F13] border border-[#1F1F24] rounded-2xl p-4">
+        <View className="w-full rounded border border-[#dbeafe] bg-white p-3">
             {product.imageUrl ? (
-                <Image source={{ uri: product.imageUrl }} style={{ width: '100%', height: 180, borderRadius: 14 }} contentFit="cover" transition={200} />
+                <Image source={{ uri: product.imageUrl }} style={{ width: '100%', height: 180, borderRadius: 4 }} contentFit="cover" transition={200} />
             ) : (
-                <View className="w-full h-[180px] rounded-2xl bg-[#15151b] items-center justify-center">
-                    <ScanLine color="#3A3A44" size={48} />
+                <View className="h-[180px] w-full items-center justify-center rounded bg-[#eef2ff]">
+                    <ScanLine color="#93c5fd" size={48} />
                 </View>
             )}
-            <Text className="text-white text-xl font-black mt-4">{product.name}</Text>
-            <Text className="text-neutral-500 text-xs font-medium mt-0.5">
+            <Text className="mt-4 font-syne-bold text-xl text-[#111827]">{product.name}</Text>
+            <Text className="mt-[2px] font-syne text-[11px] text-[#6b7280]">
                 Code {product.groupCode}{serial != null ? ` · #${serial}` : ''}
             </Text>
-            <View className="flex-row items-center justify-between mt-3">
+            <View className="mt-3 flex-row items-center justify-between">
                 {product.priceInDollars ? (
-                    <Text className="text-primary text-2xl font-black">{formatMoneyFromUsd(product.priceInDollars)}</Text>
+                    <Text className="font-syne-bold text-2xl text-[#111827]">{formatMoneyFromUsd(product.priceInDollars)}</Text>
                 ) : <View />}
-                {product.rarity ? (
-                    <View className="flex-row items-center bg-[#1A1508] border border-[#3A2E0A] rounded-full px-3 py-1.5">
-                        <Award color="#F2B807" size={15} />
-                        <Text className="text-[#F2B807] font-bold text-xs ml-1.5">
-                            {product.rarity.charAt(0) + product.rarity.slice(1).toLowerCase()}
-                        </Text>
+                {rarity ? (
+                    <View className="flex-row items-center gap-[6px] rounded border border-[#bfdbfe] bg-[#eff6ff] px-[10px] py-[6px]">
+                        <Award color="#2563eb" size={13} />
+                        <Text className="font-syne-bold text-[10px] text-[#2563eb]">{rarity}</Text>
                     </View>
                 ) : null}
             </View>
@@ -55,10 +59,10 @@ export function ProductBox({ product, serial }: { product: TapProduct; serial?: 
 }
 
 type Tone = 'good' | 'warn' | 'bad';
-const TONES: Record<Tone, { color: string; border: string }> = {
-    good: { color: '#28C76F', border: '#28C76F' },
-    warn: { color: '#F2B807', border: '#F2B807' },
-    bad: { color: '#FF3B30', border: '#7A1C1C' },
+const TONES: Record<Tone, { color: string; border: string; bg: string }> = {
+    good: { color: '#0fab48', border: '#86efac', bg: '#ecfdf3' },
+    warn: { color: '#d97706', border: '#fcd34d', bg: '#fffaed' },
+    bad: { color: '#dc2626', border: '#fecaca', bg: '#fef2f2' },
 };
 
 /** A centred icon, headline and sentence — the shape every non-success outcome shares. */
@@ -73,15 +77,17 @@ export function NoticeCard({
     body: string;
     children?: React.ReactNode;
 }) {
-    const { color, border } = TONES[tone];
+    const { color, border, bg } = TONES[tone];
     const Icon = tone === 'good' ? CheckCircle2 : tone === 'warn' ? Info : AlertTriangle;
     return (
-        <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} className="items-center mt-2">
-            <View className="p-5 rounded-full mb-4 border" style={{ borderColor: border, backgroundColor: '#12121a' }}>
-                <Icon color={color} size={56} />
+        <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} className="items-center px-5 pt-2">
+            <View className="mb-4 rounded-full border p-5" style={{ borderColor: border, backgroundColor: bg }}>
+                <Icon color={color} size={48} />
             </View>
-            <Text className="text-2xl font-black text-white mb-1 text-center px-4">{title}</Text>
-            <Text className="text-[15px] text-neutral-300 text-center font-medium leading-5 px-4 mb-4">{body}</Text>
+            <Text className="mb-2 px-2 text-center font-orbitron-black text-[22px] leading-[26px] tracking-[-0.4px] text-[#111827]">
+                {title}
+            </Text>
+            <Text className="mb-5 px-3 text-center font-syne text-[13px] leading-[20px] text-[#6b7280]">{body}</Text>
             {children}
         </MotiView>
     );
@@ -90,9 +96,9 @@ export function NoticeCard({
 /** Green "genuine" banner shown above a verified item. */
 export function GenuineBanner({ label }: { label: string }) {
     return (
-        <View className="flex-row items-center mb-4">
-            <ShieldCheck color="#28C76F" size={20} />
-            <Text className="text-[#28C76F] font-bold text-sm ml-2">{label}</Text>
+        <View className="mb-4 flex-row items-center gap-2 self-center rounded border border-[#005a21] bg-[rgba(100,255,157,0.38)] px-[10px] py-[6px]">
+            <Text className="font-syne-bold text-[10px] text-[#005a21]">{label}</Text>
+            <ShieldCheck color="#005a21" size={15} />
         </View>
     );
 }
