@@ -1,6 +1,6 @@
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { ArrowLeft, Search, SearchX, Star, X } from "lucide-react-native";
+import { ArrowLeft, Search, SearchX, ShoppingBag, Star, X } from "lucide-react-native";
 import React, { useState } from "react";
 import {
     ActivityIndicator,
@@ -106,7 +106,14 @@ export default function SearchScreen() {
                     />
                     <Text className="font-orbitron text-[15px] text-black">HitBox</Text>
                 </View>
-                <View className="size-9" />
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel="Open cart"
+                    onPress={() => router.push("/cart" as never)}
+                    className="size-9 items-center justify-center"
+                >
+                    <ShoppingBag size={21} color="#111827" />
+                </TouchableOpacity>
             </View>
 
             <ScrollView

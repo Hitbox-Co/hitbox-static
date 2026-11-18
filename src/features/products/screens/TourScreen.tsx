@@ -13,7 +13,6 @@ import {
 import React, { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -36,30 +35,21 @@ import {
 } from "@/features/products/utils/format";
 import { shareProduct } from "@/features/products/utils/share";
 import { ApiRequestError } from "@/lib/api";
-import { ProductRarity } from "../types/product";
+import { checkoutActions } from "@/features/checkout/store/checkoutStore";
+import { RARITY_STYLES } from "../utils/rarity";
 
 interface TourScreenProps {
   tourId?: string | string[];
 }
-
-/** Rarity chip colours. RARE is the green from the Figma drop-detail frame. */
-const RARITY_STYLES: Record<ProductRarity, { bg: string; border: string; text: string }> = {
-  COMMON: { bg: "#f3f4f6", border: "#d1d5db", text: "#6b7280" },
-  UNCOMMON: { bg: "rgba(34,197,94,0.15)", border: "rgba(34,197,94,0.38)", text: "#22c55e" },
-  RARE: { bg: "#b6ffd6", border: "rgba(24,116,69,0.4)", text: "#0fab48" },
-  EPIC: { bg: "#ede9fe", border: "rgba(124,58,237,0.35)", text: "#7c3aed" },
-  LEGENDARY: { bg: "#fff4d6", border: "rgba(217,119,6,0.4)", text: "#d97706" },
-  EXCLUSIVE: { bg: "#ffe4e6", border: "rgba(225,29,72,0.35)", text: "#e11d48" },
-};
 
 /**
  * Drop detail — the light "Y2K" layout from the UX-DESIGN Figma file
  * (HitBox · Drop detail), filled from `GET /products/:id`.
  *
  * Shared by the Discover and Marketplace stacks (see the route comments).
- * The Figma's cart, Add to Cart and Buy Now have no backend behind them — this
- * app claims and verifies items by NFC tap — so the actions here are the real
- * ones: claim / verify, and share.
+ * Add to Cart and Buy Now start the static checkout flow (`features/checkout`):
+ * there is no cart or order API yet, so that flow is mock apart from the drop
+ * itself. Claiming and verifying an item stays an NFC tap.
  */
 export default function TourScreen({ tourId }: TourScreenProps) {
   const productId = Array.isArray(tourId) ? tourId[0] : tourId;
@@ -73,6 +63,20 @@ export default function TourScreen({ tourId }: TourScreenProps) {
 
   const isNotFound =
     error instanceof ApiRequestError && error.error.code === "PRODUCTS_NOT_FOUND";
+
+  /** Add to Cart: put the drop in the cart and show it. */
+  const addToCart = () => {
+    if (!product) return;
+    checkoutActions.startWith(product.id);
+    router.push({ pathname: "/cart", params: { added: "1" } } as never);
+  };
+
+  /** Buy Now: straight to Delivery, skipping the cart (Figma: "enters here"). */
+  const buyNow = () => {
+    if (!product) return;
+    checkoutActions.startWith(product.id);
+    router.push("/checkout/delivery" as never);
+  };
 
   /** Opens the OS share sheet. */
   const handleShare = () => {
@@ -126,7 +130,14 @@ export default function TourScreen({ tourId }: TourScreenProps) {
           />
           <Text className="font-orbitron text-[15px] text-black">HitBox</Text>
         </View>
-        <View className="size-9" />
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="Open cart"
+          onPress={() => router.push("/cart" as never)}
+          className="size-9 items-center justify-center"
+        >
+          <ShoppingBag size={21} color="#111827" />
+        </TouchableOpacity>
       </View>
 
       {isLoading && (
@@ -308,15 +319,14 @@ export default function TourScreen({ tourId }: TourScreenProps) {
               </View>
             </View>
 
-            {/* Purchase actions (Figma). MOCK: there is no cart or checkout
-                backend yet, so both buttons only say so. */}
+            {/* Purchase actions (Figma) — static checkout, see features/checkout. */}
             <View className="gap-3">
               <View className="flex-row gap-[10px]">
                 <TouchableOpacity
                   accessibilityRole="button"
                   accessibilityLabel="Add to cart"
                   activeOpacity={0.85}
-                  onPress={() => Alert.alert("Cart coming soon", "Adding to a cart isn't available yet.")}
+                  onPress={addToCart}
                   className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
                 >
                   <Text className="font-syne-bold text-[13px] text-[#2563eb]">Add to Cart</Text>
@@ -326,7 +336,7 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   accessibilityRole="button"
                   accessibilityLabel="Buy now"
                   activeOpacity={0.85}
-                  onPress={() => Alert.alert("Checkout coming soon", "Buying isn't available yet.")}
+                  onPress={buyNow}
                   className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-[30px] border border-[#2563eb] bg-[#2563eb]"
                 >
                   <Text className="font-syne-bold text-[13px] text-white">Buy Now</Text>

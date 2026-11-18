@@ -11,6 +11,9 @@ import React from "react";
  * `https://hitboxcollectibles.com/verify?b=&e=&c=` — so opening that link (an
  * App Link / Universal Link, see app.json) lands on `verify/index.tsx`.
  *
+ * Also home to the cart (`cart`) and the checkout flow (`checkout/*`), which run
+ * full screen with their own back and result actions.
+ *
  * Screens that should keep the tab bar live in `(tabs)/(details)` instead.
  */
 export default function RoutesLayout() {
