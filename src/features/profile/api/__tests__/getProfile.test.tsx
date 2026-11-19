@@ -29,17 +29,23 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 const me = {
-  id: 'u_1',
-  username: 'ayan',
-  firstName: 'Ayan',
-  lastName: 'Saha',
+  id: '3f6a2c1e-8b4d-4e7a-9c2f-1d5e6b7a8c90',
+  handle: 'ayan',
+  fullName: 'Ayan Saha',
   avatarUrl: null,
+  bio: null,
   createdAt: '2026-07-16T04:41:00.000Z',
   email: 'ayan@example.com',
+  phone: null,
   role: 'USER',
-  state: 'ACTIVE',
-  rewardPoints: 0,
+  profileVisibility: 'PRIVATE',
+  generalLocation: null,
+  preferredMarketId: null,
+  isActive: true,
+  updatedAt: '2026-07-16T04:41:00.000Z',
 }
+
+const UID = '9b1d7e3a-4c2f-4a8b-b6d1-2e3f4a5b6c7d'
 
 beforeEach(() => {
   jest.clearAllMocks()
@@ -66,12 +72,18 @@ describe('useMe', () => {
 })
 
 describe('useUser', () => {
-  it('fetches the public profile for a given id', async () => {
-    mockGet.mockResolvedValueOnce({ id: 'u_2', username: 'other' })
+  it('does not fetch a non-uuid id (the server would answer 500)', async () => {
     const { result } = renderHook(() => useUser('u_2'), { wrapper })
+    await waitFor(() => expect(result.current.fetchStatus).toBe('idle'))
+    expect(mockGet).not.toHaveBeenCalled()
+  })
+
+  it('fetches the public profile for a given id', async () => {
+    mockGet.mockResolvedValueOnce({ id: UID, handle: 'other' })
+    const { result } = renderHook(() => useUser(UID), { wrapper })
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
-    expect(mockGet).toHaveBeenCalledWith('/api/v1/users/u_2')
+    expect(mockGet).toHaveBeenCalledWith(`/api/v1/users/${UID}`)
   })
 
   it('is disabled when the id is undefined', async () => {

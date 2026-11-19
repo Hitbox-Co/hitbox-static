@@ -13,6 +13,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Switch,
     Text,
     TextInput,
     TouchableOpacity,
@@ -24,7 +25,18 @@ import { ApiRequestError } from '@/lib/api'
 import { useMe } from '../api/getProfile'
 import { useUpdateMe } from '../api/updateProfile'
 import { useRemoveAvatar, useUploadAvatar } from '../api/uploadAvatar'
+import { Me } from '../types/profile'
 import { EditProfileFormData, editProfileSchema } from '../validation/editProfile'
+
+/** A profile as form values (null → ""). */
+const toForm = (me?: Me): EditProfileFormData => ({
+    handle: me?.handle ?? '',
+    fullName: me?.fullName ?? '',
+    bio: me?.bio ?? '',
+    phone: me?.phone ?? '',
+    generalLocation: me?.generalLocation ?? '',
+    profileVisibility: me?.profileVisibility ?? 'PRIVATE',
+})
 
 export default function EditProfileScreen() {
     const { user } = useUser()
@@ -44,18 +56,12 @@ export default function EditProfileScreen() {
         formState: { errors, isSubmitting, isDirty },
     } = useForm<EditProfileFormData>({
         resolver: zodResolver(editProfileSchema),
-        defaultValues: { username: '', firstName: '', lastName: '' },
+        defaultValues: toForm(),
     })
 
     // Seed the form once the profile arrives.
     useEffect(() => {
-        if (me) {
-            reset({
-                username: me.username ?? '',
-                firstName: me.firstName ?? '',
-                lastName: me.lastName ?? '',
-            })
-        }
+        if (me) reset(toForm(me))
     }, [me, reset])
 
     // Clerk is the source of truth for the avatar — it updates instantly on upload.
@@ -116,10 +122,15 @@ export default function EditProfileScreen() {
         setSaved(false)
 
         // Send only what actually changed — PATCH treats every field as optional.
+        // handle / fullName / phone cannot be cleared, so an empty value is "unchanged".
+        const was = toForm(me)
         const payload: Record<string, string> = {}
-        if (data.username !== (me?.username ?? '')) payload.username = data.username
-        if (data.firstName !== (me?.firstName ?? '')) payload.firstName = data.firstName
-        if (data.lastName !== (me?.lastName ?? '')) payload.lastName = data.lastName
+        if (data.handle && data.handle !== was.handle) payload.handle = data.handle
+        if (data.fullName && data.fullName !== was.fullName) payload.fullName = data.fullName
+        if (data.phone && data.phone !== was.phone) payload.phone = data.phone
+        if (data.bio !== was.bio) payload.bio = data.bio
+        if (data.generalLocation !== was.generalLocation) payload.generalLocation = data.generalLocation
+        if (data.profileVisibility !== was.profileVisibility) payload.profileVisibility = data.profileVisibility
 
         if (Object.keys(payload).length === 0) {
             setSaved(true)
@@ -128,17 +139,13 @@ export default function EditProfileScreen() {
 
         try {
             const updated = await updateMe.mutateAsync(payload)
-            reset({
-                username: updated.username ?? '',
-                firstName: updated.firstName ?? '',
-                lastName: updated.lastName ?? '',
-            })
+            reset(toForm(updated))
             setSaved(true)
         } catch (err) {
             if (err instanceof ApiRequestError) {
-                // 409 USERS_USERNAME_TAKEN → attach to the field that caused it.
-                if (err.error.code === 'USERS_USERNAME_TAKEN') {
-                    setError('username', { message: 'That username is already taken.' })
+                // 409 USERS_HANDLE_TAKEN → attach to the field that caused it.
+                if (err.error.code === 'USERS_HANDLE_TAKEN') {
+                    setError('handle', { message: 'That username is already taken.' })
                     return
                 }
                 setApiError(err.error.message)
@@ -231,14 +238,14 @@ export default function EditProfileScreen() {
                             )}
                         </View>
 
-                        {/* --- Username --- */}
-                        <Field label="Username" error={errors.username?.message}>
+                        {/* --- Username (handle) --- */}
+                        <Field label="Username" error={errors.handle?.message}>
                             <Controller
                                 control={control}
-                                name="username"
+                                name="handle"
                                 render={({ field: { onChange, onBlur, value } }) => (
                                     <TextInput
-                                        className={inputClass(!!errors.username)}
+                                        className={inputClass(!!errors.handle)}
                                         placeholder="johndoe123"
                                         placeholderTextColor="#9ca3af"
                                         autoCapitalize="none"
@@ -251,15 +258,15 @@ export default function EditProfileScreen() {
                             />
                         </Field>
 
-                        {/* --- First name --- */}
-                        <Field label="First Name" error={errors.firstName?.message}>
+                        {/* --- Full name --- */}
+                        <Field label="Full Name" error={errors.fullName?.message}>
                             <Controller
                                 control={control}
-                                name="firstName"
+                                name="fullName"
                                 render={({ field: { onChange, onBlur, value } }) => (
                                     <TextInput
-                                        className={inputClass(!!errors.firstName)}
-                                        placeholder="John"
+                                        className={inputClass(!!errors.fullName)}
+                                        placeholder="John Doe"
                                         placeholderTextColor="#9ca3af"
                                         onBlur={onBlur}
                                         onChangeText={onChange}
@@ -269,16 +276,19 @@ export default function EditProfileScreen() {
                             />
                         </Field>
 
-                        {/* --- Last name --- */}
-                        <Field label="Last Name" error={errors.lastName?.message}>
+                        {/* --- Bio --- */}
+                        <Field label="Bio" error={errors.bio?.message}>
                             <Controller
                                 control={control}
-                                name="lastName"
+                                name="bio"
                                 render={({ field: { onChange, onBlur, value } }) => (
                                     <TextInput
-                                        className={inputClass(!!errors.lastName)}
-                                        placeholder="Doe"
+                                        className={inputClass(!!errors.bio)}
+                                        placeholder="Tell collectors about yourself"
                                         placeholderTextColor="#9ca3af"
+                                        multiline
+                                        maxLength={500}
+                                        style={{ minHeight: 88, textAlignVertical: 'top' }}
                                         onBlur={onBlur}
                                         onChangeText={onChange}
                                         value={value}
@@ -286,6 +296,65 @@ export default function EditProfileScreen() {
                                 )}
                             />
                         </Field>
+
+                        {/* --- Location (coarse; never shown to others) --- */}
+                        <Field label="Location" error={errors.generalLocation?.message}>
+                            <Controller
+                                control={control}
+                                name="generalLocation"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <TextInput
+                                        className={inputClass(!!errors.generalLocation)}
+                                        placeholder="Austin, TX"
+                                        placeholderTextColor="#9ca3af"
+                                        onBlur={onBlur}
+                                        onChangeText={onChange}
+                                        value={value}
+                                    />
+                                )}
+                            />
+                            <Text className="text-zinc-500 text-xs mt-1">A city or region, never an address. Only you see it.</Text>
+                        </Field>
+
+                        {/* --- Phone --- */}
+                        <Field label="Phone" error={errors.phone?.message}>
+                            <Controller
+                                control={control}
+                                name="phone"
+                                render={({ field: { onChange, onBlur, value } }) => (
+                                    <TextInput
+                                        className={inputClass(!!errors.phone)}
+                                        placeholder="+1 555 0100"
+                                        placeholderTextColor="#9ca3af"
+                                        keyboardType="phone-pad"
+                                        onBlur={onBlur}
+                                        onChangeText={onChange}
+                                        value={value}
+                                    />
+                                )}
+                            />
+                        </Field>
+
+                        {/* --- Public profile --- */}
+                        <View className="mb-4 flex-row items-center justify-between rounded-xl border border-white/10 bg-white/5 p-4">
+                            <View className="flex-1 pr-3">
+                                <Text className="text-gray-300 font-medium">Public profile</Text>
+                                <Text className="text-zinc-500 text-xs mt-1">
+                                    Let other collectors see your name, photo and bio. Off by default.
+                                </Text>
+                            </View>
+                            <Controller
+                                control={control}
+                                name="profileVisibility"
+                                render={({ field: { onChange, value } }) => (
+                                    <Switch
+                                        accessibilityLabel="Public profile"
+                                        value={value === 'PUBLIC'}
+                                        onValueChange={(on) => onChange(on ? 'PUBLIC' : 'PRIVATE')}
+                                    />
+                                )}
+                            />
+                        </View>
 
                         {/* --- Email (read-only: owned by Clerk) --- */}
                         <View className="mb-4">
@@ -294,7 +363,7 @@ export default function EditProfileScreen() {
                                 <Text className="text-zinc-400">{me?.email ?? '—'}</Text>
                             </View>
                             <Text className="text-zinc-500 text-xs mt-1">
-                                Email is managed by your sign-in provider and can&apos;t be changed here.
+                                Email is managed by your sign-in provider and can&apos;t be changed here. Username, name and photo can be reset when you change them in your sign-in account.
                             </Text>
                         </View>
 

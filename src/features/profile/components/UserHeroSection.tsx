@@ -1,7 +1,7 @@
 import { useUser } from '@clerk/clerk-expo'
 import { router } from 'expo-router'
-import { Calendar, CheckCircle2, ChevronRight, Gem, Pencil } from 'lucide-react-native'
-import { MotiText, MotiView } from 'moti'
+import { Calendar, CheckCircle2, Pencil } from 'lucide-react-native'
+import { MotiView } from 'moti'
 import React from 'react'
 import { TouchableOpacity, View } from 'react-native'
 
@@ -12,7 +12,7 @@ import { useMe } from '../api/getProfile'
 
 export default function UserHeroSection() {
     const { user } = useUser()
-    // Backend profile (rewardPoints, canonical username). Clerk fills the gaps
+    // Backend profile (canonical handle and name). Clerk fills the gaps
     // while the query loads or if the webhook hasn't synced yet. Username and
     // names live in unsafeMetadata for email sign-ups (Clerk instance has those
     // attributes disabled), so that's the last Clerk-side fallback.
@@ -23,16 +23,16 @@ export default function UserHeroSection() {
         lastName?: string
     }
 
-    const displayName = [me?.firstName, me?.lastName].filter(Boolean).join(' ')
+    const displayName = me?.fullName
         || user?.fullName
         || [meta.firstName, meta.lastName].filter(Boolean).join(' ')
-        || me?.username
+        || me?.handle
         || user?.username
         || meta.username
         || me?.email
         || user?.primaryEmailAddress?.emailAddress
         || 'HitBox Collector'
-    const username = me?.username ?? user?.username ?? meta.username ?? null
+    const username = me?.handle ?? user?.username ?? meta.username ?? null
     // Clerk first: setProfileImage() updates user.imageUrl instantly, so a new
     // upload shows here immediately (the backend row catches up via PATCH/webhook).
     const avatarUrl = user?.imageUrl ?? me?.avatarUrl
@@ -54,8 +54,8 @@ export default function UserHeroSection() {
             transition={{ type: 'timing', duration: 450 }}
             className="grid grid-cols-3 items-center gap-2 px-4 py-3 bg-background w-full"
         >
-            {/* LEFT SIDE: AVATAR & USER INFO (Occupies 2 out of 3 columns) */}
-            <View className="col-span-2 flex-row items-center gap-4">
+            {/* AVATAR & USER INFO (the HIT points box is gone: the profile API no longer returns points) */}
+            <View className="col-span-3 flex-row items-center gap-4">
                 <MotiView
                     from={{ scale: 0.9, opacity: 0.5 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -124,36 +124,6 @@ export default function UserHeroSection() {
                 </View>
             </View>
 
-            {/* RIGHT SIDE: HIT POINTS BOX (Occupies 1 out of 3 columns) */}
-            <MotiView
-                from={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ type: 'timing', duration: 400, delay: 150 }}
-                className='col-span-1'
-            >
-                <TouchableOpacity
-                    activeOpacity={0.7}
-                    className="bg-card border border-border/30 p-3 rounded-xl flex-row items-center justify-between gap-1 w-full shadow-sm shadow-black/50"
-                >
-                    <View className="items-start gap-0.5">
-                        <View className="flex-row items-center gap-1">
-                            <Gem size={12} color="#6d28d9" />
-                            <Text className="text-muted-foreground text-xs font-bold tracking-wider uppercase" numberOfLines={1}>
-                                HIT Points
-                            </Text>
-                        </View>
-                        <MotiText
-                            from={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 350 }}
-                            className="text-foreground text-lg font-black tracking-tight"
-                        >
-                            {(me?.rewardPoints ?? 0).toLocaleString('en-US')}
-                        </MotiText>
-                    </View>
-                    <ChevronRight size={14} color="#475569" className="mt-3" />
-                </TouchableOpacity>
-            </MotiView>
         </MotiView>
     )
 }

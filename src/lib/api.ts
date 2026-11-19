@@ -23,10 +23,19 @@ export class ApiRequestError extends Error {
 
 /** Matches PATCH /api/v1/users/me body. */
 export interface UpdateMeInput {
-    username?: string
-    firstName?: string
-    lastName?: string
+    /** 3–50 chars, letters/digits/_/. — unique (409 USERS_HANDLE_TAKEN). */
+    handle?: string
+    /** 1–200 chars; cannot be cleared. */
+    fullName?: string
+    /** A hosted URL; no null (an upload goes through Clerk first). */
     avatarUrl?: string
+    /** ≤500 chars; send "" to clear. */
+    bio?: string
+    /** 5–32 chars, no format check; cannot be cleared. */
+    phone?: string
+    /** ≤120 chars, a city or region; send "" to clear. */
+    generalLocation?: string
+    profileVisibility?: 'PUBLIC' | 'PRIVATE'
 }
 
 /** Matches GET /api/v1/auth/me (req.auth). */
