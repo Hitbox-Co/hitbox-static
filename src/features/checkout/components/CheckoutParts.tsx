@@ -210,7 +210,7 @@ export function OrderItemRow({
                 </Text>
                 {item.creator && <Text className="font-syne text-[11px] text-[#2563eb]">{item.creator}</Text>}
                 <Text className={`font-syne text-[11px] ${dark ? 'text-[#9ca3af]' : 'text-[#6b7280]'}`}>
-                    {`Qty ${item.quantity}`}
+                    {[item.variantLabel, `Qty ${item.quantity}`].filter(Boolean).join(" · ")}
                 </Text>
                 <View className="flex-row items-center justify-between">
                     <Text className={`font-syne-bold text-[17px] ${dark ? 'text-white' : 'text-[#111827]'}`}>

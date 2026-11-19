@@ -43,6 +43,12 @@ export interface ProductCollection {
     artist: ProductArtist
 }
 
+export interface ProductVariant {
+    id: string
+    label: string
+    isActive: boolean
+}
+
 /** Matches GET /api/v1/products/:id and /code/:productCode (single product). */
 export interface Product {
     id: string
@@ -72,4 +78,8 @@ export interface Product {
     updatedAt: string
     images: ProductImage[]
     collection: ProductCollection | null
+    /** Size / colour options. Empty or absent for a drop without variants. */
+    variants?: ProductVariant[]
+    /** `variantMode: "REQUIRED"` means a variant must be chosen to buy. */
+    dropType?: { code: string; name: string; variantMode: string } | null
 }

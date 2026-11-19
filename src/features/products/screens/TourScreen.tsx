@@ -1,3 +1,4 @@
+import { useAuth } from "@clerk/clerk-expo";
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -10,9 +11,10 @@ import {
   ShoppingBag,
   Star,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -35,6 +37,9 @@ import {
 } from "@/features/products/utils/format";
 import { shareProduct } from "@/features/products/utils/share";
 import { ApiRequestError } from "@/lib/api";
+import SignInPopup from "@/components/auth/SignInPopup";
+import { cartErrorMessage } from "@/features/checkout/api/cartErrors";
+import { useAddToCart } from "@/features/checkout/api/cartMutations";
 import { checkoutActions } from "@/features/checkout/store/checkoutStore";
 import { RARITY_STYLES } from "../utils/rarity";
 
@@ -47,9 +52,10 @@ interface TourScreenProps {
  * (HitBox · Drop detail), filled from `GET /products/:id`.
  *
  * Shared by the Discover and Marketplace stacks (see the route comments).
- * Add to Cart and Buy Now start the static checkout flow (`features/checkout`):
- * there is no cart or order API yet, so that flow is mock apart from the drop
- * itself. Claiming and verifying an item stays an NFC tap.
+ * Add to Cart calls the Cart API (`POST /cart`, needs a session and, for a drop
+ * with required variants, a chosen one). Buy Now skips the cart and goes to the
+ * checkout flow (`features/checkout`), whose later steps are still mock until
+ * the order APIs exist. Claiming and verifying an item stays an NFC tap.
  */
 export default function TourScreen({ tourId }: TourScreenProps) {
   const productId = Array.isArray(tourId) ? tourId[0] : tourId;
@@ -64,18 +70,58 @@ export default function TourScreen({ tourId }: TourScreenProps) {
   const isNotFound =
     error instanceof ApiRequestError && error.error.code === "PRODUCTS_NOT_FOUND";
 
-  /** Add to Cart: put the drop in the cart and show it. */
-  const addToCart = () => {
+  const { isSignedIn } = useAuth();
+  const addMutation = useAddToCart();
+  const [variantId, setVariantId] = useState<string | null>(null);
+  const [askSignIn, setAskSignIn] = useState(false);
+  // What the buyer was doing when sign-in interrupted them, to resume afterwards.
+  const pendingAction = useRef<"cart" | "buy" | null>(null);
+
+  const variants = (product?.variants ?? []).filter((v) => v.isActive);
+  const chosenVariant = variants.find((v) => v.id === variantId) ?? null;
+  // variantMode "REQUIRED": a size / colour has to be picked before buying.
+  const variantRequired = product?.dropType?.variantMode === "REQUIRED" && variants.length > 0;
+
+  /** Both purchase buttons need a chosen variant (when required) and a session. */
+  const canProceed = (action: "cart" | "buy") => {
+    if (!product) return false;
+    if (variantRequired && !chosenVariant) {
+      Alert.alert("Choose an option", "Pick a size or colour first.");
+      return false;
+    }
+    if (!isSignedIn) {
+      pendingAction.current = action;
+      setAskSignIn(true);
+      return false;
+    }
+    return true;
+  };
+
+  /** POST /cart, then show the cart. Idempotent: adding twice is harmless. */
+  const doAddToCart = () => {
     if (!product) return;
-    checkoutActions.startWith(product.id);
-    router.push({ pathname: "/cart", params: { added: "1" } } as never);
+    addMutation.mutate(
+      { productId: product.id, variantId: chosenVariant?.id },
+      {
+        onSuccess: () =>
+          router.push({ pathname: "/cart", params: { added: "1", name: product.name } } as never),
+        onError: (err) => Alert.alert("Couldn't add to cart", cartErrorMessage(err)),
+      },
+    );
   };
 
   /** Buy Now: straight to Delivery, skipping the cart (Figma: "enters here"). */
-  const buyNow = () => {
+  const doBuyNow = () => {
     if (!product) return;
-    checkoutActions.startWith(product.id);
+    checkoutActions.startWith(product.id, chosenVariant?.label ?? null);
     router.push("/checkout/delivery" as never);
+  };
+
+  const addToCart = () => {
+    if (canProceed("cart")) doAddToCart();
+  };
+  const buyNow = () => {
+    if (canProceed("buy")) doBuyNow();
   };
 
   /** Opens the OS share sheet. */
@@ -319,17 +365,54 @@ export default function TourScreen({ tourId }: TourScreenProps) {
               </View>
             </View>
 
-            {/* Purchase actions (Figma) — static checkout, see features/checkout. */}
+            {/* Size / colour options, for drops that have variants. */}
+            {variants.length > 0 && (
+              <View className="gap-[10px]">
+                <Text className="font-syne-semibold text-[11px] text-[#6b7280]">
+                  {variantRequired ? "Choose an option" : "Options"}
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {variants.map((v) => {
+                    const active = v.id === chosenVariant?.id;
+                    return (
+                      <TouchableOpacity
+                        key={v.id}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active }}
+                        activeOpacity={0.8}
+                        onPress={() => setVariantId(active ? null : v.id)}
+                        className={`h-8 justify-center rounded border px-[14px] ${active
+                          ? "border-[#2563eb] bg-[#eff6ff]"
+                          : "border-[#e5e7eb] bg-[#f3f4f6]"
+                          }`}
+                      >
+                        <Text
+                          className={`text-[12.5px] ${active ? "font-syne-semibold text-[#2563eb]" : "font-syne-medium text-[#6b7280]"}`}
+                        >
+                          {v.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Purchase actions (Figma). Add to Cart is the Cart API; Buy Now starts checkout. */}
             <View className="gap-3">
               <View className="flex-row gap-[10px]">
                 <TouchableOpacity
                   accessibilityRole="button"
                   accessibilityLabel="Add to cart"
                   activeOpacity={0.85}
+                  disabled={addMutation.isPending}
                   onPress={addToCart}
                   className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
+                  style={{ opacity: addMutation.isPending ? 0.6 : 1 }}
                 >
-                  <Text className="font-syne-bold text-[13px] text-[#2563eb]">Add to Cart</Text>
+                  <Text className="font-syne-bold text-[13px] text-[#2563eb]">
+                    {addMutation.isPending ? "Adding…" : "Add to Cart"}
+                  </Text>
                   <ShoppingBag size={16} color="#2563eb" />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -436,6 +519,19 @@ export default function TourScreen({ tourId }: TourScreenProps) {
           </View>
         </ScrollView>
       )}
+
+      <SignInPopup
+        open={askSignIn}
+        onOpenChange={setAskSignIn}
+        title="Sign in to continue"
+        description="Sign in to add this drop to your cart or buy it."
+        onSignedIn={() => {
+          const action = pendingAction.current;
+          pendingAction.current = null;
+          if (action === "cart") doAddToCart();
+          else if (action === "buy") doBuyNow();
+        }}
+      />
     </SafeAreaView>
   );
 }

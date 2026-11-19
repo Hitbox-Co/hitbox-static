@@ -33,3 +33,25 @@ export function computeTotals(unitPriceUsd: number, quantity: number): OrderTota
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
+
+/**
+ * Any currency, for the cart's live prices. Cart rows carry the drop's own
+ * currency (and `summary.subtotals` is one entry per currency), unlike the
+ * later checkout steps, which are USD.
+ */
+export function formatMoney(amount: string | number, currency: string): string {
+    const n = Number(amount)
+    if (!Number.isFinite(n)) return `${currency} ${amount}`
+    try {
+        return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(n)
+    } catch {
+        return `${currency} ${n.toFixed(2)}`
+    }
+}
+
+/** A cart drop's price: "Free", an amount, or a dash when it has none. */
+export function formatDropPrice(price: { amount: string; currency: string; isFree: boolean } | null | undefined): string {
+    if (!price) return '—'
+    if (price.isFree) return 'Free'
+    return formatMoney(price.amount, price.currency)
+}

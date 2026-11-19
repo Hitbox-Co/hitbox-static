@@ -12,6 +12,8 @@ import { DeliveryAddress, PaymentMethodId } from '../types/checkout'
 interface CheckoutState {
     /** The product in the cart (or being bought now); null when nothing is. */
     productId: string | null
+    /** The chosen variant's label ("Size M"), shown on the item rows. */
+    variantLabel: string | null
     quantity: number
     addresses: DeliveryAddress[]
     selectedAddressId: string
@@ -20,6 +22,7 @@ interface CheckoutState {
 
 let state: CheckoutState = {
     productId: null,
+    variantLabel: null,
     quantity: 1,
     addresses: [MOCK_SAVED_ADDRESS],
     selectedAddressId: MOCK_SAVED_ADDRESS.id,
@@ -33,15 +36,18 @@ const set = (patch: Partial<CheckoutState>) => {
 }
 
 export const checkoutActions = {
-    /** Add to Cart and Buy Now both start here: one drop, quantity 1. */
-    startWith(productId: string) {
-        set({ productId, quantity: 1 })
+    /**
+     * Buy Now, and "Checkout" on a cart row, both start here: one drop, one unit.
+     * (Each cart row is paid for on its own, so the flow only ever holds one.)
+     */
+    startWith(productId: string, variantLabel: string | null = null) {
+        set({ productId, variantLabel, quantity: 1 })
     },
     setQuantity(quantity: number) {
         set({ quantity: Math.max(1, quantity) })
     },
     clearCart() {
-        set({ productId: null, quantity: 1 })
+        set({ productId: null, variantLabel: null, quantity: 1 })
     },
     /** Saves an address and makes it the one the order ships to. */
     saveAddress(address: DeliveryAddress) {

@@ -9,7 +9,7 @@ import { computeTotals } from '../utils/money'
  * (address, payment, tax, delivery) is mock for now.
  */
 export function useCheckoutItem() {
-    const { productId, quantity } = useCheckoutState()
+    const { productId, quantity, variantLabel } = useCheckoutState()
     const { data: product, isLoading, isError, refetch } = useProduct(productId ?? undefined)
 
     const unitPriceUsd = product?.priceInDollars != null ? Number(product.priceInDollars) : NaN
@@ -25,6 +25,7 @@ export function useCheckoutItem() {
                 rarity: product.rarity,
                 rewardPoints: product.rewardPoints,
                 quantity,
+                variantLabel,
             }
             : null
 
