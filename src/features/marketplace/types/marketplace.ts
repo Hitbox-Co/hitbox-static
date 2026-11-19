@@ -1,47 +1,50 @@
 /**
  * Types for the Marketplace module — mirrors `/api/v1/marketplace` in the
- * backend API reference. Items are lightweight listing cards; on tap the
- * client fetches the full product from GET /api/v1/products/:id.
+ * backend API reference (`marketplace-api.md`). Both endpoints are public; a
+ * Clerk token is optional and only fills in `isWishlisted`.
+ *
+ * Every card is a primary drop sold by HitBox: there is no live peer-to-peer
+ * trading API (the Peer-to-Peer banner is a static promo).
  */
 
-/** "HOT" ← TRENDING_NOW, "NEW" ← NEW_RELEASE, null otherwise. */
-export type MarketplaceBadge = 'HOT' | 'NEW' | null
+import type { DiscoverCategory, DiscoverProductItem } from '@/features/discover/types/discover'
 
-/** MarketplaceListingItem — the only shape this module returns. */
-export interface MarketplaceListingItem {
-    id: string
-    name: string
-    /** First product image; null if the product has none. */
-    imageUrl: string | null
-    /** Via the product's collection; null if none. */
-    artistName: string | null
-    /** Decimal serialized as string, e.g. "89.99". */
-    priceInDollars: string
-    /** No longer sent by the API; kept optional for older servers. */
-    rewardPoints?: number | null
-    badge: MarketplaceBadge
-}
+/**
+ * One listing card. It is **the same card as Discover** — the server builds both
+ * with one function — so the type is shared. Tap → `GET /products/:id`.
+ *
+ * `rarity` and `category` are free-form columns: format them for display, never
+ * switch on them as a fixed list.
+ */
+export type MarketplaceListingItem = DiscoverProductItem
 
-/** GET /api/v1/marketplace — the whole screen in one round-trip. */
+/**
+ * GET /api/v1/marketplace — the whole screen in one round-trip. `featured` is
+ * never empty while the selected category has any public drop (it is topped up
+ * with the most popular ones); `newListings` can be empty.
+ */
 export interface MarketplaceFeed {
-    /** Curated products (any marketplace status), most-sold first. ≤10 */
+    /** ≤10, most minted first — Featured Listings. */
     featured: MarketplaceListingItem[]
-    /** Newest active products. ≤10 */
+    /** ≤10, newest first. Not in the Figma, free to use. */
     newListings: MarketplaceListingItem[]
 }
 
-/**
- * Screen-level category tabs. Each maps to one or more product categories
- * on the backend (e.g. `cards` → TRADING_CARD + CARD_PACK). Omit for "All Items".
- */
-export type MarketplaceCategory = 'cards' | 'figures' | 'apparel' | 'posters' | 'digital' | 'other'
+/** Category chips — the same ids and meaning as Discover's. Omit for All Items. */
+export type MarketplaceCategory = DiscoverCategory
 
-export type MarketplaceSort = 'newest' | 'price_asc' | 'price_desc' | 'popular'
+/** There is no price sort: price lives in a per-market table, so it cannot be an ORDER BY. */
+export type MarketplaceSort = 'newest' | 'popular'
 
-/** Query params for GET /api/v1/marketplace/listings (tabs, search, "See All"). */
+/** Query params for GET /api/v1/marketplace/listings (chips, search and "See All"). */
 export interface MarketplaceListingFilters {
+    /**
+     * `true` = only drops that qualify as featured (a release window), with no
+     * top-up fallback — what "See All" on Featured Listings asks for.
+     */
+    featured?: boolean
     category?: MarketplaceCategory
-    /** 1–100 chars, case-insensitive name match. */
+    /** 1–100 chars, case-insensitive match on name. */
     search?: string
     /** Default `newest`. */
     sort?: MarketplaceSort

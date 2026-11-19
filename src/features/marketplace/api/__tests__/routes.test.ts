@@ -1,4 +1,5 @@
 import {
+  buildMarketplaceFeedPath,
   buildMarketplaceListingsPath,
   marketplaceKeys,
   MARKETPLACE_ROUTES,
@@ -17,9 +18,13 @@ describe('MARKETPLACE_ROUTES', () => {
 })
 
 describe('marketplaceKeys', () => {
-  it('has stable all / feed keys', () => {
+  it('has a stable all key', () => {
     expect(marketplaceKeys.all).toEqual(['marketplace'])
-    expect(marketplaceKeys.feed).toEqual(['marketplace', 'feed'])
+  })
+
+  it('keys the feed by category, "all" when there is none', () => {
+    expect(marketplaceKeys.feed()).toEqual(['marketplace', 'feed', 'all'])
+    expect(marketplaceKeys.feed('cards')).toEqual(['marketplace', 'feed', 'cards'])
   })
 
   it('embeds filters in the listings key and defaults to {}', () => {
@@ -29,6 +34,16 @@ describe('marketplaceKeys', () => {
       { category: 'cards' },
     ])
     expect(marketplaceKeys.listings()).toEqual(['marketplace', 'listings', {}])
+  })
+})
+
+describe('buildMarketplaceFeedPath', () => {
+  it('is the bare feed path for All Items', () => {
+    expect(buildMarketplaceFeedPath()).toBe('/api/v1/marketplace')
+  })
+
+  it('adds the category chip', () => {
+    expect(buildMarketplaceFeedPath('figures')).toBe('/api/v1/marketplace?category=figures')
   })
 })
 
@@ -50,8 +65,17 @@ describe('buildMarketplaceListingsPath', () => {
   })
 
   it('appends sort', () => {
-    expect(buildMarketplaceListingsPath({ sort: 'price_desc' })).toBe(
-      '/api/v1/marketplace/listings?sort=price_desc'
+    expect(buildMarketplaceListingsPath({ sort: 'popular' })).toBe(
+      '/api/v1/marketplace/listings?sort=popular'
+    )
+  })
+
+  it('sends featured as the literal strings true / false', () => {
+    expect(buildMarketplaceListingsPath({ featured: true })).toBe(
+      '/api/v1/marketplace/listings?featured=true'
+    )
+    expect(buildMarketplaceListingsPath({ featured: false })).toBe(
+      '/api/v1/marketplace/listings?featured=false'
     )
   })
 
@@ -64,13 +88,16 @@ describe('buildMarketplaceListingsPath', () => {
   it('combines every filter in a stable order', () => {
     expect(
       buildMarketplaceListingsPath({
+        featured: true,
         category: 'apparel',
         search: 'x',
         sort: 'popular',
         page: 3,
         limit: 10,
       })
-    ).toBe('/api/v1/marketplace/listings?category=apparel&search=x&sort=popular&page=3&limit=10')
+    ).toBe(
+      '/api/v1/marketplace/listings?featured=true&category=apparel&search=x&sort=popular&page=3&limit=10'
+    )
   })
 
   it('omits falsy page 0 and empty search', () => {
