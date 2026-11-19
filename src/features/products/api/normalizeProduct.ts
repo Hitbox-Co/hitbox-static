@@ -52,5 +52,23 @@ export function normalizeProduct(raw: unknown): Product {
         releaseDate: p.releaseDate ?? p.releaseStart ?? null,
         images,
         collection: p.collection ?? null,
+        // The current API shape, passed through (see products-api.md).
+        status: p.status ?? p.state,
+        groupCode: p.groupCode,
+        vertical: p.vertical ?? null,
+        complianceStatus: p.complianceStatus,
+        totalSupply: typeof p.totalSupply === 'number' ? p.totalSupply : undefined,
+        purchaseLimit: p.purchaseLimit ?? null,
+        releaseEnd: p.releaseEnd ?? null,
+        publishedAt: p.publishedAt ?? null,
+        isAgeSpecific: !!p.isAgeSpecific,
+        minimumAge: p.minimumAge ?? null,
+        artistId: p.artistId ?? null,
+        artistName: p.artistName ?? null,
+        collectionId: p.collectionId ?? null,
+        organizationId: p.organizationId ?? null,
+        price: p.price && typeof p.price === 'object' ? p.price : null,
+        variants: Array.isArray(p.variants) ? p.variants : [],
+        dropType: p.dropType ?? null,
     } as Product
 }

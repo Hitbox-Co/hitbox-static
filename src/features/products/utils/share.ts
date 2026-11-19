@@ -2,7 +2,7 @@ import * as Linking from 'expo-linking'
 import { Share } from 'react-native'
 
 import { Product } from '../types/product'
-import { formatCategory, formatPrice, formatRarity } from './format'
+import { formatCategory, formatProductPrice, formatRarity } from './format'
 
 /**
  * Deep link to a product's detail screen.
@@ -18,14 +18,14 @@ export function productShareUrl(productId: string) {
 
 /** The text body of a share — product, who made it, price, then the link. */
 export function productShareMessage(product: Product) {
-    const artist = product.collection?.artist.name
+    const artist = product.artistName ?? product.collection?.artist.name
     const lines = [
         artist ? `${product.name} by ${artist}` : product.name,
         // Rarity and price are optional on a drop; leave out what is missing
         // rather than writing "null" or "undefined" into someone's message.
         [
             [formatRarity(product.rarity), formatCategory(product.category)].filter(Boolean).join(' '),
-            formatPrice(product.priceInDollars),
+            formatProductPrice(product),
         ].filter(Boolean).join(' · '),
         `Code ${product.productCode}`,
         '',

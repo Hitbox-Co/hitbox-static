@@ -30,7 +30,7 @@ import { useProduct } from "@/features/products/api/getProduct";
 import {
   formatCategory,
   formatDate,
-  formatPrice,
+  formatProductPrice,
   formatRarity,
   formatRewardPoints,
   PRODUCT_PLACEHOLDER_IMAGE,
@@ -41,6 +41,7 @@ import SignInPopup from "@/components/auth/SignInPopup";
 import { cartErrorMessage } from "@/features/checkout/api/cartErrors";
 import { useAddToCart } from "@/features/checkout/api/cartMutations";
 import { checkoutActions } from "@/features/checkout/store/checkoutStore";
+import { ProductRarity } from "../types/product";
 import { RARITY_STYLES } from "../utils/rarity";
 
 interface TourScreenProps {
@@ -140,11 +141,16 @@ export default function TourScreen({ tourId }: TourScreenProps) {
     setImageIndex(Math.round(e.nativeEvent.contentOffset.x / innerSize));
   };
 
-  const price = product ? formatPrice(product.priceInDollars) : undefined;
+  const price = product ? formatProductPrice(product) : undefined;
+  // `ACTIVE` is on sale. `PUBLISHED` (coming soon) and `ENDED` can be opened but not bought.
+  const onSale = !product || !product.status || product.status === "ACTIVE";
   const points = product ? formatRewardPoints(product.rewardPoints) : null;
   const rarityLabel = product ? formatRarity(product.rarity) : null;
-  const rarityStyle = product?.rarity ? RARITY_STYLES[product.rarity] : null;
-  const artist = product?.collection?.artist;
+  // rarity is free-form: an unknown value falls back to the neutral chip.
+  const rarityStyle = product?.rarity ? (RARITY_STYLES[product.rarity as ProductRarity] ?? RARITY_STYLES.COMMON) : null;
+  const artist = product?.artistName
+    ? { id: product.artistId ?? "", name: product.artistName }
+    : (product?.collection?.artist ?? null);
   const released = product ? formatDate(product.releaseDate ?? product.createdAt) : null;
 
   return (
@@ -325,14 +331,10 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                     </Text>
                     <ChevronRight size={12} color="#2563eb" />
                   </View>
-                  {/* Units sold of total supply (the Figma's "042 / 100" slot) */}
-                  {product.inventoryUnit > 0 && (
-                    <Text
-                      accessibilityLabel={`${product.unitsSold} of ${product.inventoryUnit} sold`}
-                      className="font-syne text-xs text-[#6b7280]"
-                    >
-                      <Text className="text-[#ffb703]">{String(product.unitsSold).padStart(3, "0")}</Text>
-                      {` / ${product.inventoryUnit}`}
+                  {/* Edition size (the detail response has no minted count) */}
+                  {(product.totalSupply ?? 0) > 0 && (
+                    <Text className="font-syne text-xs text-[#6b7280]">
+                      <Text className="text-[#ffb703]">{`Edition of ${product.totalSupply}`}</Text>
                     </Text>
                   )}
                 </View>
@@ -405,10 +407,10 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   accessibilityRole="button"
                   accessibilityLabel="Add to cart"
                   activeOpacity={0.85}
-                  disabled={addMutation.isPending}
+                  disabled={addMutation.isPending || !onSale}
                   onPress={addToCart}
                   className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
-                  style={{ opacity: addMutation.isPending ? 0.6 : 1 }}
+                  style={{ opacity: addMutation.isPending || !onSale ? 0.5 : 1 }}
                 >
                   <Text className="font-syne-bold text-[13px] text-[#2563eb]">
                     {addMutation.isPending ? "Adding…" : "Add to Cart"}
@@ -419,10 +421,14 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   accessibilityRole="button"
                   accessibilityLabel="Buy now"
                   activeOpacity={0.85}
+                  disabled={!onSale}
                   onPress={buyNow}
                   className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-[30px] border border-[#2563eb] bg-[#2563eb]"
+                  style={{ opacity: onSale ? 1 : 0.5 }}
                 >
-                  <Text className="font-syne-bold text-[13px] text-white">Buy Now</Text>
+                  <Text className="font-syne-bold text-[13px] text-white">
+                    {onSale ? "Buy Now" : product?.status === "ENDED" ? "Ended" : "Coming soon"}
+                  </Text>
                   <ArrowUpRight size={16} color="#fff" />
                 </TouchableOpacity>
               </View>
@@ -469,6 +475,10 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   <DetailRow label="Item Code" value={product.productCode} />
                   {product.collection && <DetailRow label="Collection" value={product.collection.name} />}
                   {released && <DetailRow label="Released" value={released} />}
+                  {product.purchaseLimit != null && <DetailRow label="Limit" value={`${product.purchaseLimit} per buyer`} />}
+                  {product.isAgeSpecific && product.minimumAge != null && (
+                    <DetailRow label="Age" value={`${product.minimumAge}+`} />
+                  )}
                 </View>
               </View>
 

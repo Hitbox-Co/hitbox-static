@@ -20,7 +20,7 @@ export function useCheckoutItem() {
                 productId: product.id,
                 name: product.name,
                 imageUrl: product.images[0]?.url ?? null,
-                creator: product.collection?.artist.name ?? product.collection?.name ?? null,
+                creator: product.artistName ?? product.collection?.artist.name ?? product.collection?.name ?? null,
                 unitPriceUsd,
                 rarity: product.rarity,
                 rewardPoints: product.rewardPoints,

@@ -1,5 +1,5 @@
 import { formatMoneyFromUsd, groupThousands } from '@/lib/currency'
-import { MarketplaceStatus, ProductCategory, ProductRarity } from '../types/product'
+import { MarketplaceStatus, Product, ProductCategory } from '../types/product'
 
 /** Shown when a product has no images. */
 export const PRODUCT_PLACEHOLDER_IMAGE =
@@ -17,13 +17,33 @@ export function formatPrice(priceInDollars: string | null | undefined): string |
 }
 
 /**
+ * The drop's own price in its own currency ("$480.00", "Free"), or undefined when
+ * it has none. Prefers the current `price` object; falls back to the legacy USD string.
+ */
+export function formatProductPrice(product: Pick<Product, 'price' | 'priceInDollars'>): string | undefined {
+    const price = product.price
+    if (price) {
+        if (price.isFree) return 'Free'
+        const n = Number(price.amount)
+        if (!Number.isFinite(n)) return `${price.currency} ${price.amount}`
+        try {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: price.currency }).format(n)
+        } catch {
+            return `${price.currency} ${n.toFixed(2)}`
+        }
+    }
+    return formatPrice(product.priceInDollars)
+}
+
+/**
  * Points are a count, not money — always grouped Western, never converted.
  * Null when there are none to show: the API stopped sending `rewardPoints` with
  * the catalog restructure, and an item without points must render without the
  * badge rather than crash the screen.
  */
 export function formatRewardPoints(points: number | null | undefined): string | null {
-    if (typeof points !== 'number' || !Number.isFinite(points)) return null
+    // 0 means "none set" — render without the badge.
+    if (typeof points !== 'number' || !Number.isFinite(points) || points <= 0) return null
     return `${groupThousands(String(Math.round(points)))} pts`
 }
 
@@ -46,9 +66,9 @@ export function formatCategory(category: ProductCategory) {
 }
 
 /** "LEGENDARY" → "Legendary". Null for a drop with no rarity set (the column is optional). */
-export function formatRarity(rarity: ProductRarity | null | undefined): string | null {
-    if (!rarity) return null
-    return rarity.charAt(0) + rarity.slice(1).toLowerCase()
+export function formatRarity(rarity: string | null | undefined): string | null {
+    // Free-form column: underscores to spaces, upper-cased, never switched on as an enum.
+    return rarity ? rarity.replace(/_/g, ' ').toUpperCase() : null
 }
 
 /**
