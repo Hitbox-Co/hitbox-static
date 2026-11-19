@@ -50,6 +50,12 @@ export default function DiscoverScreen() {
 
     const { data: feed, isLoading, isError, refetch, isRefetching } = useDiscoverFeed();
 
+    // A section can be missing from the feed (the server sends only what it has),
+    // so each one reads as an empty list rather than crashing the screen.
+    const trending = feed?.trending ?? [];
+    const topCreators = feed?.topCreators ?? [];
+    const newReleases = feed?.newReleases ?? [];
+
     const [activeChip, setActiveChip] = useState<ChipId>("all");
     const scrollRef = useRef<ScrollView>(null);
     /**
@@ -217,10 +223,10 @@ export default function DiscoverScreen() {
                                             title="Trending now"
                                             onViewAll={() => handleSeeAll("trending", "Trending Now")}
                                         />
-                                        {feed.trending.length > 0 ? (
+                                        {trending.length > 0 ? (
                                             <FlatList
                                                 horizontal
-                                                data={feed.trending}
+                                                data={trending}
                                                 keyExtractor={(item) => item.id}
                                                 renderItem={({ item }) => (
                                                     <DiscoverProductCard
@@ -248,7 +254,7 @@ export default function DiscoverScreen() {
                                             actionLabel="Explore"
                                             onViewAll={() => handleSeeAll("top_creators", "Top Creators")}
                                         />
-                                        {feed.topCreators.length > 0 ? (
+                                        {topCreators.length > 0 ? (
                                             <View className="gap-[18px]">
                                                 {/* Banner artwork (Figma: 183 tall, full width) */}
                                                 <Image
@@ -270,7 +276,7 @@ export default function DiscoverScreen() {
                                                     contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
                                                     className="grow-0"
                                                 >
-                                                    {feed.topCreators.map((item) => (
+                                                    {topCreators.map((item) => (
                                                         <CreatorBubble
                                                             key={item.id}
                                                             item={item}
@@ -290,9 +296,9 @@ export default function DiscoverScreen() {
                                             title="Latest drops"
                                             onViewAll={() => handleSeeAll("new_releases", "Latest Releases")}
                                         />
-                                        {feed.newReleases.length > 0 ? (
+                                        {newReleases.length > 0 ? (
                                             <View className="flex-row flex-wrap gap-3 px-5">
-                                                {feed.newReleases.map((item) => (
+                                                {newReleases.map((item) => (
                                                     <DiscoverProductCard
                                                         key={item.id}
                                                         item={item}

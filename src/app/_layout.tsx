@@ -19,13 +19,17 @@ import {
 } from '@expo-google-fonts/syne';
 import { PortalHost } from '@rn-primitives/portal';
 import { initCurrency } from '@/lib/currency';
+import AccountStateWatcher from '@/features/auth/components/AccountStateWatcher';
 import { takeOnboarding } from '@/lib/onboarding-gate';
+import { retryDelayAuthAware } from '@/lib/queries';
 import '../global.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000, // consider data fresh for 1 min
+      // 10 s between retries of "account not created yet", normal backoff otherwise.
+      retryDelay: retryDelayAuthAware,
     },
   },
 });
@@ -109,6 +113,7 @@ function RootNavigator() {
   }
 
   return (
+    <>
     <Stack
       initialRouteName="index"
       screenOptions={{
@@ -143,6 +148,9 @@ function RootNavigator() {
       />
       <Stack.Screen name="index" />
     </Stack>
+    {/* Reacts to suspended / deleted / invalid-session answers from the API. */}
+    {isSignedIn && <AccountStateWatcher />}
+    </>
   );
 }
 

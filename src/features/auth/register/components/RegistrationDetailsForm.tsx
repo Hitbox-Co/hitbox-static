@@ -10,12 +10,14 @@ import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } fro
 
 // Adjust path according to your react-native-reusables setup
 import { Checkbox } from '@/components/ui/checkbox'
+import { useValidateRegistration } from '../../api/validateRegistration'
 import { getClerkErrorMessage } from '../../utils/clerk'
 import { UserDetailsFormData, userDetailsSchema } from '../validation/registrationFormDetails'
 
 export default function RegistrationDetailsForm() {
     const { signUp, setActive, isLoaded } = useSignUp()
     const clerk = useClerk()
+    const validateRegistration = useValidateRegistration()
 
     // 'form' → collecting details, 'verify' → waiting for the email OTP
     const [step, setStep] = useState<'form' | 'verify'>('form')
@@ -50,6 +52,7 @@ export default function RegistrationDetailsForm() {
     const {
         control,
         handleSubmit,
+        setError,
         setValue,
         watch,
         getValues,
@@ -106,9 +109,39 @@ export default function RegistrationDetailsForm() {
         if (!isLoaded) return
         setApiError(null)
 
+        // Backend pre-check (POST /auth/registration/validate): same email and
+        // name rules as the API, and whether the email is already registered.
+        // It creates nothing, and if it cannot be reached sign-up carries on —
+        // Clerk is the authority.
+        const check = await validateRegistration({
+            email: data.email,
+            username: data.username,
+            firstName: data.firstName,
+            lastName: data.lastName,
+        })
+        if (check.kind === 'email_taken') {
+            setApiError('An account with this email already exists. Sign in instead?')
+            return
+        }
+        if (check.kind === 'invalid') {
+            const messages = Object.entries(check.fieldErrors)
+            // Field names the form has go under their input; anything else is shown as one line.
+            const unplaced: string[] = []
+            for (const [field, message] of messages) {
+                if (field in data) setError(field as keyof UserDetailsFormData, { type: 'server', message })
+                else unplaced.push(message)
+            }
+            if (unplaced.length > 0 || messages.length === 0) {
+                setApiError(unplaced.join(' ') || 'Please check your details and try again.')
+            }
+            return
+        }
+        // The API's normalised email (trimmed, lowercased) is what goes to Clerk.
+        const emailAddress = check.kind === 'ok' ? check.email : data.email
+
         try {
             await signUp.create({
-                emailAddress: data.email,
+                emailAddress,
                 password: data.password,
                 unsafeMetadata: {
                     username: data.username,

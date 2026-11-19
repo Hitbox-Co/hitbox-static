@@ -1,7 +1,7 @@
 import { useAuth } from '@clerk/clerk-expo'
 import { useCallback } from 'react'
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL
+export const API_URL = process.env.EXPO_PUBLIC_API_URL
 
 export interface ApiError {
     code: string
@@ -36,6 +36,56 @@ export interface AuthPrincipal {
     email: string
     role: 'USER'
     sessionId: string
+}
+
+/** One entry of a 422 VALIDATION_ERROR's `details`. `path` is the field name. */
+export interface ValidationDetail {
+    path: string
+    message: string
+    code?: string
+    receivedType?: string
+    received?: string
+}
+
+/** One (role, organization) pair from GET /api/v1/authz/me. */
+export interface RoleGrant {
+    roleId: string
+    roleName: string
+    /** Set only for organization-scoped staff roles. */
+    organizationId: string | null
+}
+
+/**
+ * Matches GET /api/v1/authz/me. Permission keys read `resource:action:scope`.
+ * A brand-new user can have empty lists (no role is assigned at sign-up), so
+ * treat this as a UI hint, never as a gate on core buyer features.
+ */
+export interface AuthzGrants {
+    userId: string
+    permissions: string[]
+    roles: RoleGrant[]
+}
+
+/** Matches GET /api/v1/health — the one response with no `data` wrapper. */
+export interface HealthStatus {
+    status: string
+    /** Server process uptime, seconds. */
+    uptime: number
+}
+
+/** Body of POST /api/v1/auth/registration/validate. Unknown fields are rejected. */
+export interface RegistrationValidateInput {
+    email: string
+    username?: string
+    firstName?: string
+    lastName?: string
+}
+
+/** Response of POST /api/v1/auth/registration/validate. */
+export interface RegistrationValidateResult {
+    valid: true
+    /** Trimmed and lowercased — use this value for the Clerk sign-up. */
+    email: string
 }
 
 
@@ -90,18 +140,34 @@ export function useApi() {
 
     const request = useCallback(
         async <T>(path: string, options: RequestInit = {}): Promise<T> => {
-            const token = await getToken()
+            const send = (token: string | null) =>
+                fetch(`${API_URL}${path}`, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // Skips ngrok's free-tier browser interstitial page
+                        'ngrok-skip-browser-warning': 'true',
+                        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                        ...options.headers,
+                    },
+                })
 
-            const res = await fetch(`${API_URL}${path}`, {
-                ...options,
-                headers: {
-                    'Content-Type': 'application/json',
-                    // Skips ngrok's free-tier browser interstitial page
-                    'ngrok-skip-browser-warning': 'true',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-                    ...options.headers,
-                },
-            })
+            // A fresh token per request: Clerk session tokens live about a minute,
+            // and getToken() hands back its cached one while that is still valid.
+            const token = await getToken()
+            let res = await send(token)
+
+            // AUTH_INVALID_TOKEN (expired, or just stale) → refresh once, bypassing
+            // the cache, and retry once. The server rejects the token before it
+            // reads the request, so nothing was processed the first time. A second
+            // failure is left to the caller (the account watcher signs out).
+            if (res.status === 401 && token) {
+                const peek = await res.clone().json().catch(() => null)
+                if (peek?.error?.code === 'AUTH_INVALID_TOKEN') {
+                    const fresh = await getToken({ skipCache: true })
+                    if (fresh) res = await send(fresh)
+                }
+            }
 
             if (res.status === 204) return undefined as T
 
