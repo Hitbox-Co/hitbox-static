@@ -80,3 +80,24 @@ export type ClaimTapResult = ClaimResult | ClaimNotVerified
 
 /** What the success / owned screens render. */
 export type OwnedView = Pick<ClaimResult, 'owner' | 'claimedByYou' | 'claimedAt' | 'product' | 'sku'>
+
+/** One row of GET /api/v1/ledger/:tagId, oldest first. */
+export interface LedgerEntry {
+    /** 0 = the origin (MINT). */
+    sequenceNo: number
+    txType: 'MINT' | 'CLAIM' | 'TRANSFER' | 'FLAG' | 'UNFLAG' | 'REVOKE' | 'REISSUE'
+    /** The drop's groupCode (not its uuid). */
+    productId: string
+    /** Legacy tag id; null for chips registered by consignment. */
+    tag: string | null
+    /** "HitBox" on the origin row, else the owner's handle/name; null when private or a past owner. */
+    ownerId: string | null
+    dateTime: string
+    /** SHA-256 of this record. */
+    hash: string
+    /** The previous row's hash; null for the origin. */
+    previousHash: string | null
+    claimHistory: boolean
+    /** Placeholder — always equals claimHistory. */
+    peerToPeerTrading: boolean
+}

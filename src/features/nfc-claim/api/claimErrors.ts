@@ -18,6 +18,12 @@ export type ClaimFailure =
     | 'ACCOUNT_NOT_READY'
     /** The session is no longer valid. */
     | 'SESSION_EXPIRED'
+    /** 429 RATE_LIMITED — too many taps in a minute. The server refused before using the tap. */
+    | 'RATE_LIMITED'
+    /** 503 CLAIMS_TAP_UNAVAILABLE — tap verification is not configured on this server. */
+    | 'TAP_UNAVAILABLE'
+    /** 422 VALIDATION_ERROR — the link's values are not in the accepted form (e.g. an old `b` tag). */
+    | 'BAD_TAG'
     /** Anything else: network, server, timeout. Unknown whether the server saw the tap. */
     | 'UNKNOWN'
 
@@ -25,6 +31,9 @@ export function classifyClaimFailure(error: unknown): ClaimFailure {
     const code = apiErrorCode(error)
     if (code === ACCOUNT_NOT_FOUND) return 'ACCOUNT_NOT_READY'
     if (code === 'AUTH_INVALID_TOKEN' || code === 'AUTH_UNAUTHENTICATED') return 'SESSION_EXPIRED'
+    if (code === 'RATE_LIMITED') return 'RATE_LIMITED'
+    if (code === 'CLAIMS_TAP_UNAVAILABLE') return 'TAP_UNAVAILABLE'
+    if (code === 'VALIDATION_ERROR') return 'BAD_TAG'
     return 'UNKNOWN'
 }
 

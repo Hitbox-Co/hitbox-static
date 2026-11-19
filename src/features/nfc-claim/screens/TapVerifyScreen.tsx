@@ -5,7 +5,9 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
 import type { TapUrl } from '@/lib/tap-url';
 import { useVerifyTap } from '../api/useVerifyTap';
+import { classifyClaimFailure } from '../api/claimErrors';
 import NfcShell from '../components/NfcShell';
+import TapRefusalNotice, { NAMED_REFUSALS } from '../components/TapRefusalNotice';
 import { GenuineBanner, NoticeCard, ProductBox, Row, ownerNameOf } from '../components/TapCards';
 import { TapVerified } from '../types/claim';
 
@@ -63,13 +65,16 @@ export default function TapVerifyScreen({ tap }: { tap: TapUrl }) {
                 </View>
             )}
 
-            {verify.isError && (
-                <NoticeCard
-                    tone="bad"
-                    title="Couldn't reach HitBox"
-                    body="We couldn't confirm that tap. Check your connection, then hold your phone to the tag again."
-                />
-            )}
+            {verify.isError &&
+                (NAMED_REFUSALS.includes(classifyClaimFailure(verify.error)) ? (
+                    <TapRefusalNotice kind={classifyClaimFailure(verify.error)} />
+                ) : (
+                    <NoticeCard
+                        tone="bad"
+                        title="Couldn't reach HitBox"
+                        body="We couldn't confirm that tap. Check your connection, then hold your phone to the tag again."
+                    />
+                ))}
 
             {result?.verified && <Authentic result={result} />}
         </NfcShell>

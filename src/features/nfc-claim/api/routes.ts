@@ -23,6 +23,15 @@ export function buildVerifyTapPath(tap: TapUrl) {
 }
 
 /**
+ * Public provenance chain for one item. `tagId` is the chip UID (the tap URL's
+ * `u`) or a legacy tag id; the server strips `:`, `-` and spaces and ignores case.
+ * Reading it does not spend a tap.
+ */
+export function buildLedgerPath(tagId: string) {
+    return `/api/v1/ledger/${encodeURIComponent(tagId)}`
+}
+
+/**
  * TanStack Query keys for the NFC claim feature.
  *
  * Both are keyed by `e`: it differs on every tap, so one tap is one key. That is
@@ -33,4 +42,6 @@ export const claimKeys = {
     all: ['claims'] as const,
     claimTap: (e: string) => ['claims', 'claim', e] as const,
     verifyTap: (e: string) => ['claims', 'verify', e] as const,
+    /** Not tap-bound: the ledger can be read any number of times. */
+    ledger: (tagId: string) => ['claims', 'ledger', tagId] as const,
 }

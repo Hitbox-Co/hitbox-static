@@ -9,6 +9,7 @@ import { classifyClaimFailure } from '../api/claimErrors';
 import { useClaimTap } from '../api/useClaimTap';
 import NfcShell from '../components/NfcShell';
 import OwnedProvenance from '../components/OwnedProvenance';
+import TapRefusalNotice from '../components/TapRefusalNotice';
 import { NoticeCard, ProductBox, Row, ownerNameOf } from '../components/TapCards';
 import { ClaimResult } from '../types/claim';
 import SucessfulClaimScreen from './SucessfulClaimScreen';
@@ -46,7 +47,7 @@ export default function TapClaimScreen({ tap }: { tap: TapUrl }) {
     }
 
     if (result?.verified && result.outcome === 'ALREADY_CLAIMED' && result.claimedByYou) {
-        return <OwnedProvenance result={result} />;
+        return <OwnedProvenance result={result} tagId={tap.u} />;
     }
 
     return (
@@ -127,6 +128,10 @@ function ClaimFailureNotice({ error }: { error: unknown }) {
                     body="Your session has ended. Sign in, then hold your phone to the tag again."
                 />
             );
+        case 'RATE_LIMITED':
+        case 'TAP_UNAVAILABLE':
+        case 'BAD_TAG':
+            return <TapRefusalNotice kind={classifyClaimFailure(error)} />;
         default:
             return (
                 <NoticeCard

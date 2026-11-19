@@ -18,6 +18,12 @@ describe('classifyClaimFailure', () => {
     expect(classifyClaimFailure(apiError('AUTH_UNAUTHENTICATED'))).toBe('SESSION_EXPIRED')
   })
 
+  it('names the refusals the claims doc lists (429, 503, 422)', () => {
+    expect(classifyClaimFailure(apiError('RATE_LIMITED'))).toBe('RATE_LIMITED')
+    expect(classifyClaimFailure(apiError('CLAIMS_TAP_UNAVAILABLE'))).toBe('TAP_UNAVAILABLE')
+    expect(classifyClaimFailure(apiError('VALIDATION_ERROR'))).toBe('BAD_TAG')
+  })
+
   it('treats everything else as unknown', () => {
     expect(classifyClaimFailure(apiError('INTERNAL_ERROR'))).toBe('UNKNOWN')
     expect(classifyClaimFailure(new Error('Network request failed'))).toBe('UNKNOWN')

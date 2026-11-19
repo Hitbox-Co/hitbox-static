@@ -4,9 +4,33 @@ import { MotiView } from 'moti';
 import React from 'react';
 import { Image, Text, TouchableOpacity, View } from 'react-native';
 
-import { ClaimResult } from '../types/claim';
+import { useLedger } from '../api/useLedger';
+import { ClaimResult, LedgerEntry } from '../types/claim';
 import NfcShell from './NfcShell';
 import { ownerNameOf, rarityLabelOf } from './TapCards';
+
+/** What each ledger row means to a collector. A null owner is private or a past owner. */
+function ledgerTitle(entry: LedgerEntry): string {
+    const who = entry.ownerId ?? 'a private collector';
+    switch (entry.txType) {
+        case 'MINT':
+            return 'Minted by HitBox';
+        case 'CLAIM':
+            return `Claimed by ${who}`;
+        case 'TRANSFER':
+            return `Transferred to ${who}`;
+        case 'FLAG':
+            return 'Placed on hold';
+        case 'UNFLAG':
+            return 'Hold released';
+        case 'REVOKE':
+            return 'Claim revoked';
+        case 'REISSUE':
+            return 'Tag reissued';
+        default:
+            return entry.txType;
+    }
+}
 
 /**
  * An item you already own — the "Owned product · Provenance" layout from the
@@ -17,8 +41,13 @@ import { ownerNameOf, rarityLabelOf } from './TapCards';
  * The Figma's "Purchase complete" row is not shown: the app has no purchase
  * record to draw it from.
  */
-export default function OwnedProvenance({ result }: { result: ClaimResult }) {
+export default function OwnedProvenance({ result, tagId }: { result: ClaimResult; tagId?: string }) {
     const { product, sku } = result;
+    // The real chain (GET /ledger/:tagId, keyed by the chip UID). Reading it spends
+    // no tap. Until it loads — or for a tag with no UID in its link — the two
+    // steps below stand in for it.
+    const ledger = useLedger(tagId);
+    const chain = ledger.data && ledger.data.length > 0 ? ledger.data : null;
     const rarity = rarityLabelOf(product.rarity);
     const owner = ownerNameOf(result.owner) ?? 'you';
     const claimedOn = result.claimedAt
@@ -94,6 +123,24 @@ export default function OwnedProvenance({ result }: { result: ClaimResult }) {
                 <View className="rounded border border-[#dbeafe] bg-white p-4">
                     <Text className="font-orbitron text-base text-[#111827]">Provenance</Text>
 
+                    {chain ? (
+                        chain.map((entry) => (
+                            <View key={entry.sequenceNo} className="mt-3 flex-row items-center justify-between gap-3 py-2">
+                                <View className="flex-1 gap-1">
+                                    <Text className="font-syne-bold text-[13px] text-[#111827]">{ledgerTitle(entry)}</Text>
+                                    <Text className="font-syne text-[11px] text-[#6b7280]">
+                                        {`${new Date(entry.dateTime).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })} · #${entry.hash.slice(0, 8)}`}
+                                    </Text>
+                                </View>
+                                {entry.txType === 'MINT' ? (
+                                    <ScanLine size={18} color="#2563eb" />
+                                ) : (
+                                    <BadgeCheck size={18} color="#f5b301" />
+                                )}
+                            </View>
+                        ))
+                    ) : (
+                    <>
                     <View className="mt-3 flex-row items-center justify-between gap-3 py-2">
                         <View className="flex-1 gap-1">
                             <Text className="font-syne-bold text-[13px] text-[#111827]">NFC authenticated</Text>
@@ -111,6 +158,8 @@ export default function OwnedProvenance({ result }: { result: ClaimResult }) {
                         </View>
                         <BadgeCheck size={18} color="#f5b301" />
                     </View>
+                    </>
+                    )}
 
                     <Text className="mt-3 font-syne text-[10px] leading-[15px] text-[#6b7280]">
                         Recorded in the HitBox provenance ledger when this tag was claimed.

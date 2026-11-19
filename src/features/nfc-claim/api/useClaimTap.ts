@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { collectionKeys } from '@/features/collections/api/routes'
+import { rewardKeys } from '@/features/rewards/api/routes'
 import { useApi } from '@/lib/api'
 import { tapIdentity } from '@/lib/tap-url'
 import type { TapUrl } from '@/lib/tap-url'
@@ -44,9 +45,11 @@ export function useClaimTap(tap: TapUrl | null, enabled = true) {
                 c: tap!.c,
                 visibility: 'PRIVATE',
             })
-            // A new item joined the shelf.
+            // A new item joined the shelf — and completing a set can unlock a
+            // collection reward, which the server does not push.
             if (result.verified && result.outcome === 'CLAIMED') {
                 void queryClient.invalidateQueries({ queryKey: collectionKeys.all })
+                void queryClient.invalidateQueries({ queryKey: rewardKeys.all })
             }
             return result
         },
