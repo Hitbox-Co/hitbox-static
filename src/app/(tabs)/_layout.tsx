@@ -1,4 +1,4 @@
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,6 +12,7 @@ import {
 } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import {
+  Image,
   Platform,
   StyleSheet,
   Text,
@@ -101,6 +102,41 @@ const HAS_LIQUID_GLASS = (() => {
 const ACTIVE = "#42526c";
 const INACTIVE = "#6b7280";
 
+/**
+ * The signed-in user's photo, in a circle, in place of the Profile icon. The ring
+ * takes the tab's active/inactive colour so it still reads as selected. If the
+ * image can't load, the plain icon comes back.
+ */
+function ProfileAvatar({
+  uri,
+  color,
+  focused,
+}: {
+  uri: string;
+  color: string;
+  focused: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <UserRound color={color} size={21} strokeWidth={focused ? 2 : 1.75} />;
+  }
+  return (
+    <Image
+      source={{ uri }}
+      onError={() => setFailed(true)}
+      accessibilityIgnoresInvertColors
+      style={{
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        borderWidth: focused ? 2 : 1.5,
+        borderColor: color,
+        backgroundColor: "#e5e7eb",
+      }}
+    />
+  );
+}
+
 function FloatingTabBar({
   state,
   navigation,
@@ -108,6 +144,8 @@ function FloatingTabBar({
 }: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const { isSignedIn } = useAuth();
+  const { user } = useUser();
+  const avatarUri = isSignedIn ? user?.imageUrl : undefined;
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   pathnameRef.current = pathname;
@@ -218,7 +256,11 @@ function FloatingTabBar({
               onLongPress={onLongPress}
               style={styles.tabButton}
             >
-              <Icon color={color} size={21} strokeWidth={isFocused ? 2 : 1.75} />
+              {tab.key === "profile" && avatarUri ? (
+                <ProfileAvatar uri={avatarUri} color={color} focused={isFocused} />
+              ) : (
+                <Icon color={color} size={21} strokeWidth={isFocused ? 2 : 1.75} />
+              )}
               <Text
                 numberOfLines={1}
                 style={[

@@ -142,7 +142,9 @@ export default function DiscoverScreen() {
                     locations={[0, 0.4, 1]}
                     style={{ paddingTop: 12 }}
                 >
+                    {/* Leaderboard banner: hidden for the MVP (mock content, no API). Uncomment to bring it back.
                     <LeaderboardBanner />
+                    */}
 
                     {/* Category chips — each one asks the server for that category */}
                     <ScrollView
