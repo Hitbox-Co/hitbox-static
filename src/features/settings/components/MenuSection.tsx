@@ -1,7 +1,7 @@
 import { useClerk } from '@clerk/clerk-expo'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { Bell, ChevronRight, HandHelping, Lock, LogOut, User } from 'lucide-react-native'
+import { Bell, ChevronRight, FileText, HandHelping, Lock, LogOut, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import React from 'react'
 import { Text, TouchableOpacity, View } from 'react-native'
@@ -85,6 +85,26 @@ export default function MenuSection({
                         <View className="flex-1">
                             <Text className="text-foreground text-sm font-bold">Notifications</Text>
                             <Text className="text-muted-foreground text-xs">Toggle push notifications and emails</Text>
+                        </View>
+                    </View>
+                    <ChevronRight size={18} color="#94a3b8" />
+                </TouchableOpacity>
+
+                {/* My invoices — also leaves settings, so it pushes a route. */}
+                <TouchableOpacity
+                    onPress={() => router.push('/invoices' as never)}
+                    activeOpacity={0.7}
+                    accessibilityRole="button"
+                    accessibilityLabel="My invoices"
+                    className="flex-row items-center justify-between p-4 border-b border-border/30"
+                >
+                    <View className="flex-row items-center gap-4 flex-1">
+                        <View className="w-9 h-9 rounded-xl bg-violet-600/10 items-center justify-center border border-violet-500/20">
+                            <FileText size={18} color="#8b5cf6" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-foreground text-sm font-bold">My invoices</Text>
+                            <Text className="text-muted-foreground text-xs">View and download your receipts</Text>
                         </View>
                     </View>
                     <ChevronRight size={18} color="#94a3b8" />
