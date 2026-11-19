@@ -14,11 +14,6 @@ export const DISCOVER_ROUTES = {
  * The heart on a card (backend `wishlist-api.md`, referenced by the Discover doc):
  * POST to turn it on, DELETE to turn it off. Both need a session.
  */
-export const WISHLIST_ROUTES = {
-    add: '/api/v1/wishlist',
-    remove: (productId: string) => `/api/v1/wishlist/products/${encodeURIComponent(productId)}`,
-} as const
-
 /** TanStack Query keys for the discover feature. */
 export const discoverKeys = {
     all: ['discover'] as const,
