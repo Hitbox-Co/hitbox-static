@@ -189,6 +189,11 @@ export function useApi() {
         get: async <T>(path: string) => (await request<{ data: T }>(path)).data,
         /** For list endpoints — preserves the pagination `meta` envelope. */
         getPage: <T>(path: string) => request<Paginated<T>>(path),
+        /**
+         * For the rare endpoint whose body is NOT wrapped in `{ data }` — e.g. the
+         * orders list, whose fields sit at the top level. Returns the body as sent.
+         */
+        getRaw: <T>(path: string) => request<T>(path),
         post: async <T>(path: string, body?: unknown) =>
             (await request<{ data: T }>(path, { method: 'POST', body: body != null ? JSON.stringify(body) : undefined })).data,
         patch: async <T>(path: string, body: unknown) =>
