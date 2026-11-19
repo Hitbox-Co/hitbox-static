@@ -1,12 +1,15 @@
 import { useSyncExternalStore } from 'react'
 
+import { DiscoverPrice } from '../types/discover'
+
 /** The few fields the search list needs — enough to redraw a card without refetching. */
 export interface RecentSearchItem {
     id: string
     name: string
     imageUrl: string | null
     rewardPoints?: number | null
-    priceInDollars?: string | null
+    price?: DiscoverPrice | null
+    artistName?: string | null
 }
 
 const MAX_RECENTS = 6

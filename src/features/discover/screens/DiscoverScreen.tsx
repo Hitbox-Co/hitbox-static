@@ -8,7 +8,6 @@ import {
     ActivityIndicator,
     FlatList,
     Image,
-    LayoutChangeEvent,
     NativeScrollEvent,
     NativeSyntheticEvent,
     RefreshControl,
@@ -21,25 +20,33 @@ import {
 
 import { useNotifications } from "@/features/notifications/hooks/useNotifications";
 import { useTabScrollReset } from "@/hooks/use-tab-scroll-reset";
+import { describeApiError } from "@/lib/api-errors";
 import { useDiscoverFeed } from "../api/getDiscoverFeed";
 import DiscoverHero from "../components/DiscoverHero";
 import DiscoverProductCard from "../components/DiscoverProductCard";
-import { DiscoverProductItem, DiscoverSection } from "../types/discover";
-import { DISCOVER_PLACEHOLDER_IMAGE } from "../utils/format";
+import {
+    DiscoverCategory,
+    DiscoverCreatorItem,
+    DiscoverProductItem,
+    DiscoverSection,
+} from "../types/discover";
+import { DISCOVER_PLACEHOLDER_IMAGE, formatDropCount } from "../utils/format";
 
-/** Breathing room left above a section title after a chip jump. */
-const SCROLL_GAP = 12;
 /** Scroll offset past which the status bar sits over white content, not the hero. */
 const HERO_SCROLL_LIMIT = 380;
 
-/** Chip ids double as section ids: a chip scrolls to the section registered under it. */
-type ChipId = "all" | "trending" | "topCreators" | "newReleases";
-
-const CHIPS: { id: ChipId; label: string }[] = [
+/**
+ * Category chips. Each is a server filter (`GET /discover?category=`); "All Items"
+ * is no filter. The ids and the drop categories behind them are the backend's.
+ */
+const CHIPS: { id: DiscoverCategory | "all"; label: string }[] = [
     { id: "all", label: "All Items" },
-    { id: "trending", label: "Trending" },
-    { id: "newReleases", label: "Latest Releases" },
-    { id: "topCreators", label: "Top Creators" },
+    { id: "cards", label: "Cards" },
+    { id: "figures", label: "Figures" },
+    { id: "apparel", label: "Apparel" },
+    { id: "posters", label: "Posters" },
+    { id: "digital", label: "Digital" },
+    { id: "other", label: "Other" },
 ];
 
 export default function DiscoverScreen() {
@@ -48,23 +55,21 @@ export default function DiscoverScreen() {
     const { unreadCount } = useNotifications();
     const isFocused = useIsFocused();
 
-    const { data: feed, isLoading, isError, refetch, isRefetching } = useDiscoverFeed();
+    const [category, setCategory] = useState<DiscoverCategory | "all">("all");
+    const activeCategory = category === "all" ? undefined : category;
 
-    // A section can be missing from the feed (the server sends only what it has),
-    // so each one reads as an empty list rather than crashing the screen.
+    const { data: feed, isLoading, isError, error, refetch, isRefetching, isPlaceholderData } =
+        useDiscoverFeed(activeCategory);
+
+    // A section the server leaves empty is hidden, not shown as a placeholder.
+    const featured = feed?.featured ?? [];
     const trending = feed?.trending ?? [];
-    const topCreators = feed?.topCreators ?? [];
+    const creators = feed?.creators ?? [];
     const newReleases = feed?.newReleases ?? [];
+    const isFeedEmpty =
+        !!feed && featured.length === 0 && trending.length === 0 && creators.length === 0 && newReleases.length === 0;
 
-    const [activeChip, setActiveChip] = useState<ChipId>("all");
     const scrollRef = useRef<ScrollView>(null);
-    /**
-     * Each section reports its y offset within the scroll content as it lays out;
-     * a chip press then just scrolls there. Measuring on layout (rather than
-     * hardcoding heights) keeps it correct as sections grow, empty out, or get
-     * replaced by a placeholder.
-     */
-    const sectionY = useRef<Partial<Record<ChipId, number>>>({});
 
     // Status bar icons: white over the dark hero, dark once white content is under them.
     const [overHero, setOverHero] = useState(true);
@@ -73,24 +78,8 @@ export default function DiscoverScreen() {
         setOverHero((prev) => (prev === next ? prev : next));
     };
 
-    // Reopen the tab at the top, with the chip highlight reset too.
-    useTabScrollReset(scrollRef, () => setActiveChip("all"));
-
-    const registerSection = (id: ChipId) => (event: LayoutChangeEvent) => {
-        sectionY.current[id] = event.nativeEvent.layout.y;
-    };
-
-    const scrollToSection = (id: ChipId) => {
-        const y = sectionY.current[id];
-        // Undefined only while the feed is still loading and nothing has laid out.
-        if (y == null) return;
-        scrollRef.current?.scrollTo({ y: Math.max(0, y - SCROLL_GAP), animated: true });
-    };
-
-    const handleChipSelect = (id: ChipId) => {
-        setActiveChip(id);
-        scrollToSection(id);
-    };
+    // Reopen the tab at the top, with the category chip back on "All Items".
+    useTabScrollReset(scrollRef, () => setCategory("all"));
 
     const handleProductPress = (item: DiscoverProductItem) => {
         // Cards are lightweight — the detail screen fetches GET /products/:id.
@@ -101,17 +90,15 @@ export default function DiscoverScreen() {
 
     /**
      * "View all" → the paginated view of that section
-     * (`GET /api/v1/discover/products?section=…`). `section` uses the API's
-     * snake_case values, not the chip ids.
+     * (`GET /api/v1/discover/products?section=…`), keeping the chosen category.
      */
     const handleSeeAll = (section: DiscoverSection, title: string) => {
         router.push({
             pathname: '/(tabs)/discover/see-all',
-            params: { section, title },
+            params: { section, title, ...(activeCategory ? { category: activeCategory } : {}) },
         });
     };
 
-    // Search lives on its own page (Figma "Search · Discover").
     const openSearch = () => router.push('/(tabs)/discover/search');
 
     // Figma sizes: carousel cards 170 wide / 150 tall artwork; grid is two square cards.
@@ -132,7 +119,7 @@ export default function DiscoverScreen() {
                 contentContainerStyle={{ paddingBottom: 122 }}
                 refreshControl={
                     <RefreshControl
-                        refreshing={isRefetching}
+                        refreshing={isRefetching && !isPlaceholderData}
                         onRefresh={refetch}
                         tintColor="#2563eb"
                         progressViewOffset={60}
@@ -140,11 +127,10 @@ export default function DiscoverScreen() {
                 }
             >
                 <DiscoverHero
-                    items={feed?.featured}
+                    items={featured}
                     signedIn={!!isSignedIn}
                     hasUnread={unreadCount > 0}
                     onItemPress={handleProductPress}
-                    onExplore={() => scrollToSection("trending")}
                     onSearchPress={openSearch}
                     onBellPress={() => router.push("/notifications")}
                     onSignUpPress={() => router.push("/(auth)/register")}
@@ -156,165 +142,164 @@ export default function DiscoverScreen() {
                     locations={[0, 0.4, 1]}
                     style={{ paddingTop: 12 }}
                 >
-                    <View onLayout={registerSection("all")} />
+                    <LeaderboardBanner />
 
-                    <>
-                            <LeaderboardBanner />
-
-                            {/* Category chips — jump to a section of the feed */}
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-                                className="grow-0"
-                            >
-                                {CHIPS.map((chip) => {
-                                    const active = chip.id === activeChip;
-                                    return (
-                                        <TouchableOpacity
-                                            key={chip.id}
-                                            accessibilityRole="button"
-                                            accessibilityState={{ selected: active }}
-                                            activeOpacity={0.8}
-                                            onPress={() => handleChipSelect(chip.id)}
-                                            className={`h-8 justify-center rounded border px-[14px] ${active
-                                                ? "border-[rgba(59,130,245,0.25)] bg-[rgba(59,130,245,0.08)]"
-                                                : "border-[#e5e7eb] bg-[#f3f4f6]"
-                                                }`}
-                                        >
-                                            <Text
-                                                className={`text-[12.5px] ${active
-                                                    ? "font-syne-semibold text-[#3b82f6]"
-                                                    : "font-syne-medium text-[#6b7280]"
-                                                    }`}
-                                            >
-                                                {chip.label}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    );
-                                })}
-                            </ScrollView>
-
-                            {isLoading && (
-                                <View className="mt-16 items-center">
-                                    <ActivityIndicator size="large" color="#2563eb" />
-                                </View>
-                            )}
-
-                            {isError && !isLoading && (
-                                <View className="mt-16 items-center px-8">
-                                    <Text className="text-center font-syne text-sm text-[#6b7280]">
-                                        Couldn't load the Discover feed. Check your connection.
-                                    </Text>
-                                    <TouchableOpacity
-                                        onPress={() => refetch()}
-                                        className="mt-3 rounded-[30px] bg-[#111827] px-5 py-2"
+                    {/* Category chips — each one asks the server for that category */}
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+                        className="grow-0"
+                    >
+                        {CHIPS.map((chip) => {
+                            const active = chip.id === category;
+                            return (
+                                <TouchableOpacity
+                                    key={chip.id}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected: active }}
+                                    activeOpacity={0.8}
+                                    onPress={() => setCategory(chip.id)}
+                                    className={`h-8 justify-center rounded border px-[14px] ${active
+                                        ? "border-[rgba(59,130,245,0.25)] bg-[rgba(59,130,245,0.08)]"
+                                        : "border-[#e5e7eb] bg-[#f3f4f6]"
+                                        }`}
+                                >
+                                    <Text
+                                        className={`text-[12.5px] ${active
+                                            ? "font-syne-semibold text-[#3b82f6]"
+                                            : "font-syne-medium text-[#6b7280]"
+                                            }`}
                                     >
-                                        <Text className="font-syne-bold text-[13px] text-white">Retry</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            )}
+                                        {chip.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
 
-                            {feed && (
-                                <View className="gap-[27px] pt-[14px]">
-                                    {/* TRENDING — unitsSold desc */}
-                                    <View onLayout={registerSection("trending")} className="gap-[14px]">
-                                        <SectionHeading
-                                            title="Trending now"
-                                            onViewAll={() => handleSeeAll("trending", "Trending Now")}
-                                        />
-                                        {trending.length > 0 ? (
-                                            <FlatList
-                                                horizontal
-                                                data={trending}
-                                                keyExtractor={(item) => item.id}
-                                                renderItem={({ item }) => (
-                                                    <DiscoverProductCard
-                                                        item={item}
-                                                        width={carouselCardWidth}
-                                                        imageHeight={150}
-                                                        onPress={() => handleProductPress(item)}
-                                                    />
-                                                )}
-                                                ItemSeparatorComponent={() => <View className="w-3" />}
-                                                showsHorizontalScrollIndicator={false}
-                                                // Room for the card shadow, which would otherwise be clipped.
-                                                contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 6 }}
-                                                className="grow-0"
+                    {isLoading && (
+                        <View className="mt-16 items-center">
+                            <ActivityIndicator size="large" color="#2563eb" />
+                        </View>
+                    )}
+
+                    {isError && !isLoading && (
+                        <View className="mt-16 items-center px-8">
+                            <Text className="text-center font-syne text-sm text-[#6b7280]">
+                                {describeApiError(error, "Couldn't load the Discover feed. Check your connection.")}
+                            </Text>
+                            <TouchableOpacity
+                                onPress={() => refetch()}
+                                className="mt-3 rounded-[30px] bg-[#111827] px-5 py-2"
+                            >
+                                <Text className="font-syne-bold text-[13px] text-white">Retry</Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
+
+                    {isFeedEmpty && (
+                        <View className="mt-16 items-center px-8">
+                            <Text className="text-center font-syne text-sm text-[#6b7280]">
+                                No drops in this category yet.
+                            </Text>
+                        </View>
+                    )}
+
+                    {feed && !isFeedEmpty && (
+                        <View className="gap-[27px] pt-[14px]">
+                            {/* TRENDING — most minted first */}
+                            {trending.length > 0 && (
+                                <View className="gap-[14px]">
+                                    <SectionHeading
+                                        title="Trending now"
+                                        onViewAll={() => handleSeeAll("trending", "Trending Now")}
+                                    />
+                                    <FlatList
+                                        horizontal
+                                        data={trending}
+                                        keyExtractor={(item) => item.id}
+                                        renderItem={({ item }) => (
+                                            <DiscoverProductCard
+                                                item={item}
+                                                width={carouselCardWidth}
+                                                imageHeight={150}
+                                                onPress={() => handleProductPress(item)}
                                             />
-                                        ) : (
-                                            <EmptyNote text="No trending drops yet — pull to refresh." />
                                         )}
-                                    </View>
+                                        ItemSeparatorComponent={() => <View className="w-3" />}
+                                        showsHorizontalScrollIndicator={false}
+                                        // Room for the card shadow, which would otherwise be clipped.
+                                        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 6 }}
+                                        className="grow-0"
+                                    />
+                                </View>
+                            )}
 
-                                    {/* TOP CREATORS — unitsSold desc */}
-                                    <View onLayout={registerSection("topCreators")} className="gap-[14px]">
-                                        <SectionHeading
-                                            title="Meet the creators"
-                                            actionLabel="Explore"
-                                            onViewAll={() => handleSeeAll("top_creators", "Top Creators")}
+                            {/* MEET THE CREATORS — artists, most drops first */}
+                            {creators.length > 0 && (
+                                <View className="gap-[14px]">
+                                    <SectionHeading
+                                        title="Meet the creators"
+                                        actionLabel="Explore"
+                                        onViewAll={() => router.push("/(tabs)/discover/creators" as never)}
+                                    />
+                                    <View className="gap-[18px]">
+                                        {/* Banner: the first creator's cover (Figma: 183 tall, full width) */}
+                                        <Image
+                                            source={
+                                                creators[0]?.coverUrl
+                                                    ? { uri: creators[0].coverUrl }
+                                                    : require("@/assets/images/onboarding-hero.jpg")
+                                            }
+                                            resizeMode="cover"
+                                            style={{
+                                                width,
+                                                height: 183,
+                                                backgroundColor: "#eef2ff",
+                                                shadowColor: "#1a4db2",
+                                                shadowOffset: { width: 0, height: 3 },
+                                                shadowOpacity: 0.14,
+                                                shadowRadius: 10,
+                                            }}
                                         />
-                                        {topCreators.length > 0 ? (
-                                            <View className="gap-[18px]">
-                                                {/* Banner artwork (Figma: 183 tall, full width) */}
-                                                <Image
-                                                    source={require("@/assets/images/onboarding-hero.jpg")}
-                                                    resizeMode="cover"
-                                                    style={{
-                                                        width,
-                                                        height: 183,
-                                                        shadowColor: "#1a4db2",
-                                                        shadowOffset: { width: 0, height: 3 },
-                                                        shadowOpacity: 0.14,
-                                                        shadowRadius: 10,
-                                                    }}
-                                                />
-                                                {/* One bubble per top-creator pick, from the feed */}
-                                                <ScrollView
-                                                    horizontal
-                                                    showsHorizontalScrollIndicator={false}
-                                                    contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
-                                                    className="grow-0"
-                                                >
-                                                    {topCreators.map((item) => (
-                                                        <CreatorBubble
-                                                            key={item.id}
-                                                            item={item}
-                                                            onPress={() => handleProductPress(item)}
-                                                        />
-                                                    ))}
-                                                </ScrollView>
-                                            </View>
-                                        ) : (
-                                            <EmptyNote text="No creator picks yet — pull to refresh." />
-                                        )}
-                                    </View>
-
-                                    {/* NEW RELEASES — createdAt desc, two-column grid */}
-                                    <View onLayout={registerSection("newReleases")} className="gap-[14px]">
-                                        <SectionHeading
-                                            title="Latest drops"
-                                            onViewAll={() => handleSeeAll("new_releases", "Latest Releases")}
-                                        />
-                                        {newReleases.length > 0 ? (
-                                            <View className="flex-row flex-wrap gap-3 px-5">
-                                                {newReleases.map((item) => (
-                                                    <DiscoverProductCard
-                                                        key={item.id}
-                                                        item={item}
-                                                        width={gridCardWidth}
-                                                        imageHeight={gridCardWidth}
-                                                        onPress={() => handleProductPress(item)}
-                                                    />
-                                                ))}
-                                            </View>
-                                        ) : (
-                                            <EmptyNote text="No new releases yet — pull to refresh." />
-                                        )}
+                                        <ScrollView
+                                            horizontal
+                                            showsHorizontalScrollIndicator={false}
+                                            contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
+                                            className="grow-0"
+                                        >
+                                            {creators.map((creator) => (
+                                                <CreatorBubble key={creator.id} creator={creator} />
+                                            ))}
+                                        </ScrollView>
                                     </View>
                                 </View>
                             )}
-                    </>
+
+                            {/* LATEST DROPS — newest first, two-column grid */}
+                            {newReleases.length > 0 && (
+                                <View className="gap-[14px]">
+                                    <SectionHeading
+                                        title="Latest drops"
+                                        onViewAll={() => handleSeeAll("new_releases", "Latest Releases")}
+                                    />
+                                    <View className="flex-row flex-wrap gap-3 px-5">
+                                        {newReleases.map((item) => (
+                                            <DiscoverProductCard
+                                                key={item.id}
+                                                item={item}
+                                                width={gridCardWidth}
+                                                imageHeight={gridCardWidth}
+                                                variant="grid"
+                                                onPress={() => handleProductPress(item)}
+                                            />
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                    )}
                 </LinearGradient>
             </ScrollView>
         </View>
@@ -322,9 +307,9 @@ export default function DiscoverScreen() {
 }
 
 /**
- * Leaderboard banner, as in the Figma. **Mock content for now**: there is no
- * leaderboard endpoint, so the "#1–10" range is fixed text and the banner does
- * not navigate anywhere yet. Wire both to real data once the backend has one.
+ * Leaderboard banner from the Figma. **Mock content for now**: the Discover API
+ * does not serve a leaderboard, so the "#1–10" range is fixed text and the
+ * banner does not navigate anywhere yet.
  */
 const LEADERBOARD_MOCK = {
     title: "Leaderboard",
@@ -378,18 +363,17 @@ function LeaderboardBanner() {
     );
 }
 
-/**
- * Round creator avatar from the Figma. The feed's "top creators" are products,
- * so the portrait is the product image and the caption its name; the Figma's
- * "12 drops" line is dropped because there is no count to show.
- */
-function CreatorBubble({ item, onPress }: { item: DiscoverProductItem; onPress: () => void }) {
+/** Round creator avatar from the Figma: ringed portrait, name and drop count. */
+function CreatorBubble({ creator }: { creator: DiscoverCreatorItem }) {
     return (
         <TouchableOpacity
             accessibilityRole="button"
-            accessibilityLabel={item.name}
+            accessibilityLabel={creator.name}
             activeOpacity={0.8}
-            onPress={onPress}
+            // The creator's id is the artist id the profile screen takes.
+            onPress={() =>
+                router.push({ pathname: "/artists/[artistId]", params: { artistId: creator.id } } as never)
+            }
             className="w-[72px] items-center gap-[6px]"
         >
             <LinearGradient
@@ -397,14 +381,15 @@ function CreatorBubble({ item, onPress }: { item: DiscoverProductItem; onPress: 
                 style={{ width: 56, height: 56, borderRadius: 28, padding: 2 }}
             >
                 <Image
-                    source={{ uri: item.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
+                    source={{ uri: creator.avatarUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
                     resizeMode="cover"
                     style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "#eef2ff" }}
                 />
             </LinearGradient>
-            <Text numberOfLines={2} className="text-center font-syne-bold text-[10.25px] leading-[13px] text-[#111827]">
-                {item.name}
+            <Text numberOfLines={1} className="text-center font-syne-bold text-[10.25px] text-[#111827]">
+                {creator.name}
             </Text>
+            <Text className="font-syne text-[9.5px] text-[#6b7280]">{formatDropCount(creator.dropCount)}</Text>
         </TouchableOpacity>
     );
 }
@@ -432,14 +417,6 @@ function SectionHeading({
                 <Text className="font-syne-semibold text-[10.25px] text-[#3b82f6]">{actionLabel}</Text>
                 <ChevronRight size={12} color="#3b82f6" />
             </TouchableOpacity>
-        </View>
-    );
-}
-
-function EmptyNote({ text }: { text: string }) {
-    return (
-        <View className="mx-5 rounded border border-dashed border-[#dbeafe] bg-white/60 px-4 py-6">
-            <Text className="text-center font-syne text-xs text-[#6b7280]">{text}</Text>
         </View>
     );
 }

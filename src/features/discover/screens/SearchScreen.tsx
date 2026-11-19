@@ -13,20 +13,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useMarketplaceListings } from "@/features/marketplace/api/getMarketplaceListings";
-import { MarketplaceCategory } from "@/features/marketplace/types/marketplace";
-import { formatPrice } from "@/features/products/utils/format";
+import { useDiscoverProducts } from "../api/getDiscoverProducts";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import { DiscoverCategory } from "../types/discover";
 import {
     addRecentSearch,
     clearRecentSearches,
     RecentSearchItem,
     useRecentSearches,
 } from "../utils/recentSearches";
-import { DISCOVER_PLACEHOLDER_IMAGE, formatRewardPoints } from "../utils/format";
+import { DISCOVER_PLACEHOLDER_IMAGE, formatDiscoverPrice, formatRewardPoints } from "../utils/format";
 
-/** Figma "Product type" chips. Each id is a real marketplace category filter. */
-const PRODUCT_TYPES: { id: MarketplaceCategory | "all"; label: string }[] = [
+/** Figma "Product type" chips. Each id is a real `?category=` filter on Discover. */
+const PRODUCT_TYPES: { id: DiscoverCategory | "all"; label: string }[] = [
     { id: "all", label: "All Items" },
     { id: "cards", label: "Cards" },
     { id: "figures", label: "Figures" },
@@ -40,27 +39,26 @@ const PRODUCT_TYPES: { id: MarketplaceCategory | "all"; label: string }[] = [
  * Search — the light "Y2K" layout from the UX-DESIGN Figma file
  * (HitBox · Search · Discover).
  *
- * Results come from `GET /marketplace/listings` rather than the Discover
- * products endpoint, because that is the one that filters by product type as
- * well as by name. With nothing typed it shows what the user opened from here
- * recently, or the most popular drops if there is no history yet.
+ * Results come from `GET /discover/products?search=` (and `?category=` for the
+ * product-type chips). With nothing typed it shows what the user opened from here
+ * recently, or the most popular drops (most minted first) if there is no history.
  */
 export default function SearchScreen() {
     const isFocused = useIsFocused();
     const [query, setQuery] = useState("");
     const debounced = useDebouncedValue(query.trim());
-    const [type, setType] = useState<MarketplaceCategory | "all">("all");
+    const [type, setType] = useState<DiscoverCategory | "all">("all");
     const recents = useRecentSearches();
 
     const searching = debounced.length > 0;
     const showRecents = !searching && type === "all" && recents.length > 0;
 
-    const { data, isLoading, isError, refetch } = useMarketplaceListings(
+    const { data, isLoading, isError, refetch } = useDiscoverProducts(
         {
             search: searching ? debounced : undefined,
             category: type === "all" ? undefined : type,
-            // Nothing typed → "popular" gives the browse list a sensible order.
-            sort: searching ? undefined : "popular",
+            // Nothing typed → "trending" (most minted) gives the browse list a sensible order.
+            section: searching ? undefined : "trending",
             limit: 20,
         },
         { enabled: !showRecents },
@@ -73,7 +71,8 @@ export default function SearchScreen() {
             name: i.name,
             imageUrl: i.imageUrl,
             rewardPoints: i.rewardPoints,
-            priceInDollars: i.priceInDollars,
+            price: i.price,
+            artistName: i.artist?.name ?? null,
         }));
 
     const heading = searching ? "Results" : showRecents ? "Recent searches" : "Popular drops";
@@ -250,7 +249,7 @@ export default function SearchScreen() {
 
 function ResultCard({ item, onPress }: { item: RecentSearchItem; onPress: () => void }) {
     const points = formatRewardPoints(item.rewardPoints);
-    const price = formatPrice(item.priceInDollars);
+    const price = formatDiscoverPrice(item.price);
     return (
         <TouchableOpacity
             accessibilityRole="button"
@@ -268,6 +267,9 @@ function ResultCard({ item, onPress }: { item: RecentSearchItem; onPress: () => 
                 <Text numberOfLines={2} className="font-syne-bold text-[13px] leading-[17px] text-[#111827]">
                     {item.name}
                 </Text>
+                {item.artistName && (
+                    <Text numberOfLines={1} className="font-syne text-[11px] text-[#6b7280]">{item.artistName}</Text>
+                )}
                 <View className="flex-row items-center gap-3">
                     {price && <Text className="font-syne-bold text-[12px] text-[#111827]">{price}</Text>}
                     {points && (

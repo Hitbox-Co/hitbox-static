@@ -1,22 +1,25 @@
 import { LinearGradient } from 'expo-linear-gradient'
-import { ArrowUpRight, Bell, Heart, Search, Star } from 'lucide-react-native'
+import { ArrowUpRight, Bell, Search, Star } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import React, { useEffect, useState } from 'react'
 import { Image, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DiscoverProductItem } from '../types/discover'
-import { formatRewardPoints } from '../utils/format'
+import { formatDiscoverPrice, formatRewardPoints, rarityLabel } from '../utils/format'
+import WishlistHeart from './WishlistHeart'
 
 /** Figma: the carousel is 499 tall including the 44px status bar. */
 const HERO_BODY_HEIGHT = 455
 const LIME = '#d1f63b'
+const DEFAULT_TAGLINE = 'Beyond the ordinary.'
 
 interface DiscoverHeroProps {
-    /** Featured products from GET /api/v1/discover (≤5). May be empty while loading. */
+    /** Featured drops from GET /api/v1/discover (≤5). May be empty while loading. */
     items?: DiscoverProductItem[]
+    /** Opens the drop (where a size or colour can be chosen before buying). */
     onItemPress?: (item: DiscoverProductItem) => void
-    /** Fallback CTA when there is no featured product to open. */
+    /** Fallback CTA when there is no featured drop to open. */
     onExplore?: () => void
     onSearchPress?: () => void
     onBellPress?: () => void
@@ -29,10 +32,12 @@ interface DiscoverHeroProps {
  * Top of Discover — the dark full-bleed banner from the Figma, behind a
  * transparent header (logo, search, notifications, Sign Up).
  *
- * The artwork is fixed brand imagery; the *featured products* from the feed
- * rotate through the caption beneath it (name, reward points, "View Drop").
- * The feed carries no price, rarity or creator, so the Figma's price and rarity
- * chip are not shown.
+ * The artwork is fixed brand imagery; the *featured drops* rotate through the
+ * caption beneath it, exactly as the Figma lays it out: rarity chip, the drop's
+ * tagline as the headline (its `description`), "name · by artist", price and
+ * reward points, and **Buy Now**. Anything a drop lacks (no rarity, no price,
+ * no points) is left off. Buy Now opens the drop, because a drop with sizes or
+ * colours needs one chosen first.
  */
 export default function DiscoverHero({
     items,
@@ -50,7 +55,6 @@ export default function DiscoverHero({
 
     const featured = items ?? []
     const [index, setIndex] = useState(0)
-    const [liked, setLiked] = useState(false)
     const active = featured.length > 0 ? featured[Math.min(index, featured.length - 1)] : undefined
 
     // Auto-advance, restarting whenever the user picks a dot.
@@ -61,6 +65,11 @@ export default function DiscoverHero({
     }, [index, featured.length])
 
     const points = active ? formatRewardPoints(active.rewardPoints) : null
+    const price = active ? formatDiscoverPrice(active.price) : null
+    const rarity = active ? rarityLabel(active.rarity) : null
+    const subtitle = active
+        ? [active.name, active.artist ? `by ${active.artist.name}` : null].filter(Boolean).join(' · ')
+        : 'Physical collectibles, verified on HitBox'
 
     return (
         <View style={{ height, backgroundColor: '#0a0a1a', overflow: 'hidden' }}>
@@ -133,26 +142,17 @@ export default function DiscoverHero({
                 </View>
             </View>
 
-            {/* Save/like — Figma puts it at the right edge, just under the header. */}
-            <TouchableOpacity
-                accessibilityRole="button"
-                accessibilityLabel={liked ? 'Remove from saved' : 'Save featured drop'}
-                activeOpacity={0.7}
-                hitSlop={10}
-                onPress={() => setLiked((v) => !v)}
-                style={{ position: 'absolute', right: 25, top: insets.top + 62 }}
-            >
-                <Heart
-                    size={19}
-                    color={liked ? '#f43f5e' : '#fda4af'}
-                    fill={liked ? '#f43f5e' : '#fda4af'}
-                />
-            </TouchableOpacity>
+            {/* Wishlist heart — Figma puts it at the right edge, just under the header. */}
+            {active && (
+                <View style={{ position: 'absolute', right: 25, top: insets.top + 62 }}>
+                    <WishlistHeart key={active.id} productId={active.id} isWishlisted={active.isWishlisted} variant="hero" size={19} />
+                </View>
+            )}
 
             {/* Featured caption */}
             <View className="absolute bottom-5 left-5 right-5 gap-2">
                 <View className="self-start rounded border border-[rgba(229,255,80,0.4)] bg-[rgba(188,255,71,0.15)] px-[10px] py-[5px]">
-                    <Text className="font-syne-bold text-[7.5px] text-[#d1f63b]">FEATURED DROP</Text>
+                    <Text className="font-syne-bold text-[7.5px] text-[#d1f63b]">{rarity ?? 'FEATURED DROP'}</Text>
                 </View>
 
                 <MotiView
@@ -164,6 +164,7 @@ export default function DiscoverHero({
                 >
                     <View className="gap-[5px]">
                         <Text
+                            numberOfLines={2}
                             className="font-orbitron-black text-[21px] leading-[22px] text-white"
                             style={{
                                 textShadowColor: 'rgba(64,107,204,0.17)',
@@ -171,32 +172,31 @@ export default function DiscoverHero({
                                 textShadowRadius: 1,
                             }}
                         >
-                            Beyond the ordinary.
+                            {active?.description?.trim() || DEFAULT_TAGLINE}
                         </Text>
                         <Text numberOfLines={1} className="font-syne-medium text-[13px] text-white">
-                            {active ? active.name : 'Physical collectibles, verified on HitBox'}
+                            {subtitle}
                         </Text>
                     </View>
 
                     <View className="h-[42px] flex-row items-center gap-[10px]">
                         <View className="flex-1 gap-[3px]">
+                            {price ? <Text className="font-syne-extrabold text-[20px] text-white">{price}</Text> : null}
                             {points ? (
                                 <View className="flex-row items-center gap-[3px]">
                                     <Star size={10} color={LIME} fill={LIME} />
-                                    <Text className="font-syne-semibold text-[11px] text-[#d1f63b]">{points}</Text>
+                                    <Text className="font-syne-semibold text-[9.5px] text-[#d1f63b]">{points}</Text>
                                 </View>
                             ) : null}
                         </View>
                         <TouchableOpacity
                             accessibilityRole="button"
-                            accessibilityLabel={active ? `View ${active.name}` : 'Explore drops'}
+                            accessibilityLabel={active ? `Buy ${active.name}` : 'Explore drops'}
                             activeOpacity={0.85}
                             onPress={() => (active ? onItemPress?.(active) : onExplore?.())}
                             className="h-[42px] w-[153px] flex-row items-center justify-center gap-2 rounded-[30px] border border-[#2563eb] bg-[#2563eb]"
                         >
-                            <Text className="font-syne-bold text-[13px] text-white">
-                                {active ? 'View Drop' : 'Explore'}
-                            </Text>
+                            <Text className="font-syne-bold text-[13px] text-white">{active ? 'Buy Now' : 'Explore'}</Text>
                             <ArrowUpRight size={16} color="#fff" />
                         </TouchableOpacity>
                     </View>

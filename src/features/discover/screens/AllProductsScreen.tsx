@@ -16,11 +16,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useDiscoverProductsInfinite } from "../api/getDiscoverProductsInfinite";
 import DiscoverProductCard from "../components/DiscoverProductCard";
-import { DiscoverProductItem, DiscoverSection } from "../types/discover";
+import { DiscoverCategory, DiscoverProductItem, DiscoverSection } from "../types/discover";
 
 interface AllProductsScreenProps {
     /** Omitted → all ACTIVE products, newest first (the endpoint's default). */
     section?: DiscoverSection;
+    /** The category chip carried over from the Discover screen. */
+    category?: DiscoverCategory;
     title?: string;
 }
 
@@ -32,7 +34,7 @@ interface AllProductsScreenProps {
  * Cards stay lightweight here too: tapping one opens Discover's own
  * `discover/[productId]`, which fetches the full `GET /products/:id`.
  */
-export default function AllProductsScreen({ section, title }: AllProductsScreenProps) {
+export default function AllProductsScreen({ section, category, title }: AllProductsScreenProps) {
     const isFocused = useIsFocused();
     const { width } = useWindowDimensions();
     const cardWidth = (width - 40 - 12) / 2;
@@ -46,7 +48,7 @@ export default function AllProductsScreen({ section, title }: AllProductsScreenP
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
-    } = useDiscoverProductsInfinite({ section, limit: 20 });
+    } = useDiscoverProductsInfinite({ section, category, limit: 20 });
 
     const items = data?.pages.flatMap((page) => page.data) ?? [];
     const total = data?.pages[0]?.meta.total ?? 0;
@@ -116,6 +118,7 @@ export default function AllProductsScreen({ section, title }: AllProductsScreenP
                             item={item}
                             width={cardWidth}
                             imageHeight={cardWidth}
+                            variant="grid"
                             onPress={() => openProduct(item)}
                         />
                     )}
