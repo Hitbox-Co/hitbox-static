@@ -1,7 +1,10 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
+import { Globe, Lock } from "lucide-react-native";
 import React from "react";
 import {
+  ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   Text,
@@ -14,30 +17,29 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
+import { collectionErrorMessage } from "../api/collectionErrors";
+import { useUpdateCollectionVisibility } from "../api/updateCollectionVisibility";
+import { CollectionCardData, serialLabel } from "../utils/mapCollectionItem";
+
 const AnimatedPressable =
   Animated.createAnimatedComponent(Pressable);
 
-interface CollectionItem {
-  id: string;
-  title: string;
-  subtitle: string;
-  image: { uri: string };
-  owned: number;
-  total: number;
-  featured: boolean;
-}
-
 interface Props {
-  item: CollectionItem;
+  item: CollectionCardData;
 }
 
 export default function CollectionCard({ item }: Props) {
   const { width } = useWindowDimensions();
   const CARD_WIDTH = (width - 56) / 3;
 
-  const progress = Math.round(
-    (item.owned / item.total) * 100
-  );
+  // PATCH /collections/me/:skuId — takes the SKU id, not the shelf-row id.
+  const updateVisibility = useUpdateCollectionVisibility();
+  const isPublic = item.visibility === "PUBLIC";
+  const toggleVisibility = () =>
+    updateVisibility.mutate(
+      { skuId: item.skuId, visibility: isPublic ? "PRIVATE" : "PUBLIC" },
+      { onError: (err) => Alert.alert("Couldn't update visibility", collectionErrorMessage(err)) },
+    );
 
   const scale = useSharedValue(1);
 
@@ -158,58 +160,48 @@ export default function CollectionCard({ item }: Props) {
           </Text>
         </View>
 
-        {/* PROGRESS */}
+        {/* SERIAL + VISIBILITY — one card is one physical unit */}
         <View
           style={{
             marginTop: 8,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          <View
+          <Text style={{ color: "#fff", fontSize: 8, fontWeight: "700" }}>
+            {serialLabel(item.serial)}
+          </Text>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isPublic ? "Public. Tap to make private" : "Private. Tap to make public"}
+            hitSlop={8}
+            disabled={updateVisibility.isPending}
+            onPress={toggleVisibility}
             style={{
               flexDirection: "row",
-              justifyContent: "space-between",
-              marginBottom: 4,
+              alignItems: "center",
+              gap: 3,
+              borderRadius: 8,
+              borderWidth: 1,
+              borderColor: isPublic ? "#7C3AED" : "#232C3F",
+              backgroundColor: isPublic ? "rgba(124,58,237,0.18)" : "#111827",
+              paddingHorizontal: 5,
+              paddingVertical: 2,
             }}
           >
-            <Text
-              style={{
-                color: "#fff",
-                fontSize: 8,
-                fontWeight: "700",
-              }}
-            >
-              {item.owned}/{item.total}
+            {updateVisibility.isPending ? (
+              <ActivityIndicator size="small" color="#A78BFA" style={{ transform: [{ scale: 0.55 }] }} />
+            ) : isPublic ? (
+              <Globe size={8} color="#C4B5FD" />
+            ) : (
+              <Lock size={8} color="#8B95A7" />
+            )}
+            <Text style={{ color: isPublic ? "#C4B5FD" : "#8B95A7", fontSize: 7, fontWeight: "700" }}>
+              {isPublic ? "Public" : "Private"}
             </Text>
-
-            <Text
-              style={{
-                color: "#8B95A7",
-                fontSize: 8,
-              }}
-            >
-              {progress}%
-            </Text>
-          </View>
-
-          <View
-            style={{
-              height: 3,
-              backgroundColor: "#1A2234",
-              borderRadius: 10,
-              overflow: "hidden",
-            }}
-          >
-            <LinearGradient
-              colors={["#A855F7", "#7C3AED"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{
-                width: `${progress}%`,
-                height: "100%",
-                borderRadius: 10,
-              }}
-            />
-          </View>
+          </Pressable>
         </View>
       </View>
     </AnimatedPressable>

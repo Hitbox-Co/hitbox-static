@@ -1,44 +1,54 @@
 /**
  * Types for the Collections module — mirrors `/api/v1/collections` in the
- * backend API reference. Backs the "My Collection" tab: a user's shelf of
- * owned/claimed collectibles (BuyerCollection). Items are added via the
- * claims flow — there is no "add to collection" endpoint.
+ * backend API reference (`collections-api.md`). Backs the "My Collection" tab:
+ * the physical items a user owns, their stats, and the public/private switch per
+ * item. There is no "add to collection" endpoint: items reach the shelf only by
+ * an NFC claim.
  */
 
 export type CollectionVisibility = 'PUBLIC' | 'PRIVATE'
 
-export type CollectionGenre =
-    | 'MUSIC' | 'SPORTS' | 'FILM' | 'GAMING' | 'PUBLICATION' | 'ART' | 'ANIME' | 'OTHER'
+export type ClaimedStatus = 'UNCLAIMED' | 'CLAIMED' | 'IN_TRANSFER' | 'FLAGGED'
 
-export type CollectionRarity =
-    | 'COMMON' | 'UNCOMMON' | 'RARE' | 'EPIC' | 'LEGENDARY' | 'EXCLUSIVE'
-
-/** Product card embedded in a collection row — tap → GET /products/:id for full detail. */
-export interface CollectionProductCard {
+/** The serialized unit a shelf row is: copy #14 of an edition. */
+export interface CollectionSku {
+    /** What `PATCH /collections/me/:skuId` takes — not the shelf-row id, not the product id. */
     id: string
-    name: string
-    /** First product image; null if none. */
-    imageUrl: string | null
-    rarity: CollectionRarity
-    rewardPoints: number
-    claimedStatus: 'UNCLAIMED' | 'CLAIMED'
+    skuCode: string
+    /** "#14" — position in the edition. */
+    serialNumber: number
+    claimedStatus: ClaimedStatus
 }
 
-/** CollectionItemDto — a collection row plus its embedded product card. */
+/** Product card embedded in a shelf row — tap → GET /products/:id for full detail. */
+export interface CollectionProductCard {
+    /** The drop id. */
+    id: string
+    name: string
+    /** Primary image; null when the drop has none (or the server has no storage bucket). */
+    imageUrl: string | null
+    /** Free-form text, null when not set. Format it for display; never switch on it as an enum. */
+    rarity: string | null
+    /** 0 when none is set. */
+    rewardPoints: number
+}
+
+/**
+ * One shelf row = **one serialized unit**. A user who owns three copies of the
+ * same drop has three rows.
+ */
 export interface CollectionItem {
-    /** Collection-item id (distinct from product id). */
+    /** Shelf-row id (not used in any path). */
     id: string
     visibility: CollectionVisibility
-    totalClaimedNo: number
-    /** Nullable. */
-    genre: CollectionGenre | null
-    addedAt: string
+    /** When it reached the shelf — the claim. */
+    acquiredAt: string
+    sku: CollectionSku
     product: CollectionProductCard
 }
 
-/** Query params for GET /api/v1/collections/me. */
+/** Query params for GET /api/v1/collections/me. (There is no genre filter any more.) */
 export interface MyCollectionFilters {
-    genre?: CollectionGenre
     visibility?: CollectionVisibility
     /** int ≥ 1, default 1. */
     page?: number
@@ -46,23 +56,29 @@ export interface MyCollectionFilters {
     limit?: number
 }
 
-/** Body for PATCH /api/v1/collections/me/:productId. */
+/** Query params for GET /api/v1/collections/user/:userId (always PUBLIC items only). */
+export interface UserCollectionFilters {
+    page?: number
+    limit?: number
+}
+
+/** Body for PATCH /api/v1/collections/me/:skuId. */
 export interface UpdateVisibilityInput {
     visibility: CollectionVisibility
 }
 
 /** GET /api/v1/collections/me/stats — aggregated stats for the Collections screen. */
 export interface CollectionStats {
-    /** Count of the user's collection items (rows). */
+    /** Every live shelf row. */
     totalClaimedItems: number
-    /** Distinct ArtistCollections the user has ≥ 1 product from. */
+    /** Artist collections the user owns at least one item from. */
     totalArtistCollections: number
     collectionProgress: {
-        /** The user's items that belong to an ArtistCollection. */
+        /** The user's items that belong to an artist collection (units, so two copies count twice). */
         owned: number
         /** Σ maximumLimit of those collections. */
         total: number
-        /** round(owned / total × 100), clamped 0–100. */
+        /** round(owned / total × 100), 0–100; 0 when total is 0. */
         percentage: number
     }
 }
