@@ -42,6 +42,7 @@ import { cartErrorMessage } from "@/features/checkout/api/cartErrors";
 import { useAddToCart } from "@/features/checkout/api/cartMutations";
 import { checkoutActions } from "@/features/checkout/store/checkoutStore";
 import { ProductRarity } from "../types/product";
+import RewardTeaserCard from "@/features/rewards/components/RewardTeaserCard";
 import { RARITY_STYLES } from "../utils/rarity";
 
 interface TourScreenProps {
@@ -466,6 +467,8 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   {product.description ?? "No description available for this item yet."}
                 </Text>
               </View>
+
+              <RewardTeaserCard collectionId={product.collectionId ?? product.collection?.id} />
 
               <View className="gap-2">
                 <SectionHeading title="The details" />
