@@ -22,7 +22,7 @@ import { Profile } from '../types/profile'
  * a PRIVATE profile shows "This profile is private" and the items call is
  * skipped (it would answer 403). Follow / Following comes from `viewer`.
  */
-export default function CollectorProfileScreen({ userId }: { userId?: string }) {
+export default function CollectorProfileScreen({ userId, preview = false }: { userId?: string; preview?: boolean }) {
     const { data: profile, isLoading, isError, error, refetch } = useUser(userId)
 
     if (isLoading) {
@@ -57,15 +57,28 @@ export default function CollectorProfileScreen({ userId }: { userId?: string }) 
 
     return (
         <CheckoutShell showBag={false}>
-            <ProfileHeader profile={profile} />
-            {profile.isPrivate && !profile.viewer?.isSelf ? <PrivateNotice name={displayName(profile)} /> : <Showcase userId={profile.id} />}
+            {preview && (
+                <View className="rounded border border-[#bfdbfe] bg-[#eff6ff] p-3">
+                    <Text className="font-syne-bold text-[12px] text-[#2563eb]">Visitor preview</Text>
+                    <Text className="mt-0.5 font-syne text-[11px] leading-[16px] text-[#4b5563]">
+                        This is how other collectors see your profile right now.
+                    </Text>
+                </View>
+            )}
+            <ProfileHeader profile={profile} preview={preview} />
+            {profile.isPrivate && (preview || !profile.viewer?.isSelf) ? (
+                <PrivateNotice name={displayName(profile)} />
+            ) : (
+                // Your own token returns your whole shelf; a visitor only gets items marked Public.
+                <Showcase userId={profile.id} publicOnly={preview} />
+            )}
         </CheckoutShell>
     )
 }
 
 const displayName = (p: Profile) => p.fullName || (p.handle ? `@${p.handle}` : 'Collector')
 
-function ProfileHeader({ profile }: { profile: Profile }) {
+function ProfileHeader({ profile, preview = false }: { profile: Profile; preview?: boolean }) {
     const { isSignedIn } = useAuth()
     const follow = useFollowUser()
     // Optimistic: follow/unfollow is idempotent, so the button flips at once.
@@ -129,7 +142,7 @@ function ProfileHeader({ profile }: { profile: Profile }) {
                 <Stat value={profile.stats.following} label="Following" onPress={() => openFollows('following')} />
             </View>
 
-            {profile.viewer?.isSelf ? (
+            {preview ? null : profile.viewer?.isSelf ? (
                 <TouchableOpacity
                     accessibilityRole="button"
                     onPress={() => router.push('/edit-profile' as never)}
@@ -182,9 +195,9 @@ function PrivateNotice({ name }: { name: string }) {
     )
 }
 
-function Showcase({ userId }: { userId: string }) {
+function Showcase({ userId, publicOnly = false }: { userId: string; publicOnly?: boolean }) {
     const { data, isLoading, isError, error } = useUserCollection(userId, { limit: 50 })
-    const items = data?.data ?? []
+    const items = (data?.data ?? []).filter((item) => !publicOnly || item.visibility === 'PUBLIC')
 
     return (
         <View className="gap-3">

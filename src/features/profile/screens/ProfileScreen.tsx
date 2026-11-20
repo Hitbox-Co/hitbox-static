@@ -159,7 +159,7 @@ export default function ProfileScreen() {
                     accessibilityRole="button"
                     accessibilityLabel="Manage profile visibility"
                     activeOpacity={0.8}
-                    onPress={() => router.push('/edit-profile' as never)}
+                    onPress={() => router.push('/profile-privacy' as never)}
                     className="mx-5 mt-3 h-11 flex-row items-center justify-between rounded-lg border border-[#374151] bg-white px-3.5"
                 >
                     <View className="flex-row items-center gap-2.5">
