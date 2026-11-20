@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
-import { ArrowLeft, Check, Lock } from "lucide-react-native";
+import { ArrowLeft, Check } from "lucide-react-native";
 import React, { useState } from "react";
 import { ActivityIndicator, Image as RNImage, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -149,30 +149,27 @@ export default function CollectionDetailScreen({ collectionId }: { collectionId?
                     <TouchableOpacity
                       key={p.id}
                       accessibilityRole="button"
-                      accessibilityLabel={`${p.name}, ${isOwned ? "owned" : "not owned"}`}
+                      accessibilityLabel={`${p.name}, ${isOwned ? "owned" : "not owned yet"}`}
                       activeOpacity={0.85}
-                      onPress={() => router.push({ pathname: "/discover/[productId]", params: { productId: p.id } } as never)}
+                      onPress={() => router.push({ pathname: "/collectible/[productId]", params: { productId: p.id, collectionId } } as never)}
                       style={{ width: "48.5%" }}
                       className="overflow-hidden rounded-lg bg-white"
                     >
                       <View>
                         <Image
                           source={{ uri: p.imageUrl ?? COLLECTION_PLACEHOLDER_IMAGE }}
-                          style={{ width: "100%", aspectRatio: 1.15, backgroundColor: "#e5e7eb", opacity: isOwned ? 1 : 0.45 }}
+                          style={{ width: "100%", aspectRatio: 1.15, backgroundColor: "#e5e7eb" }}
                           contentFit="cover"
                         />
-                        {!isOwned && (
-                          <View className="absolute inset-0 items-center justify-center">
-                            <Lock size={20} color="#111827" />
-                          </View>
-                        )}
+                        {/* Not owned yet: the picture is veiled, not removed */}
+                        {!isOwned && <View className="absolute inset-0 bg-[#eef2f7]/60" />}
                       </View>
                       <View className="gap-0.5 p-2.5">
                         <Text numberOfLines={1} className="font-syne-bold text-[12px] text-[#111827]">{p.name}</Text>
                         <View className="flex-row items-center gap-1">
                           {isOwned && <Check size={11} color="#111827" />}
                           <Text className={`font-syne-semibold text-[10px] ${isOwned ? "text-[#111827]" : "text-[#6b7280]"}`}>
-                            {isOwned ? "Owned" : "Not owned"}
+                            {isOwned ? "Owned" : "Not owned yet"}
                           </Text>
                         </View>
                       </View>
@@ -205,12 +202,25 @@ export default function CollectionDetailScreen({ collectionId }: { collectionId?
               </View>
             )}
 
-            <View className="gap-1 rounded bg-[#eef2f7] p-4">
-              <Text className="font-syne-bold text-[14px] text-[#111827]">Your authenticated finds</Text>
-              <Text className="font-syne text-[12px] leading-[18px] text-[#6b7280]">
-                {`These ${owned} ${owned === 1 ? "product is" : "products are"} part of your public collection when your profile is public and the item is set to public.`}
-              </Text>
-            </View>
+            {tab === "missing" ? (
+              <View className="gap-1 rounded bg-[#eef2f7] p-4">
+                <Text className="font-syne-bold text-[16px] text-[#111827]">
+                  {missing > 0 ? "Your next great find is waiting" : "Set complete"}
+                </Text>
+                <Text className="font-syne text-[12px] leading-[18px] text-[#6b7280]">
+                  {missing > 0
+                    ? `Explore the ${missing} ${missing === 1 ? "product" : "products"} you're missing and get closer to completing ${title}.`
+                    : `You own every drop in ${title}.`}
+                </Text>
+              </View>
+            ) : (
+              <View className="gap-1 rounded bg-[#eef2f7] p-4">
+                <Text className="font-syne-bold text-[14px] text-[#111827]">Your authenticated finds</Text>
+                <Text className="font-syne text-[12px] leading-[18px] text-[#6b7280]">
+                  {`These ${owned} ${owned === 1 ? "product is" : "products are"} part of your public collection when your profile is public and the item is set to public.`}
+                </Text>
+              </View>
+            )}
           </>
         )}
       </ScrollView>

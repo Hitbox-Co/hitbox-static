@@ -362,7 +362,7 @@ function ShelfRow({ item }: { item: CollectionItem }) {
         accessibilityRole="button"
         accessibilityLabel={`Open ${item.product.name}`}
         activeOpacity={0.85}
-        onPress={() => router.push({ pathname: "/discover/[productId]", params: { productId: item.product.id } } as never)}
+        onPress={() => router.push({ pathname: "/collectible/[productId]", params: { productId: item.product.id } } as never)}
         className="flex-1 flex-row items-center gap-3"
       >
         <Image
