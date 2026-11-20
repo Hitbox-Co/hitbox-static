@@ -192,7 +192,7 @@ export default function CollectionCard({ item }: Props) {
             }}
           >
             {updateVisibility.isPending ? (
-              <ActivityIndicator size="small" color="#A78BFA" style={{ transform: [{ scale: 0.55 }] }} />
+              <ActivityIndicator size="small" color="#2563eb" style={{ transform: [{ scale: 0.55 }] }} />
             ) : isPublic ? (
               <Globe size={8} color="#C4B5FD" />
             ) : (

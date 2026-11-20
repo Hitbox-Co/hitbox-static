@@ -52,7 +52,7 @@ export default function AllCollectionsScreen() {
         {/* Loading */}
         {isLoading && (
           <View className="mt-16 items-center">
-            <ActivityIndicator size="large" color="#8B5CF6" />
+            <ActivityIndicator size="large" color="#2563eb" />
           </View>
         )}
 
@@ -96,7 +96,7 @@ export default function AllCollectionsScreen() {
                 activeOpacity={0.8}
               >
                 {isFetchingNextPage ? (
-                  <ActivityIndicator size="small" color="#A78BFA" />
+                  <ActivityIndicator size="small" color="#2563eb" />
                 ) : (
                   <Text className="text-violet-400 text-xs font-bold">Load More</Text>
                 )}

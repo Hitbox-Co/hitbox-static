@@ -106,8 +106,8 @@ function RootNavigator() {
   // otherwise signed-in users get bounced to public routes on cold start.
   if (!isLoaded || !currencyReady || !(fontsLoaded || fontError)) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#08060b]">
-        <ActivityIndicator size="large" color="#6C5CE7" />
+      <View className="flex-1 items-center justify-center bg-[#f6f9fc]">
+        <ActivityIndicator size="large" color="#2563eb" />
       </View>
     );
   }
@@ -119,7 +119,7 @@ function RootNavigator() {
       screenOptions={{
         headerShown: false,
         contentStyle: {
-          backgroundColor: "#08060b",
+          backgroundColor: "#f6f9fc",
         },
       }}
     >
@@ -187,13 +187,13 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   }, [retrying, retry]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-[#08060b] px-8">
+    <View className="flex-1 items-center justify-center bg-[#f6f9fc] px-8">
       {retrying ? (
-        <ActivityIndicator size="large" color="#6C5CE7" />
+        <ActivityIndicator size="large" color="#2563eb" />
       ) : (
         <>
-          <Text className="text-white text-xl font-black text-center">Something went wrong</Text>
-          <Text className="text-neutral-400 text-center mt-2 mb-6">
+          <Text className="text-[#111827] text-xl font-black text-center">Something went wrong</Text>
+          <Text className="text-[#6b7280] text-center mt-2 mb-6">
             HitBox hit an unexpected problem. Try again.
           </Text>
           <TouchableOpacity

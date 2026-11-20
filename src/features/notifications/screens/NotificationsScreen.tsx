@@ -80,7 +80,7 @@ export default function NotificationsScreen() {
                         hitSlop={8}
                         onPress={() => markAllSeen()}
                     >
-                        <CheckCheck size={16} color="#8B5CF6" />
+                        <CheckCheck size={16} color="#2563eb" />
                         <Text className="text-primary text-xs font-bold ml-1">Mark all read</Text>
                     </TouchableOpacity>
                 )}
@@ -88,7 +88,7 @@ export default function NotificationsScreen() {
 
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
-                    <ActivityIndicator size="large" color="#8B5CF6" />
+                    <ActivityIndicator size="large" color="#2563eb" />
                 </View>
             ) : (
                 <ScrollView
@@ -96,7 +96,7 @@ export default function NotificationsScreen() {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 32, paddingTop: 4 }}
                     refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#8B5CF6" />
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563eb" />
                     }
                 >
                     {notifications.length === 0 ? (

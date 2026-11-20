@@ -14,11 +14,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { categoryChipLabel, useOwnedCategories } from "@/features/profile/api/getOwnedCategories";
-import { useRewards } from "@/features/rewards/api/getRewards";
+import { categoryChipLabel, useOwnedCategories, useOwnedProductInfo } from "@/features/profile/api/getOwnedCategories";
+import { useRewards, useRewardTeaser } from "@/features/rewards/api/getRewards";
 import { describeApiError } from "@/lib/api-errors";
 import { useTabScrollReset } from "@/hooks/use-tab-scroll-reset";
 import { collectionErrorMessage } from "../api/collectionErrors";
+import { useAllMyItems, useCollectionTotal } from "../api/getCollectionProducts";
 import { useCollectionStats } from "../api/getCollectionStats";
 import { useMyCollectionInfinite } from "../api/getMyCollectionInfinite";
 import { useUpdateCollectionVisibility } from "../api/updateCollectionVisibility";
@@ -84,6 +85,21 @@ export default function CollectionScreen() {
       : sort === "name"
         ? [...filtered].sort((a, b) => a.product.name.localeCompare(b.product.name))
         : filtered;
+
+  // Collections: the owned drops, grouped by the collection each belongs to (one
+  // cached detail lookup per drop — the shelf rows don't carry it).
+  const everything = useAllMyItems();
+  const infoById = useOwnedProductInfo(everything.items.map((i) => i.product.id));
+  const groups = new Map<string, { ownedDrops: Set<string>; image: string | null; artist: string | null }>();
+  for (const item of everything.items) {
+    const info = infoById[item.product.id];
+    if (!info?.collectionId) continue;
+    const g = groups.get(info.collectionId) ?? { ownedDrops: new Set<string>(), image: null, artist: null };
+    g.ownedDrops.add(item.product.id);
+    g.image = g.image ?? item.product.imageUrl;
+    g.artist = g.artist ?? info.artistName;
+    groups.set(info.collectionId, g);
+  }
 
   const progress = stats.data?.collectionProgress;
   const itemsOwned = stats.data?.totalClaimedItems ?? 0;
@@ -218,8 +234,19 @@ export default function CollectionScreen() {
           </View>
         )}
 
+        {/* Collections — each opens its own page (Figma C06 → C07) */}
+        {groups.size > 0 && (
+          <View className="mt-4 gap-3 px-5">
+            <Text className="font-syne-bold text-[16px] text-[#111827]">Collections</Text>
+            {[...groups.entries()].map(([id, g]) => (
+              <CollectionRow key={id} collectionId={id} owned={g.ownedDrops.size} image={g.image} artist={g.artist} />
+            ))}
+          </View>
+        )}
+
         {/* List */}
         <View className="mt-3 gap-3 px-5">
+          {groups.size > 0 && <Text className="mt-2 font-syne-bold text-[16px] text-[#111827]">Items</Text>}
           {shelf.isLoading && (
             <View className="mt-12 items-center">
               <ActivityIndicator size="large" color="#2563eb" />
@@ -369,5 +396,58 @@ function ShelfRow({ item }: { item: CollectionItem }) {
         </Text>
       </TouchableOpacity>
     </View>
+  );
+}
+
+/** One collection you hold items from: its name, "4 / 8 owned", a progress bar, and what is missing. */
+function CollectionRow({
+  collectionId,
+  owned,
+  image,
+  artist,
+}: {
+  collectionId: string;
+  owned: number;
+  image: string | null;
+  artist: string | null;
+}) {
+  const total = useCollectionTotal(collectionId);
+  // The collection's own name exists only when it has a reward; otherwise the artist stands in.
+  const teaser = useRewardTeaser(collectionId).data;
+  const title = teaser?.collection.name ?? (artist ? `${artist} collection` : "Collection");
+  const cover = teaser?.collection.heroImageUrl ?? image;
+
+  const count = Math.max(total ?? owned, owned);
+  const pct = count > 0 ? Math.round((owned / count) * 100) : 0;
+  const missing = Math.max(0, count - owned);
+
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${title}`}
+      activeOpacity={0.85}
+      onPress={() => router.push({ pathname: "/collection/[collectionId]", params: { collectionId } } as never)}
+      className="flex-row items-center gap-3 rounded-lg bg-white p-2.5"
+    >
+      <Image
+        source={{ uri: cover ?? COLLECTION_PLACEHOLDER_IMAGE }}
+        style={{ width: 76, height: 76, borderRadius: 4, backgroundColor: "#e5e7eb" }}
+        contentFit="cover"
+      />
+      <View className="flex-1 gap-1">
+        <View className="flex-row items-center justify-between">
+          <Text numberOfLines={1} className="flex-1 font-syne-bold text-[16px] text-[#111827]">{title}</Text>
+          <ChevronRight size={18} color="#4b5563" />
+        </View>
+        <View className="flex-row items-center justify-between">
+          <Text className="font-syne text-[12px] text-[#6b7280]">{owned} / {count} owned</Text>
+          <Text className="font-syne-bold text-[12px] text-[#111827]">{pct}%</Text>
+        </View>
+        <View className="h-[5px] overflow-hidden rounded-full bg-[#e5e7eb]">
+          <View className="h-full rounded-full bg-black" style={{ width: `${pct}%` }} />
+        </View>
+        <Text className="font-syne text-[10.5px] text-[#6b7280]">{missing === 0 ? "Complete" : `${missing} missing`}</Text>
+      </View>
+    </TouchableOpacity>
   );
 }

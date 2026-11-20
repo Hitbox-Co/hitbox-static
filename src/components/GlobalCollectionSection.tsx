@@ -483,7 +483,7 @@ export default function GlobalCollectionSection({
                   activeOpacity={0.8}
                 >
                   {loadingMore ? (
-                    <ActivityIndicator size="small" color="#A78BFA" />
+                    <ActivityIndicator size="small" color="#2563eb" />
                   ) : (
                     <Text className="text-violet-400 text-xs font-bold">Load More</Text>
                   )}

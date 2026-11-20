@@ -44,9 +44,9 @@ export default function SSOCallback() {
     }, [isLoaded, isSignedIn]);
 
     return (
-        <View className="flex-1 items-center justify-center bg-[#050507]">
-            <ActivityIndicator size="large" color="#208AEF" />
-            <Text className="text-neutral-300 mt-4 text-base font-medium">Finishing sign-in…</Text>
+        <View className="flex-1 items-center justify-center bg-[#f6f9fc]">
+            <ActivityIndicator size="large" color="#2563eb" />
+            <Text className="text-[#374151] mt-4 text-base font-medium">Finishing sign-in…</Text>
         </View>
     );
 }
