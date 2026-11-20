@@ -193,7 +193,7 @@ export default function ProfileScreen() {
                 <View className="mt-6 px-5">
                     <View className="flex-row items-center justify-between">
                         <Text className="font-orbitron text-[22px] text-[#1e2a44]">Collection</Text>
-                        <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/(tabs)/collections' as never)}>
+                        <TouchableOpacity accessibilityRole="button" onPress={() => router.push('/my-products' as never)}>
                             <Text className="font-syne-bold text-[11px] text-[#111827]">View All</Text>
                         </TouchableOpacity>
                     </View>
