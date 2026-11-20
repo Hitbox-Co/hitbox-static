@@ -1,44 +1,46 @@
 import { useAuth } from '@clerk/clerk-expo'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
-import { Lock, Package, UserRound } from 'lucide-react-native'
+import { ArrowLeft, Globe, Lock, Package, UserRound } from 'lucide-react-native'
 import React, { useState } from 'react'
-import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Alert, Image as RNImage, ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
-import { CheckoutShell, GroupedCard, SectionHeading } from '@/features/checkout/components/CheckoutParts'
 import { collectionErrorMessage } from '@/features/collections/api/collectionErrors'
 import { useUserCollection } from '@/features/collections/api/getUserCollection'
 import { CollectionItem } from '@/features/collections/types/collection'
-import { DISCOVER_PLACEHOLDER_IMAGE, rarityLabel } from '@/features/discover/utils/format'
+import { DISCOVER_PLACEHOLDER_IMAGE } from '@/features/discover/utils/format'
 import { followErrorMessage, useFollowUser } from '@/features/follows/api/follows'
 import { ApiRequestError } from '@/lib/api'
 import { describeApiError } from '@/lib/api-errors'
+import { useOwnedProductInfo } from '../api/getOwnedCategories'
 import { useUser } from '../api/getProfile'
 import { Profile } from '../types/profile'
 
 /**
- * A collector's page (`GET /users/:id`). Name, avatar, bio and stats show for
- * every profile; the items (`GET /collections/user/:id`) only when it is PUBLIC —
- * a PRIVATE profile shows "This profile is private" and the items call is
- * skipped (it would answer 403). Follow / Following comes from `viewer`.
+ * A collector's page (`GET /users/:id`) — Figma P08 (public) and C14 / P10
+ * (private). Name, photo and bio show for every profile; the items
+ * (`GET /collections/user/:id`) only when it is PUBLIC. A PRIVATE profile is a
+ * page of its own ("This profile is private") and the items call is skipped (it
+ * would answer 403). Follow / Following comes from `viewer`.
  */
 export default function CollectorProfileScreen({ userId, preview = false }: { userId?: string; preview?: boolean }) {
     const { data: profile, isLoading, isError, error, refetch } = useUser(userId)
 
     if (isLoading) {
         return (
-            <CheckoutShell showBag={false}>
+            <Shell>
                 <View className="mt-24 items-center">
                     <ActivityIndicator size="large" color="#2563eb" />
                 </View>
-            </CheckoutShell>
+            </Shell>
         )
     }
 
     if (isError || !profile) {
         const notFound = (error instanceof ApiRequestError && error.status === 404) || !profile
         return (
-            <CheckoutShell showBag={false}>
+            <Shell>
                 <View className="mt-16 items-center gap-3 px-6">
                     <UserRound size={36} color="#9ca3af" />
                     <Text className="text-center font-syne text-sm leading-5 text-[#6b7280]">
@@ -51,12 +53,14 @@ export default function CollectorProfileScreen({ userId, preview = false }: { us
                         <Text className="font-syne-bold text-[13px] text-white">{notFound ? 'Go Back' : 'Retry'}</Text>
                     </TouchableOpacity>
                 </View>
-            </CheckoutShell>
+            </Shell>
         )
     }
 
+    const asVisitor = preview || !profile.viewer?.isSelf
+
     return (
-        <CheckoutShell showBag={false}>
+        <Shell>
             {preview && (
                 <View className="rounded border border-[#bfdbfe] bg-[#eff6ff] p-3">
                     <Text className="font-syne-bold text-[12px] text-[#2563eb]">Visitor preview</Text>
@@ -65,23 +69,51 @@ export default function CollectorProfileScreen({ userId, preview = false }: { us
                     </Text>
                 </View>
             )}
-            {profile.isPrivate && (preview || !profile.viewer?.isSelf) ? (
-                // A private profile is a page of its own (Figma C14 / P10): who they are, and that the rest is hidden.
+            {profile.isPrivate && asVisitor ? (
                 <PrivateProfile profile={profile} preview={preview} />
             ) : (
-                <>
-                    <ProfileHeader profile={profile} preview={preview} />
-                    {/* Your own token returns your whole shelf; a visitor only gets items marked Public. */}
-                    <Showcase userId={profile.id} publicOnly={preview} />
-                </>
+                <PublicProfile profile={profile} preview={preview} />
             )}
-        </CheckoutShell>
+        </Shell>
     )
 }
 
 const displayName = (p: Profile) => p.fullName || (p.handle ? `@${p.handle}` : 'Collector')
 
-function ProfileHeader({ profile, preview = false }: { profile: Profile; preview?: boolean }) {
+/** The page frame: back + HitBox + "PROFILE" on white, the light page below. */
+function Shell({ children }: { children: React.ReactNode }) {
+    return (
+        <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: '#f6f9fc' }}>
+            <View className="h-12 flex-row items-center justify-between bg-white px-5">
+                <View className="flex-row items-center gap-3">
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Back"
+                        onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/discover' as never))}
+                        className="size-8 items-center justify-center rounded bg-[#eff6ff]"
+                    >
+                        <ArrowLeft size={17} color="#111827" />
+                    </TouchableOpacity>
+                    <View className="flex-row items-center gap-[7px]">
+                        <RNImage source={require('@/assets/images/HitBoxLogo-dark.png')} resizeMode="contain" style={{ width: 24, height: 24 }} />
+                        <Text className="font-orbitron text-[14px] text-[#111827]">HitBox</Text>
+                    </View>
+                </View>
+                <Text className="font-syne-semibold text-[10px] tracking-[1.2px] text-[#374151]">PROFILE</Text>
+            </View>
+            <View className="h-px bg-[#e5e7eb]" />
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 16 }}>
+                {children}
+            </ScrollView>
+        </SafeAreaView>
+    )
+}
+
+/* ------------------------------------------------------------------ */
+/* Public profile (Figma P08)                                          */
+/* ------------------------------------------------------------------ */
+
+function PublicProfile({ profile, preview }: { profile: Profile; preview: boolean }) {
     const { isSignedIn } = useAuth()
     const follow = useFollowUser()
     // Optimistic: follow/unfollow is idempotent, so the button flips at once.
@@ -89,7 +121,7 @@ function ProfileHeader({ profile, preview = false }: { profile: Profile; preview
     const on = pending?.on ?? profile.viewer?.isFollowing === true
     const followers = pending?.followers ?? profile.stats.followers
     const name = displayName(profile)
-    const memberSince = new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    const memberSince = new Date(profile.createdAt).getFullYear()
 
     const toggleFollow = () => {
         if (!isSignedIn) {
@@ -117,41 +149,74 @@ function ProfileHeader({ profile, preview = false }: { profile: Profile; preview
     const openFollows = (tab: 'followers' | 'following') =>
         router.push({ pathname: '/follows/[userId]', params: { userId: profile.id, tab } } as never)
 
+    const stats = [
+        { value: profile.stats.claimedItems, label: 'Items\nowned', onPress: undefined as (() => void) | undefined },
+        { value: profile.stats.artistCollections, label: 'Collections', onPress: undefined },
+        { value: followers, label: 'Followers', onPress: () => openFollows('followers') },
+    ]
+
     return (
-        <View className="gap-4">
-            <View className="flex-row items-center gap-4">
-                {profile.avatarUrl ? (
-                    <Image source={{ uri: profile.avatarUrl }} style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#e5e7eb' }} contentFit="cover" />
-                ) : (
-                    <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#eff6ff]">
-                        <UserRound size={30} color="#2563eb" />
-                    </View>
-                )}
-                <View className="flex-1 gap-0.5">
-                    <Text numberOfLines={1} className="font-orbitron text-[18px] text-[#111827]">{name}</Text>
-                    {!!profile.handle && profile.fullName && (
-                        <Text numberOfLines={1} className="font-syne text-[12px] text-[#6b7280]">@{profile.handle}</Text>
+        <>
+            {/* Identity card */}
+            <View className="rounded-lg bg-[#0b1b36] p-4">
+                <View className="flex-row gap-4">
+                    {profile.avatarUrl ? (
+                        <Image source={{ uri: profile.avatarUrl }} style={{ width: 58, height: 58, borderRadius: 4, backgroundColor: '#1f2f4d' }} contentFit="cover" />
+                    ) : (
+                        <View className="h-[58px] w-[58px] items-center justify-center rounded bg-[#1f2f4d]">
+                            <UserRound size={26} color="#94a3b8" />
+                        </View>
                     )}
-                    <Text className="font-syne text-[11px] text-[#9ca3af]">{`Member since ${memberSince}`}</Text>
+                    <View className="flex-1 gap-1">
+                        <View className="flex-row items-center gap-1.5">
+                            <Text numberOfLines={1} className="shrink font-syne-bold text-[22px] text-white">{name}</Text>
+                            <Text className="text-[20px] text-white">✓</Text>
+                        </View>
+                        {!!profile.handle && (
+                            <Text numberOfLines={1} className="font-syne text-[11px] text-[#94a3b8]">@{profile.handle}</Text>
+                        )}
+                    </View>
+                </View>
+
+                <View className="mt-3 flex-row items-center justify-between">
+                    <Text className="font-syne text-[11px] text-[#94a3b8]">Member since {memberSince}</Text>
+                    <View className="flex-row items-center gap-1.5">
+                        <Globe size={13} color="#4ade80" />
+                        <Text className="font-syne-bold text-[11px] text-[#4ade80]">Public</Text>
+                    </View>
+                </View>
+
+                <View className="mt-4 h-px bg-[#1f2f4d]" />
+
+                <View className="mt-4 flex-row justify-between">
+                    {stats.map((s) => {
+                        const body = (
+                            <View className="gap-0.5">
+                                <Text className="font-syne-bold text-[20px] text-white">{s.value}</Text>
+                                <Text className="font-syne text-[10px] leading-[12px] text-[#94a3b8]">{s.label}</Text>
+                            </View>
+                        )
+                        return s.onPress ? (
+                            <TouchableOpacity key={s.label} accessibilityRole="button" accessibilityLabel={`${s.value} ${s.label}`} onPress={s.onPress}>
+                                {body}
+                            </TouchableOpacity>
+                        ) : (
+                            <View key={s.label}>{body}</View>
+                        )
+                    })}
                 </View>
             </View>
 
-            {!!profile.bio && <Text className="font-syne text-[13px] leading-[20px] text-[#374151]">{profile.bio}</Text>}
+            {!!profile.bio && <Text className="font-syne text-[13px] leading-[19px] text-[#6b7280]">{profile.bio}</Text>}
 
-            <View className="flex-row justify-between rounded border border-[#dbeafe] bg-white px-4 py-3">
-                <Stat value={profile.stats.claimedItems} label="Items" />
-                <Stat value={profile.stats.artistCollections} label="Collections" />
-                <Stat value={followers} label="Followers" onPress={() => openFollows('followers')} />
-                <Stat value={profile.stats.following} label="Following" onPress={() => openFollows('following')} />
-            </View>
-
+            {/* The one action: Follow (visitors) or Edit profile (yourself) */}
             {preview ? null : profile.viewer?.isSelf ? (
                 <TouchableOpacity
                     accessibilityRole="button"
                     onPress={() => router.push('/edit-profile' as never)}
-                    className="h-11 items-center justify-center rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
+                    className="h-[46px] items-center justify-center rounded-[2px] border-[1.5px] border-[#111827] bg-white"
                 >
-                    <Text className="font-syne-bold text-[13px] text-[#2563eb]">Edit profile</Text>
+                    <Text className="font-syne-bold text-[13px] text-[#111827]">Edit profile</Text>
                 </TouchableOpacity>
             ) : (
                 <TouchableOpacity
@@ -159,37 +224,119 @@ function ProfileHeader({ profile, preview = false }: { profile: Profile; preview
                     accessibilityLabel={on ? `Unfollow ${name}` : `Follow ${name}`}
                     onPress={toggleFollow}
                     disabled={follow.isPending}
-                    className={`h-11 items-center justify-center rounded-[30px] ${on ? 'border border-[#bfdbfe] bg-[#eff6ff]' : 'bg-[#111827]'}`}
+                    className={`h-[46px] items-center justify-center rounded-[2px] ${on ? 'border-[1.5px] border-[#111827] bg-white' : 'bg-black'}`}
                 >
-                    <Text className={`font-syne-bold text-[13px] ${on ? 'text-[#2563eb]' : 'text-white'}`}>{on ? 'Following' : 'Follow'}</Text>
+                    <Text className={`font-syne-bold text-[13px] ${on ? 'text-[#111827]' : 'text-white'}`}>{on ? 'Following' : 'Follow'}</Text>
                 </TouchableOpacity>
             )}
-        </View>
-    )
-}
 
-function Stat({ value, label, onPress }: { value: number; label: string; onPress?: () => void }) {
-    const body = (
-        <View className="items-center">
-            <Text className="font-syne-bold text-[16px] text-[#111827]">{value}</Text>
-            <Text className="font-syne text-[10px] text-[#6b7280]">{label}</Text>
-        </View>
-    )
-    return onPress ? (
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel={`${value} ${label}`} onPress={onPress}>
-            {body}
-        </TouchableOpacity>
-    ) : (
-        body
+            {/* Collection */}
+            {/* Your own token returns your whole shelf; a visitor only gets items marked Public. */}
+            <Showcase userId={profile.id} publicOnly={preview} />
+
+            <View className="rounded bg-[#eef2f7] p-4">
+                <Text className="font-syne-bold text-[12px] text-[#111827]">Owned products only · Official collection names</Text>
+            </View>
+
+            <TouchableOpacity
+                accessibilityRole="button"
+                onPress={() => router.back()}
+                className="flex-row items-center gap-2 self-start py-1"
+            >
+                <ArrowLeft size={15} color="#111827" />
+                <Text className="font-syne-bold text-[13px] text-[#111827]">{preview ? 'Back to privacy settings' : 'Back to collectors'}</Text>
+            </TouchableOpacity>
+        </>
     )
 }
 
 /**
- * What a visitor sees on a PRIVATE profile (Figma C14 "Collection hidden" / P10):
- * the photo, name and "@handle · Member since", a card saying the collection is
- * hidden, and a way back. No items, no stats and no Follow button — the page is
- * deliberately bare. (The follow endpoints still accept a private profile; they are
- * reachable from the Followers / Following lists.)
+ * The collector's public items, grouped by the collection each belongs to (one
+ * cached drop-detail lookup per item — a shelf row doesn't carry it). Each group
+ * is a row of "Verified collectible" cards. The API has no collection names, so a
+ * group is titled by its artist; items outside any collection fall under "Other
+ * collectibles".
+ */
+function Showcase({ userId, publicOnly = false }: { userId: string; publicOnly?: boolean }) {
+    const { data, isLoading, isError, error } = useUserCollection(userId, { limit: 50 })
+    const items = (data?.data ?? []).filter((item) => !publicOnly || item.visibility === 'PUBLIC')
+    const infoById = useOwnedProductInfo(items.map((i) => i.product.id))
+
+    const groups = new Map<string, { title: string; items: CollectionItem[] }>()
+    for (const item of items) {
+        const info = infoById[item.product.id]
+        const key = info?.collectionId ?? 'other'
+        const title = info?.collectionId ? (info.artistName ?? 'Collection') : 'Other collectibles'
+        const g = groups.get(key) ?? { title, items: [] }
+        g.items.push(item)
+        groups.set(key, g)
+    }
+
+    return (
+        <View className="gap-3">
+            <Text className="font-syne-bold text-[24px] text-[#111827]">Collection</Text>
+            {isLoading && <ActivityIndicator size="small" color="#2563eb" />}
+            {isError && <Text className="font-syne text-[12px] text-[#6b7280]">{collectionErrorMessage(error)}</Text>}
+            {!isLoading && !isError && items.length === 0 && (
+                <View className="items-center gap-2 py-6">
+                    <Package size={28} color="#9ca3af" />
+                    <Text className="font-syne text-[12px] text-[#6b7280]">Nothing shared yet.</Text>
+                </View>
+            )}
+            {[...groups.entries()].map(([key, g]) => (
+                <View key={key} className="gap-2.5">
+                    <View className="flex-row items-center justify-between">
+                        <Text numberOfLines={1} className="flex-1 font-syne-bold text-[16px] text-[#111827]">{g.title}</Text>
+                        <View className="rounded bg-white px-3 py-1.5">
+                            <Text className="font-syne text-[11px] text-[#6b7280]">
+                                {g.items.length} {g.items.length === 1 ? 'item' : 'items'}
+                            </Text>
+                        </View>
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }} className="grow-0">
+                        {g.items.map((item) => (
+                            <ShowcaseCard key={item.id} item={item} />
+                        ))}
+                    </ScrollView>
+                </View>
+            ))}
+        </View>
+    )
+}
+
+function ShowcaseCard({ item }: { item: CollectionItem }) {
+    return (
+        <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${item.product.name}`}
+            activeOpacity={0.85}
+            onPress={() => router.push({ pathname: '/discover/[productId]', params: { productId: item.product.id } } as never)}
+            style={{ width: 152 }}
+            className="overflow-hidden rounded bg-white"
+        >
+            <Image
+                source={{ uri: item.product.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
+                style={{ width: '100%', aspectRatio: 1.05, backgroundColor: '#e5e7eb' }}
+                contentFit="cover"
+            />
+            <View className="gap-0.5 p-2.5">
+                <Text numberOfLines={1} className="font-syne-bold text-[12px] text-[#111827]">{item.product.name}</Text>
+                <Text className="font-syne text-[10px] text-[#6b7280]">Verified collectible</Text>
+            </View>
+        </TouchableOpacity>
+    )
+}
+
+/* ------------------------------------------------------------------ */
+/* Private profile (Figma C14 / P10)                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * What a visitor sees on a PRIVATE profile: the photo, name and "@handle · Member
+ * since", a card saying the collection is hidden, and a way back. No items, no
+ * stats and no Follow button — the page is deliberately bare. (The follow
+ * endpoints still accept a private profile; they are reachable from the
+ * Followers / Following lists.)
  */
 function PrivateProfile({ profile, preview }: { profile: Profile; preview: boolean }) {
     const name = displayName(profile)
@@ -243,57 +390,5 @@ function PrivateProfile({ profile, preview }: { profile: Profile; preview: boole
                 No collection previews or purchase stories are visible on a private profile.
             </Text>
         </View>
-    )
-}
-
-function Showcase({ userId, publicOnly = false }: { userId: string; publicOnly?: boolean }) {
-    const { data, isLoading, isError, error } = useUserCollection(userId, { limit: 50 })
-    const items = (data?.data ?? []).filter((item) => !publicOnly || item.visibility === 'PUBLIC')
-
-    return (
-        <View className="gap-3">
-            <SectionHeading title="Collection" />
-            {isLoading && <ActivityIndicator size="small" color="#2563eb" />}
-            {isError && (
-                <Text className="font-syne text-[12px] text-[#6b7280]">{collectionErrorMessage(error)}</Text>
-            )}
-            {!isLoading && !isError && items.length === 0 && (
-                <View className="items-center gap-2 py-6">
-                    <Package size={28} color="#9ca3af" />
-                    <Text className="font-syne text-[12px] text-[#6b7280]">Nothing shared yet.</Text>
-                </View>
-            )}
-            <View className="flex-row flex-wrap justify-between gap-y-3">
-                {items.map((item) => (
-                    <ShowcaseCard key={item.id} item={item} />
-                ))}
-            </View>
-        </View>
-    )
-}
-
-function ShowcaseCard({ item }: { item: CollectionItem }) {
-    const rarity = rarityLabel(item.product.rarity)
-    return (
-        <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel={`Open ${item.product.name}`}
-            activeOpacity={0.85}
-            onPress={() => router.push({ pathname: '/discover/[productId]', params: { productId: item.product.id } } as never)}
-            style={{ width: '48%' }}
-            className="overflow-hidden rounded-[10px] border border-[#dbeafe] bg-white"
-        >
-            <Image
-                source={{ uri: item.product.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
-                style={{ width: '100%', aspectRatio: 1, backgroundColor: '#eef2ff' }}
-                contentFit="cover"
-            />
-            <View className="gap-0.5 p-2.5">
-                <Text numberOfLines={1} className="font-syne-bold text-[12px] text-[#111827]">{item.product.name}</Text>
-                <Text className="font-syne text-[10px] text-[#6b7280]">
-                    {[`#${item.sku.serialNumber}`, rarity].filter(Boolean).join(' · ')}
-                </Text>
-            </View>
-        </TouchableOpacity>
     )
 }
