@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import MenuSection from '../components/MenuSection';
+import SettingsHome from '../components/SettingsHome';
 import NotificationScreen from '../components/NotificationScreen';
 import SecuritySection from '../components/SecuritySection';
 
@@ -54,6 +54,12 @@ export default function SettingsScreen({ initialTab = 'menu' }: SettingsScreenPr
       default: return 'Settings';
     }
   };
+
+  // The main menu is the light Figma P04 page; Security and Notification
+  // preferences below it keep the existing sub-page layout.
+  if (activeTab === 'menu') {
+    return <SettingsHome onOpen={setActiveTab} />;
+  }
 
   return (
     <SafeAreaView
@@ -99,11 +105,6 @@ export default function SettingsScreen({ initialTab = 'menu' }: SettingsScreenPr
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         <AnimatePresence exitBeforeEnter>
-
-          {/* MAIN MENU */}
-          {activeTab === 'menu' && (
-            <MenuSection setActiveTab={setActiveTab} />
-          )}
 
           {/* PERSONAL INFORMATION SCREEN */}
           {activeTab === 'personal'
