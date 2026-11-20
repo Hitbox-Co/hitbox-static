@@ -340,7 +340,7 @@ export default function EditProfileScreen() {
                             <View className="flex-1 pr-3">
                                 <Text className="text-gray-300 font-medium">Public profile</Text>
                                 <Text className="text-zinc-500 text-xs mt-1">
-                                    Let other collectors see your name, photo and bio. Off by default.
+                                    Let other collectors see your name, photo and bio, and see you as the owner when they scan an item you made public. Off by default.
                                 </Text>
                             </View>
                             <Controller
