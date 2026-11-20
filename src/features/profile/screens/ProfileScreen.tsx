@@ -118,9 +118,20 @@ export default function ProfileScreen() {
                                 <BadgeCheck size={18} color="#0b1b36" fill="#ffffff" />
                             </View>
                             {!!handle && (
-                                <Text numberOfLines={1} className="font-syne text-[12px] text-[#94a3b8]">
-                                    @{handle}
-                                </Text>
+                                <View className="flex-row items-center gap-1">
+                                    <Text numberOfLines={1} className="shrink font-syne text-[12px] text-[#94a3b8]">
+                                        @{handle}
+                                    </Text>
+                                    {!!me && (
+                                        <TouchableOpacity
+                                            accessibilityRole="button"
+                                            accessibilityLabel="Open your newest purchase story"
+                                            onPress={() => router.push({ pathname: '/story/[userId]', params: { userId: me.id } } as never)}
+                                        >
+                                            <Text className="font-syne-semibold text-[12px] text-[#94a3b8]">· Story →</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
                             )}
                         </View>
                     </View>

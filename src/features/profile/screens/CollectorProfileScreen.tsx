@@ -149,6 +149,11 @@ function PublicProfile({ profile, preview }: { profile: Profile; preview: boolea
     const openFollows = (tab: 'followers' | 'following') =>
         router.push({ pathname: '/follows/[userId]', params: { userId: profile.id, tab } } as never)
 
+    // Their newest public item, if any — what the story card shows (the list is newest-first).
+    const newestItem = useUserCollection(profile.id, { limit: 50 }).data?.data.find(
+        (i) => !preview || i.visibility === 'PUBLIC',
+    )
+
     const stats = [
         { value: profile.stats.claimedItems, label: 'Items\nowned', onPress: undefined as (() => void) | undefined },
         { value: profile.stats.artistCollections, label: 'Collections', onPress: undefined },
@@ -227,6 +232,17 @@ function PublicProfile({ profile, preview }: { profile: Profile; preview: boolea
                     className={`h-[46px] items-center justify-center rounded-[2px] ${on ? 'border-[1.5px] border-[#111827] bg-white' : 'bg-black'}`}
                 >
                     <Text className={`font-syne-bold text-[13px] ${on ? 'text-[#111827]' : 'text-white'}`}>{on ? 'Following' : 'Follow'}</Text>
+                </TouchableOpacity>
+            )}
+
+            {!!newestItem && (
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    activeOpacity={0.85}
+                    onPress={() => router.push({ pathname: '/story/[userId]', params: { userId: profile.id } } as never)}
+                    className="h-[46px] items-center justify-center rounded-[2px] border-[1.5px] border-[#111827] bg-white"
+                >
+                    <Text className="font-syne-bold text-[13px] text-[#111827]">View newest purchase →</Text>
                 </TouchableOpacity>
             )}
 
