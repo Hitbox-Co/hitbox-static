@@ -11,7 +11,10 @@ export const COLLECTION_ROUTES = {
      * NOT the shelf-row id (`item.id`) and not the product id.
      */
     meItem: (skuId: string) => `/api/v1/collections/me/${encodeURIComponent(skuId)}`,
-    /** GET — another user's showcase: PUBLIC items only. Public, ignores the token. */
+    /**
+     * GET — another collector's showcase: their PUBLIC items, only while their
+     * profile is PUBLIC (else 403). Token optional: the owner's own token gets the whole shelf.
+     */
     user: (userId: string) => `/api/v1/collections/user/${encodeURIComponent(userId)}`,
 } as const
 
