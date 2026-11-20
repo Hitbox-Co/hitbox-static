@@ -163,14 +163,14 @@ export default function DiscoverScreen() {
                                     activeOpacity={0.8}
                                     onPress={() => setCategory(chip.id)}
                                     className={`h-8 justify-center rounded border px-[14px] ${active
-                                        ? "border-[rgba(59,130,245,0.25)] bg-[rgba(59,130,245,0.08)]"
-                                        : "border-[#e5e7eb] bg-[#f3f4f6]"
+                                        ? "border-black bg-black"
+                                        : "border-[#d1d5db] bg-white"
                                         }`}
                                 >
                                     <Text
                                         className={`text-[12.5px] ${active
-                                            ? "font-syne-semibold text-[#3b82f6]"
-                                            : "font-syne-medium text-[#6b7280]"
+                                            ? "font-syne-semibold text-white"
+                                            : "font-syne-medium text-[#111827]"
                                             }`}
                                     >
                                         {chip.label}
@@ -271,8 +271,8 @@ export default function DiscoverScreen() {
                                             contentContainerStyle={{ paddingHorizontal: 20, gap: 8 }}
                                             className="grow-0"
                                         >
-                                            {creators.map((creator) => (
-                                                <CreatorBubble key={creator.id} creator={creator} />
+                                            {creators.map((creator, index) => (
+                                                <CreatorBubble key={creator.id} creator={creator} index={index} />
                                             ))}
                                         </ScrollView>
                                     </View>
@@ -365,8 +365,11 @@ function LeaderboardBanner() {
     );
 }
 
-/** Round creator avatar from the Figma: ringed portrait, name and drop count. */
-function CreatorBubble({ creator }: { creator: DiscoverCreatorItem }) {
+/** Tile colours the Figma cycles through: blue, amber, green. */
+const CREATOR_TILE_COLORS = ["#3b82f6", "#f59e0b", "#22c55e"];
+
+/** Creator from the Figma: a round portrait in a coloured ring, name and drop count. */
+function CreatorBubble({ creator, index }: { creator: DiscoverCreatorItem; index: number }) {
     return (
         <TouchableOpacity
             accessibilityRole="button"
@@ -378,16 +381,23 @@ function CreatorBubble({ creator }: { creator: DiscoverCreatorItem }) {
             }
             className="w-[72px] items-center gap-[6px]"
         >
-            <LinearGradient
-                colors={["#3b82f6", "#2563eb"]}
-                style={{ width: 56, height: 56, borderRadius: 28, padding: 2 }}
+            <View
+                style={{
+                    width: 58,
+                    height: 58,
+                    borderRadius: 29,
+                    borderWidth: 2.5,
+                    borderColor: CREATOR_TILE_COLORS[index % CREATOR_TILE_COLORS.length],
+                    backgroundColor: "#ffffff",
+                    padding: 2,
+                }}
             >
                 <Image
                     source={{ uri: creator.avatarUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
                     resizeMode="cover"
-                    style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: "#eef2ff" }}
+                    style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: "#eef2ff" }}
                 />
-            </LinearGradient>
+            </View>
             <Text numberOfLines={1} className="text-center font-syne-bold text-[10.25px] text-[#111827]">
                 {creator.name}
             </Text>
@@ -416,7 +426,7 @@ function SectionHeading({
                 hitSlop={8}
                 onPress={onViewAll}
             >
-                <Text className="font-syne-semibold text-[10.25px] text-[#3b82f6]">{actionLabel}</Text>
+                <Text className="font-syne-semibold text-[10.25px] text-[#111827]">{actionLabel}</Text>
                 <ChevronRight size={12} color="#3b82f6" />
             </TouchableOpacity>
         </View>

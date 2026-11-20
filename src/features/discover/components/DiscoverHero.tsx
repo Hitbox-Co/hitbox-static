@@ -133,7 +133,7 @@ export default function DiscoverHero({
                                 accessibilityLabel="Sign up"
                                 activeOpacity={0.8}
                                 onPress={onSignUpPress}
-                                className="h-[34px] items-center justify-center rounded-lg border border-white/25 bg-white/[0.13] px-[13px]"
+                                className="h-[34px] items-center justify-center rounded-lg border border-white/15 bg-black px-[13px]"
                             >
                                 <Text className="font-syne-medium text-[11.75px] text-white">Sign Up</Text>
                             </TouchableOpacity>
@@ -194,7 +194,7 @@ export default function DiscoverHero({
                             accessibilityLabel={active ? `Buy ${active.name}` : 'Explore drops'}
                             activeOpacity={0.85}
                             onPress={() => (active ? onItemPress?.(active) : onExplore?.())}
-                            className="h-[42px] w-[153px] flex-row items-center justify-center gap-2 rounded-[30px] border border-[#2563eb] bg-[#2563eb]"
+                            className="h-[42px] w-[153px] flex-row items-center justify-center gap-2 rounded border border-white bg-black"
                         >
                             <Text className="font-syne-bold text-[13px] text-white">{active ? 'Buy Now' : 'Explore'}</Text>
                             <ArrowUpRight size={16} color="#fff" />

@@ -31,6 +31,16 @@ export function rarityLabel(rarity: string | null | undefined): string | null {
     return rarity ? rarity.replace(/_/g, ' ').toUpperCase() : null
 }
 
+/**
+ * Chip colours for a rarity label (Figma P01): UNCOMMON is green, everything
+ * else blue. Matched on the formatted label, never treated as an enum.
+ */
+export function rarityTone(label: string | null | undefined): { border: string; bg: string; text: string } {
+    return label === 'UNCOMMON'
+        ? { border: 'rgba(34,197,94,0.45)', bg: '#ecfdf3', text: '#16a34a' }
+        : { border: 'rgba(59,130,246,0.4)', bg: '#ffffff', text: '#3b82f6' }
+}
+
 /** "Edition of 200"; null when the supply is unknown. */
 export function formatEdition(totalSupply: number | null | undefined): string | null {
     return typeof totalSupply === 'number' && totalSupply > 0 ? `Edition of ${totalSupply}` : null

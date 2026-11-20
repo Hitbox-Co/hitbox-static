@@ -10,6 +10,7 @@ import {
     formatEdition,
     formatRewardPoints,
     rarityLabel,
+    rarityTone,
 } from '../utils/format'
 import WishlistHeart from './WishlistHeart'
 
@@ -77,18 +78,40 @@ export default function DiscoverProductCard({
                     locations={[0, 0.6, 1]}
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 />
-                {rarity && (
-                    <View className="absolute bottom-[10px] left-[10px] rounded border border-[rgba(59,130,246,0.4)] bg-white px-[8px] py-[3px]">
-                        <Text className="font-syne-bold text-[8px] text-[#3b82f6]">{rarity}</Text>
+                {rarity && variant === 'grid' && (
+                    <View
+                        className="absolute bottom-[10px] left-[10px] rounded border px-[8px] py-[3px]"
+                        style={{ borderColor: rarityTone(rarity).border, backgroundColor: rarityTone(rarity).bg }}
+                    >
+                        <Text className="font-syne-bold text-[8px]" style={{ color: rarityTone(rarity).text }}>{rarity}</Text>
                     </View>
                 )}
                 <WishlistHeart productId={item.id} isWishlisted={item.isWishlisted} />
             </View>
 
             <View className="gap-[7px] p-3">
-                <Text numberOfLines={2} className="font-syne-bold text-[13px] leading-[17px] text-[#111827]">
-                    {item.name}
-                </Text>
+                {variant === 'grid' ? (
+                    <Text numberOfLines={2} className="font-syne-bold text-[13px] leading-[17px] text-[#111827]">
+                        {item.name}
+                    </Text>
+                ) : (
+                    <View className="flex-row items-start justify-between gap-2">
+                        <Text numberOfLines={2} className="flex-1 font-syne-bold text-[13px] leading-[17px] text-[#111827]">
+                            {item.name}
+                        </Text>
+                        {rarity && (
+                            <View
+                                className="rounded border px-[8px] py-[3px]"
+                                style={{
+                                    borderColor: rarityTone(rarity).border,
+                                    backgroundColor: rarity === 'UNCOMMON' ? rarityTone(rarity).bg : '#eff6ff',
+                                }}
+                            >
+                                <Text className="font-syne-bold text-[8px]" style={{ color: rarityTone(rarity).text }}>{rarity}</Text>
+                            </View>
+                        )}
+                    </View>
+                )}
                 {artistLine !== '' && (
                     <Text numberOfLines={1} className="font-syne text-[11px] text-[#6b7280]">
                         {artistLine}
