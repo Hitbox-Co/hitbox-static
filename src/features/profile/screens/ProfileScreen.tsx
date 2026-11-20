@@ -1,4 +1,4 @@
-import { BadgeCheck, Globe, Lock, UserRound } from 'lucide-react-native';
+import { BadgeCheck, Globe, Lock, Star, UserRound } from 'lucide-react-native';
 import { useUser } from '@clerk/clerk-expo';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
@@ -10,6 +10,7 @@ import { useMyCollection } from '@/features/collections/api/getMyCollection';
 import { DISCOVER_PLACEHOLDER_IMAGE } from '@/features/discover/utils/format';
 import { useFollowCounts } from '@/features/follows/api/follows';
 import { useRewards } from '@/features/rewards/api/getRewards';
+import { useHitPoints } from '../api/getHitPoints';
 import { useMe } from '../api/getProfile';
 
 /**
@@ -20,16 +21,17 @@ import { useMe } from '../api/getProfile';
  *
  * Every number is real: items and collections come with `GET /users/me`
  * (`stats`), rewards are the count of `GET /rewards`, and the preview is
- * `GET /collections/me`. Two things in the Figma have no source and are left
- * out: HIT POINTS (the profile API no longer returns points) and the collection
- * being grouped by artist (a shelf row does not say which artist it belongs to),
- * so the preview is the newest items in rows of three.
+ * `GET /collections/me`. HIT POINTS is the total of the points on the items you
+ * own (the profile API no longer returns a points total, see useHitPoints). The
+ * collection is not grouped by artist as in the Figma (a shelf row does not say
+ * which artist it belongs to), so the preview is the newest items in rows of three.
  */
 export default function ProfileScreen() {
     const { user } = useUser();
     const { data: me } = useMe();
     const rewards = useRewards();
     const shelf = useMyCollection({ limit: 9 });
+    const hit = useHitPoints();
     // Followers / Following come with `stats`; list totals only back them up.
     const fallback = useFollowCounts(me?.id, !me?.stats);
 
@@ -44,9 +46,9 @@ export default function ProfileScreen() {
     const totalItems = shelf.data?.meta.total ?? me?.stats?.claimedItems ?? 0;
 
     const stats = [
-        { value: me?.stats?.claimedItems ?? shelf.data?.meta.total, label: 'Items\nowned' },
+        { value: me?.stats?.claimedItems ?? shelf.data?.meta.total, label: 'Items owned' },
         { value: me?.stats?.artistCollections, label: 'Collections' },
-        { value: rewards.data?.length, label: 'Rewards\nearned' },
+        { value: rewards.data?.length, label: 'Rewards earned' },
     ];
     const followers = me?.stats?.followers ?? fallback.followers;
     const following = me?.stats?.following ?? fallback.following;
@@ -110,45 +112,63 @@ export default function ProfileScreen() {
                         )}
                         <View className="flex-1 gap-1">
                             <View className="flex-row items-center gap-1.5">
-                                <Text numberOfLines={1} className="shrink font-syne-extrabold text-[20px] text-white">
+                                <Text numberOfLines={1} className="shrink font-syne-bold text-[22px] text-white">
                                     {name}
                                 </Text>
                                 <BadgeCheck size={18} color="#0b1b36" fill="#ffffff" />
                             </View>
                             {!!handle && (
-                                <Text numberOfLines={1} className="font-syne text-[11px] text-[#94a3b8]">
+                                <Text numberOfLines={1} className="font-syne text-[12px] text-[#94a3b8]">
                                     @{handle}
                                 </Text>
                             )}
                         </View>
                     </View>
 
-                    <Text className="mt-3 font-syne text-[10px] text-[#94a3b8]">
+                    <Text className="mt-3 font-syne text-[11px] text-[#94a3b8]">
                         {memberSince ? `Member since ${memberSince}` : ' '}
                     </Text>
 
+                    {/* HIT POINTS: the points on the items you own */}
+                    <View className="mt-2 flex-row items-center justify-between">
+                        <Text
+                            accessibilityLabel={`${hit.points ?? 0} hit points`}
+                            className="font-syne-extrabold text-[20px] tracking-[0.4px] text-[#4ade80]"
+                        >
+                            {`${(hit.points ?? 0).toLocaleString('en-US')} HIT POINTS`}
+                        </Text>
+                        <Star size={22} color="#3b82f6" fill="#3b82f6" />
+                    </View>
+
                     {/* Followers · Following */}
                     {me && (
-                        <View className="mt-1 flex-row items-center gap-4">
-                            <TouchableOpacity accessibilityRole="button" onPress={() => openFollows('followers')}>
-                                <Text className="font-syne text-[11px] text-[#94a3b8]">
-                                    <Text className="font-syne-bold text-white">{followers ?? '–'}</Text> Followers
-                                </Text>
+                        <View className="mt-2 flex-row items-baseline gap-5">
+                            <TouchableOpacity
+                                accessibilityRole="button"
+                                onPress={() => openFollows('followers')}
+                                className="flex-row items-baseline gap-1.5"
+                            >
+                                <Text className="font-syne-bold text-[13px] text-white">{followers ?? 0}</Text>
+                                <Text className="font-syne text-[11px] text-[#94a3b8]">Followers</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity accessibilityRole="button" onPress={() => openFollows('following')}>
-                                <Text className="font-syne text-[11px] text-[#94a3b8]">
-                                    <Text className="font-syne-bold text-white">{following ?? '–'}</Text> Following
-                                </Text>
+                            <TouchableOpacity
+                                accessibilityRole="button"
+                                onPress={() => openFollows('following')}
+                                className="flex-row items-baseline gap-1.5"
+                            >
+                                <Text className="font-syne-bold text-[13px] text-white">{following ?? 0}</Text>
+                                <Text className="font-syne text-[11px] text-[#94a3b8]">Following</Text>
                             </TouchableOpacity>
                         </View>
                     )}
 
                     {/* Items · Collections · Rewards */}
-                    <View className="mt-4 flex-row items-end justify-between">
+                    <View className="mt-4 flex-row items-baseline justify-between">
                         {stats.map((s) => (
-                            <View key={s.label} className="flex-row items-end gap-1.5">
-                                <Text className="font-syne-extrabold text-[22px] leading-[26px] text-white">{s.value ?? '–'}</Text>
-                                <Text className="mb-0.5 font-syne text-[9px] leading-[11px] text-[#94a3b8]">{s.label}</Text>
+                            // Number and label share one baseline, on one line (Figma P02).
+                            <View key={s.label} className="flex-row items-baseline gap-1.5">
+                                <Text className="font-syne-bold text-[18px] text-white">{s.value ?? 0}</Text>
+                                <Text numberOfLines={1} className="font-syne text-[10.5px] text-[#94a3b8]">{s.label}</Text>
                             </View>
                         ))}
                     </View>
