@@ -1,8 +1,9 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useIsFocused } from 'expo-router';
+import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { BellOff, ChevronLeft, CheckCheck } from 'lucide-react-native';
 import { View as MotiView } from 'moti';
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StatusBar, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import NotificationRow from '../components/NotificationRow';
@@ -22,6 +23,7 @@ const AUTO_READ_DELAY_MS = 2_000;
 export default function NotificationsScreen() {
     const { notifications, unreadCount, isLoading, refresh, markSeen, markAllSeen } = useNotifications();
     const [refreshing, setRefreshing] = useState(false);
+    const isFocused = useIsFocused();
 
     // Opening the feed counts as reading it — same as the badge clearing once
     // you've looked. The delay leaves the unread accents on screen long enough
@@ -49,42 +51,43 @@ export default function NotificationsScreen() {
             // No bottom edge: this route renders inside (tabs), so the tab bar
             // already reserves the safe area below.
             edges={["top", "left", "right"]}
-            className="flex-1 bg-[#050507]"
+            style={{ flex: 1, backgroundColor: '#f6f9fc' }}
         >
-            <StatusBar barStyle="light-content" />
+            {isFocused && <ExpoStatusBar style="dark" />}
 
             {/* Header */}
-            <View className="flex-row items-center px-4 pt-2 pb-3">
+            <View className="h-12 flex-row items-center bg-white px-5">
                 <TouchableOpacity
                     accessibilityRole="button"
                     accessibilityLabel="Go back"
                     hitSlop={12}
-                    className="p-1 -ml-1 active:opacity-60"
+                    className="size-8 items-center justify-center rounded bg-[#eff6ff]"
                     onPress={() => router.back()}
                 >
-                    <ChevronLeft size={24} color="#FFFFFF" />
+                    <ChevronLeft size={19} color="#111827" />
                 </TouchableOpacity>
 
-                <Text className="text-white text-xl font-black ml-1">Notifications</Text>
+                <Text className="ml-3 font-syne-bold text-[18px] text-[#111827]">Notifications</Text>
 
                 {unreadCount > 0 && (
-                    <View className="ml-2 rounded-full bg-primary px-2 py-0.5">
-                        <Text className="text-white text-[11px] font-black">{unreadCount} new</Text>
+                    <View className="ml-2 rounded-full bg-[#2563eb] px-2 py-0.5">
+                        <Text className="font-syne-bold text-[10.5px] text-white">{unreadCount} new</Text>
                     </View>
                 )}
 
                 {unreadCount > 0 && (
                     <TouchableOpacity
                         accessibilityRole="button"
-                        className="ml-auto flex-row items-center active:opacity-60"
+                        className="ml-auto flex-row items-center"
                         hitSlop={8}
                         onPress={() => markAllSeen()}
                     >
                         <CheckCheck size={16} color="#2563eb" />
-                        <Text className="text-primary text-xs font-bold ml-1">Mark all read</Text>
+                        <Text className="ml-1 font-syne-bold text-[12px] text-[#2563eb]">Mark all read</Text>
                     </TouchableOpacity>
                 )}
             </View>
+            <View className="h-px bg-[#e5e7eb]" />
 
             {isLoading ? (
                 <View className="flex-1 items-center justify-center">
@@ -92,9 +95,8 @@ export default function NotificationsScreen() {
                 </View>
             ) : (
                 <ScrollView
-                    className="px-4"
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ paddingBottom: 32, paddingTop: 4 }}
+                    contentContainerStyle={{ paddingBottom: 120, paddingTop: 16, paddingHorizontal: 20 }}
                     refreshControl={
                         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2563eb" />
                     }
@@ -103,13 +105,13 @@ export default function NotificationsScreen() {
                         <MotiView
                             from={{ opacity: 0, translateY: 12 }}
                             animate={{ opacity: 1, translateY: 0 }}
-                            className="items-center mt-24"
+                            className="mt-24 items-center"
                         >
-                            <View className="h-20 w-20 rounded-full bg-[#12121A] border border-[#24242E] items-center justify-center">
-                                <BellOff color="#4B4B57" size={34} />
+                            <View className="h-20 w-20 items-center justify-center rounded-full bg-[#eff6ff]">
+                                <BellOff color="#2563eb" size={34} />
                             </View>
-                            <Text className="text-white text-lg font-bold mt-4">You’re all caught up</Text>
-                            <Text className="text-neutral-400 text-sm text-center mt-1 px-10 leading-5">
+                            <Text className="mt-4 font-syne-bold text-[17px] text-[#111827]">You’re all caught up</Text>
+                            <Text className="mt-1 px-10 text-center font-syne text-[13px] leading-5 text-[#6b7280]">
                                 New activity on your items and drops will show up here.
                             </Text>
                         </MotiView>

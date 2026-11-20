@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import SettingsHome from '../components/SettingsHome';
-import NotificationScreen from '../components/NotificationScreen';
+import NotificationPreferences from '../components/NotificationPreferences';
 import SecuritySection from '../components/SecuritySection';
 
 interface SettingsScreenProps {
@@ -59,6 +59,10 @@ export default function SettingsScreen({ initialTab = 'menu' }: SettingsScreenPr
   // preferences below it keep the existing sub-page layout.
   if (activeTab === 'menu') {
     return <SettingsHome onOpen={setActiveTab} />;
+  }
+  // Notification preferences are a light page of their own too.
+  if (activeTab === 'notifications') {
+    return <NotificationPreferences onBack={() => setActiveTab('menu')} />;
   }
 
   return (
@@ -114,11 +118,6 @@ export default function SettingsScreen({ initialTab = 'menu' }: SettingsScreenPr
           {/* SECURITY SCREEN */}
           {activeTab === 'security' && (
             <SecuritySection triggerSuccess={triggerSuccess} />
-          )}
-
-          {/* NOTIFICATIONS SCREEN */}
-          {activeTab === 'notifications' && (
-            <NotificationScreen triggerSuccess={triggerSuccess} />
           )}
 
 

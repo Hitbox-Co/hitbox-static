@@ -5,13 +5,13 @@ import { Text, TouchableOpacity, View } from 'react-native';
 import { AppNotification, NotificationKind } from '../types/notification';
 import { formatAge } from '../utils/format';
 
-/** Icon + accent per kind, so the list reads at a glance. */
+/** Icon + accent per kind, so the list reads at a glance (light UI: a soft wash behind a strong tint). */
 const LOOK: Record<NotificationKind, { Icon: typeof ShieldCheck; tint: string; wash: string }> = {
-    account: { Icon: UserCircle2, tint: '#8B5CF6', wash: '#1B1430' },
-    security: { Icon: ShieldCheck, tint: '#28C76F', wash: '#0C2A1B' },
-    claim: { Icon: BadgeCheck, tint: '#208AEF', wash: '#0C2033' },
-    drop: { Icon: Box, tint: '#F2B807', wash: '#2A2109' },
-    tip: { Icon: Sparkles, tint: '#F472B6', wash: '#2C1420' },
+    account: { Icon: UserCircle2, tint: '#2563eb', wash: '#eff6ff' },
+    security: { Icon: ShieldCheck, tint: '#16a34a', wash: '#ecfdf3' },
+    claim: { Icon: BadgeCheck, tint: '#0891b2', wash: '#ecfeff' },
+    drop: { Icon: Box, tint: '#d97706', wash: '#fffbeb' },
+    tip: { Icon: Sparkles, tint: '#db2777', wash: '#fdf2f8' },
 };
 
 export default function NotificationRow({
@@ -28,39 +28,34 @@ export default function NotificationRow({
         <TouchableOpacity
             accessibilityRole="button"
             accessibilityLabel={`${notification.title}${unread ? ', unread' : ''}`}
-            activeOpacity={0.75}
+            activeOpacity={0.8}
             onPress={onPress}
-            className={`flex-row items-start rounded-2xl border p-3.5 mb-2.5 ${unread ? 'bg-[#12101A] border-[#2C2542]' : 'bg-[#0D0D11] border-[#1B1B21]'
-                }`}
+            className={`mb-3 flex-row items-start rounded-lg border p-3.5 ${unread ? 'border-[#bfdbfe] bg-white' : 'border-[#e5e7eb] bg-white'}`}
+            style={unread ? { shadowColor: '#3b82f6', shadowOpacity: 0.1, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 2 } : undefined}
         >
-            <View
-                className="h-11 w-11 rounded-full items-center justify-center"
-                style={{ backgroundColor: wash, borderWidth: 1, borderColor: tint + '55' }}
-            >
+            <View className="h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: wash }}>
                 <Icon color={tint} size={20} />
             </View>
 
-            <View className="flex-1 ml-3">
+            <View className="ml-3 flex-1">
                 <View className="flex-row items-center">
                     <Text
-                        className={`flex-1 text-[15px] pr-2 ${unread ? 'text-white font-bold' : 'text-neutral-300 font-semibold'}`}
+                        className={`flex-1 pr-2 text-[14px] ${unread ? 'font-syne-bold text-[#111827]' : 'font-syne-semibold text-[#4b5563]'}`}
                         numberOfLines={2}
                     >
                         {notification.title}
                     </Text>
-                    {unread && <View className="h-2 w-2 rounded-full bg-primary" />}
+                    {unread && <View className="h-2 w-2 rounded-full bg-[#2563eb]" />}
                 </View>
 
-                <Text className="text-[13px] text-neutral-400 leading-5 mt-1">{notification.body}</Text>
+                <Text className="mt-1 font-syne text-[12.5px] leading-[19px] text-[#6b7280]">{notification.body}</Text>
 
-                <View className="flex-row items-center mt-2">
-                    <Text className="text-[11px] text-neutral-500 font-medium">
-                        {formatAge(notification.createdAt)}
-                    </Text>
+                <View className="mt-2 flex-row items-center">
+                    <Text className="font-syne-medium text-[11px] text-[#9ca3af]">{formatAge(notification.createdAt)}</Text>
                     {notification.href && (
-                        <View className="flex-row items-center ml-auto">
-                            <Text className="text-[11px] text-primary font-bold">Open</Text>
-                            <ChevronRight size={13} color="#8B5CF6" />
+                        <View className="ml-auto flex-row items-center">
+                            <Text className="font-syne-bold text-[11px] text-[#2563eb]">Open</Text>
+                            <ChevronRight size={13} color="#2563eb" />
                         </View>
                     )}
                 </View>
