@@ -65,12 +65,15 @@ export default function CollectorProfileScreen({ userId, preview = false }: { us
                     </Text>
                 </View>
             )}
-            <ProfileHeader profile={profile} preview={preview} />
             {profile.isPrivate && (preview || !profile.viewer?.isSelf) ? (
-                <PrivateNotice name={displayName(profile)} />
+                // A private profile is a page of its own (Figma C14 / P10): who they are, and that the rest is hidden.
+                <PrivateProfile profile={profile} preview={preview} />
             ) : (
-                // Your own token returns your whole shelf; a visitor only gets items marked Public.
-                <Showcase userId={profile.id} publicOnly={preview} />
+                <>
+                    <ProfileHeader profile={profile} preview={preview} />
+                    {/* Your own token returns your whole shelf; a visitor only gets items marked Public. */}
+                    <Showcase userId={profile.id} publicOnly={preview} />
+                </>
             )}
         </CheckoutShell>
     )
@@ -181,17 +184,65 @@ function Stat({ value, label, onPress }: { value: number; label: string; onPress
     )
 }
 
-function PrivateNotice({ name }: { name: string }) {
+/**
+ * What a visitor sees on a PRIVATE profile (Figma C14 "Collection hidden" / P10):
+ * the photo, name and "@handle · Member since", a card saying the collection is
+ * hidden, and a way back. No items, no stats and no Follow button — the page is
+ * deliberately bare. (The follow endpoints still accept a private profile; they are
+ * reachable from the Followers / Following lists.)
+ */
+function PrivateProfile({ profile, preview }: { profile: Profile; preview: boolean }) {
+    const name = displayName(profile)
+    const first = profile.fullName?.split(' ')[0] || profile.handle || 'This collector'
+    const memberSince = new Date(profile.createdAt).getFullYear()
+
     return (
-        <GroupedCard>
-            <View className="items-center gap-2 py-6">
-                <Lock size={28} color="#6b7280" />
-                <Text className="font-syne-bold text-[14px] text-[#111827]">This profile is private</Text>
-                <Text className="px-4 text-center font-syne text-[12px] leading-[18px] text-[#6b7280]">
-                    {`${name}'s collection is hidden. You can still follow them.`}
+        <View className="gap-5">
+            <View className="items-center">
+                {profile.avatarUrl ? (
+                    <Image source={{ uri: profile.avatarUrl }} style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: '#e5e7eb' }} contentFit="cover" />
+                ) : (
+                    <View className="h-[84px] w-[84px] items-center justify-center rounded-full bg-[#eff6ff]">
+                        <UserRound size={34} color="#2563eb" />
+                    </View>
+                )}
+            </View>
+
+            <View className="gap-1.5">
+                <View className="flex-row items-center gap-2">
+                    <Text numberOfLines={1} className="shrink font-syne-bold text-[28px] text-[#111827]">{name}</Text>
+                    <Text className="text-[24px] text-[#111827]">✓</Text>
+                </View>
+                <Text className="font-syne text-[13px] text-[#6b7280]">
+                    {[profile.handle ? `@${profile.handle}` : null, `Member since ${memberSince}`].filter(Boolean).join(' · ')}
                 </Text>
             </View>
-        </GroupedCard>
+
+            <View className="gap-3 rounded-[3px] border border-[#eef2f7] bg-white p-5">
+                <View className="items-center">
+                    <View className="h-[62px] w-[62px] items-center justify-center rounded bg-[#f1f5f9]">
+                        <Lock size={22} color="#111827" />
+                    </View>
+                </View>
+                <Text className="mt-2 font-syne-bold text-[22px] text-[#111827]">This profile is private</Text>
+                <Text className="pb-4 font-syne text-[13px] leading-[19px] text-[#6b7280]">
+                    {`${first}'s collections and products are hidden. Only ${first} can manage their collection.`}
+                </Text>
+            </View>
+
+            <TouchableOpacity
+                accessibilityRole="button"
+                activeOpacity={0.85}
+                onPress={() => router.back()}
+                className="h-[45px] justify-center rounded-[2px] bg-black px-3.5"
+            >
+                <Text className="font-syne-bold text-[13px] text-white">{preview ? 'Back to privacy settings' : 'Back to collectors'}</Text>
+            </TouchableOpacity>
+
+            <Text className="font-syne text-[12px] leading-[18px] text-[#6b7280]">
+                No collection previews or purchase stories are visible on a private profile.
+            </Text>
+        </View>
     )
 }
 

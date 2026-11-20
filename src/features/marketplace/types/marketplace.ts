@@ -3,8 +3,7 @@
  * backend API reference (`marketplace-api.md`). Both endpoints are public; a
  * Clerk token is optional and only fills in `isWishlisted`.
  *
- * Every card is a primary drop sold by HitBox: there is no live peer-to-peer
- * trading API (the Peer-to-Peer banner is a static promo).
+ * Every card is a primary drop sold by HitBox.
  */
 
 import type { DiscoverCategory, DiscoverProductItem } from '@/features/discover/types/discover'

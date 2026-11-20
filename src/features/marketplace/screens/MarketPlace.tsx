@@ -18,7 +18,6 @@ import { describeApiError } from '@/lib/api-errors';
 import { useMarketplaceFeed } from '../api/getMarketplaceFeed';
 import { useMarketplaceListingsInfinite } from '../api/getMarketplaceListingsInfinite';
 import ListingGrid from '../components/ListingGrid';
-import PromoBannerSection from '../components/PromoBannerSection';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { MarketplaceCategory } from '../types/marketplace';
 
@@ -35,7 +34,7 @@ const CHIPS: { id: MarketplaceCategory | 'all'; label: string }[] = [
 
 /**
  * Marketplace tab, top to bottom (backend `marketplace-api.md`): title, search,
- * the Peer-to-Peer banner (static), category chips, **Featured Listings** and
+ * category chips, **Featured Listings** and
  * New Listings. The chips filter both lists on the server; typing in the search
  * bar switches to the paginated `GET /marketplace/listings?search=`.
  */
@@ -144,8 +143,6 @@ const MarketPlaceScreen = () => {
                             </TouchableOpacity>
                         )}
                     </View>
-
-                    {!isSearching && <PromoBannerSection />}
 
                     {/* Category chips */}
                     <ScrollView
