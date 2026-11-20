@@ -1,0 +1,235 @@
+import { useAuth } from '@clerk/clerk-expo'
+import { Image } from 'expo-image'
+import { router } from 'expo-router'
+import { Lock, Package, UserRound } from 'lucide-react-native'
+import React, { useState } from 'react'
+import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native'
+
+import { CheckoutShell, GroupedCard, SectionHeading } from '@/features/checkout/components/CheckoutParts'
+import { collectionErrorMessage } from '@/features/collections/api/collectionErrors'
+import { useUserCollection } from '@/features/collections/api/getUserCollection'
+import { CollectionItem } from '@/features/collections/types/collection'
+import { DISCOVER_PLACEHOLDER_IMAGE, rarityLabel } from '@/features/discover/utils/format'
+import { followErrorMessage, useFollowUser } from '@/features/follows/api/follows'
+import { ApiRequestError } from '@/lib/api'
+import { describeApiError } from '@/lib/api-errors'
+import { useUser } from '../api/getProfile'
+import { Profile } from '../types/profile'
+
+/**
+ * A collector's page (`GET /users/:id`). Name, avatar, bio and stats show for
+ * every profile; the items (`GET /collections/user/:id`) only when it is PUBLIC —
+ * a PRIVATE profile shows "This profile is private" and the items call is
+ * skipped (it would answer 403). Follow / Following comes from `viewer`.
+ */
+export default function CollectorProfileScreen({ userId }: { userId?: string }) {
+    const { data: profile, isLoading, isError, error, refetch } = useUser(userId)
+
+    if (isLoading) {
+        return (
+            <CheckoutShell showBag={false}>
+                <View className="mt-24 items-center">
+                    <ActivityIndicator size="large" color="#2563eb" />
+                </View>
+            </CheckoutShell>
+        )
+    }
+
+    if (isError || !profile) {
+        const notFound = (error instanceof ApiRequestError && error.status === 404) || !profile
+        return (
+            <CheckoutShell showBag={false}>
+                <View className="mt-16 items-center gap-3 px-6">
+                    <UserRound size={36} color="#9ca3af" />
+                    <Text className="text-center font-syne text-sm leading-5 text-[#6b7280]">
+                        {notFound ? "This collector isn't available." : describeApiError(error, "Couldn't load this profile.")}
+                    </Text>
+                    <TouchableOpacity
+                        onPress={() => (notFound ? router.back() : refetch())}
+                        className="rounded-[30px] bg-[#111827] px-5 py-2"
+                    >
+                        <Text className="font-syne-bold text-[13px] text-white">{notFound ? 'Go Back' : 'Retry'}</Text>
+                    </TouchableOpacity>
+                </View>
+            </CheckoutShell>
+        )
+    }
+
+    return (
+        <CheckoutShell showBag={false}>
+            <ProfileHeader profile={profile} />
+            {profile.isPrivate && !profile.viewer?.isSelf ? <PrivateNotice name={displayName(profile)} /> : <Showcase userId={profile.id} />}
+        </CheckoutShell>
+    )
+}
+
+const displayName = (p: Profile) => p.fullName || (p.handle ? `@${p.handle}` : 'Collector')
+
+function ProfileHeader({ profile }: { profile: Profile }) {
+    const { isSignedIn } = useAuth()
+    const follow = useFollowUser()
+    // Optimistic: follow/unfollow is idempotent, so the button flips at once.
+    const [pending, setPending] = useState<{ on: boolean; followers: number } | null>(null)
+    const on = pending?.on ?? profile.viewer?.isFollowing === true
+    const followers = pending?.followers ?? profile.stats.followers
+    const name = displayName(profile)
+    const memberSince = new Date(profile.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+
+    const toggleFollow = () => {
+        if (!isSignedIn) {
+            Alert.alert('Sign in to follow', 'Sign in to follow collectors.', [
+                { text: 'Not now', style: 'cancel' },
+                { text: 'Sign in', onPress: () => router.push('/(auth)/register' as never) },
+            ])
+            return
+        }
+        const next = !on
+        setPending({ on: next, followers: Math.max(0, followers + (next ? 1 : -1)) })
+        follow.mutate(
+            { userId: profile.id, follow: next },
+            {
+                // The server's own count wins once it answers.
+                onSuccess: (result) => result && setPending({ on: result.following, followers: result.followerCount }),
+                onError: (err) => {
+                    setPending(null)
+                    Alert.alert("Couldn't update", followErrorMessage(err))
+                },
+            },
+        )
+    }
+
+    const openFollows = (tab: 'followers' | 'following') =>
+        router.push({ pathname: '/follows/[userId]', params: { userId: profile.id, tab } } as never)
+
+    return (
+        <View className="gap-4">
+            <View className="flex-row items-center gap-4">
+                {profile.avatarUrl ? (
+                    <Image source={{ uri: profile.avatarUrl }} style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#e5e7eb' }} contentFit="cover" />
+                ) : (
+                    <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#eff6ff]">
+                        <UserRound size={30} color="#2563eb" />
+                    </View>
+                )}
+                <View className="flex-1 gap-0.5">
+                    <Text numberOfLines={1} className="font-orbitron text-[18px] text-[#111827]">{name}</Text>
+                    {!!profile.handle && profile.fullName && (
+                        <Text numberOfLines={1} className="font-syne text-[12px] text-[#6b7280]">@{profile.handle}</Text>
+                    )}
+                    <Text className="font-syne text-[11px] text-[#9ca3af]">{`Member since ${memberSince}`}</Text>
+                </View>
+            </View>
+
+            {!!profile.bio && <Text className="font-syne text-[13px] leading-[20px] text-[#374151]">{profile.bio}</Text>}
+
+            <View className="flex-row justify-between rounded border border-[#dbeafe] bg-white px-4 py-3">
+                <Stat value={profile.stats.claimedItems} label="Items" />
+                <Stat value={profile.stats.artistCollections} label="Collections" />
+                <Stat value={followers} label="Followers" onPress={() => openFollows('followers')} />
+                <Stat value={profile.stats.following} label="Following" onPress={() => openFollows('following')} />
+            </View>
+
+            {profile.viewer?.isSelf ? (
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    onPress={() => router.push('/edit-profile' as never)}
+                    className="h-11 items-center justify-center rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
+                >
+                    <Text className="font-syne-bold text-[13px] text-[#2563eb]">Edit profile</Text>
+                </TouchableOpacity>
+            ) : (
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={on ? `Unfollow ${name}` : `Follow ${name}`}
+                    onPress={toggleFollow}
+                    disabled={follow.isPending}
+                    className={`h-11 items-center justify-center rounded-[30px] ${on ? 'border border-[#bfdbfe] bg-[#eff6ff]' : 'bg-[#111827]'}`}
+                >
+                    <Text className={`font-syne-bold text-[13px] ${on ? 'text-[#2563eb]' : 'text-white'}`}>{on ? 'Following' : 'Follow'}</Text>
+                </TouchableOpacity>
+            )}
+        </View>
+    )
+}
+
+function Stat({ value, label, onPress }: { value: number; label: string; onPress?: () => void }) {
+    const body = (
+        <View className="items-center">
+            <Text className="font-syne-bold text-[16px] text-[#111827]">{value}</Text>
+            <Text className="font-syne text-[10px] text-[#6b7280]">{label}</Text>
+        </View>
+    )
+    return onPress ? (
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={`${value} ${label}`} onPress={onPress}>
+            {body}
+        </TouchableOpacity>
+    ) : (
+        body
+    )
+}
+
+function PrivateNotice({ name }: { name: string }) {
+    return (
+        <GroupedCard>
+            <View className="items-center gap-2 py-6">
+                <Lock size={28} color="#6b7280" />
+                <Text className="font-syne-bold text-[14px] text-[#111827]">This profile is private</Text>
+                <Text className="px-4 text-center font-syne text-[12px] leading-[18px] text-[#6b7280]">
+                    {`${name}'s collection is hidden. You can still follow them.`}
+                </Text>
+            </View>
+        </GroupedCard>
+    )
+}
+
+function Showcase({ userId }: { userId: string }) {
+    const { data, isLoading, isError, error } = useUserCollection(userId, { limit: 50 })
+    const items = data?.data ?? []
+
+    return (
+        <View className="gap-3">
+            <SectionHeading title="Collection" />
+            {isLoading && <ActivityIndicator size="small" color="#2563eb" />}
+            {isError && (
+                <Text className="font-syne text-[12px] text-[#6b7280]">{collectionErrorMessage(error)}</Text>
+            )}
+            {!isLoading && !isError && items.length === 0 && (
+                <View className="items-center gap-2 py-6">
+                    <Package size={28} color="#9ca3af" />
+                    <Text className="font-syne text-[12px] text-[#6b7280]">Nothing shared yet.</Text>
+                </View>
+            )}
+            <View className="flex-row flex-wrap justify-between gap-y-3">
+                {items.map((item) => (
+                    <ShowcaseCard key={item.id} item={item} />
+                ))}
+            </View>
+        </View>
+    )
+}
+
+function ShowcaseCard({ item }: { item: CollectionItem }) {
+    const rarity = rarityLabel(item.product.rarity)
+    return (
+        <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Open ${item.product.name}`}
+            activeOpacity={0.85}
+            onPress={() => router.push({ pathname: '/discover/[productId]', params: { productId: item.product.id } } as never)}
+            style={{ width: '48%' }}
+            className="overflow-hidden rounded-[10px] border border-[#dbeafe] bg-white"
+        >
+            <Image
+                source={{ uri: item.product.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
+                style={{ width: '100%', aspectRatio: 1, backgroundColor: '#eef2ff' }}
+                contentFit="cover"
+            />
+            <View className="gap-0.5 p-2.5">
+                <Text numberOfLines={1} className="font-syne-bold text-[12px] text-[#111827]">{item.product.name}</Text>
+                <Text className="font-syne text-[10px] text-[#6b7280]">
+                    {[`#${item.sku.serialNumber}`, rarity].filter(Boolean).join(' · ')}
+                </Text>
+            </View>
+        </TouchableOpacity>
+    )
+}

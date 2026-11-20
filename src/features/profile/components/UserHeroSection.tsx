@@ -18,8 +18,13 @@ export default function UserHeroSection() {
     // names live in unsafeMetadata for email sign-ups (Clerk instance has those
     // attributes disabled), so that's the last Clerk-side fallback.
     const { data: me } = useMe()
-    // Followers / Following, from the Follows API's list totals.
-    const counts = useFollowCounts(me?.id)
+    // Followers / Following come with GET /users/me (`stats`); the list totals
+    // are only fetched when an older server leaves `stats` out.
+    const fallbackCounts = useFollowCounts(me?.id, !me?.stats)
+    const counts = {
+        followers: me?.stats?.followers ?? fallbackCounts.followers,
+        following: me?.stats?.following ?? fallbackCounts.following,
+    }
     const openFollows = (tab: 'followers' | 'following') =>
         me && router.push({ pathname: '/follows/[userId]', params: { userId: me.id, tab } } as never)
     const meta = (user?.unsafeMetadata ?? {}) as {

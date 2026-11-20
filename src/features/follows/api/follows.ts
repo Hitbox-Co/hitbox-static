@@ -98,12 +98,13 @@ export function useFollowingInfinite<T extends FollowingType>(userId: string | u
 }
 
 /**
- * Counts for a profile header, read from each list's `meta.total` (a 1-row
- * page). Null while loading or when the list can't be read.
+ * Fallback counts for a profile header, read from each list's `meta.total` (a
+ * 1-row page) — for when the profile's own `stats` are missing (an older
+ * server). Pass enabled=false when `stats` are there. Null while loading.
  */
-export function useFollowCounts(userId: string | undefined) {
+export function useFollowCounts(userId: string | undefined, enabledWhen = true) {
     const api = useApi()
-    const enabled = isUuid(userId)
+    const enabled = enabledWhen && isUuid(userId)
     const followers = useQuery({
         queryKey: [...followKeys.followers(userId ?? '', 1), 'count'],
         queryFn: () => api.getPage<FollowUserView>(buildFollowersPath(userId!, 1, 1)),

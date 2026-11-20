@@ -40,7 +40,8 @@ export function useUploadAvatar() {
             return null
         },
         onSuccess: (me) => {
-            if (me) queryClient.setQueryData(queryKeys.me, me)
+            // PATCH answers without `stats`: keep the ones we had.
+            if (me) queryClient.setQueryData<Me>(queryKeys.me, (old) => ({ ...me, stats: old?.stats }))
         },
     })
 }

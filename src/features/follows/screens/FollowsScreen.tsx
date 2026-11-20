@@ -1,5 +1,6 @@
 import { useAuth } from '@clerk/clerk-expo'
 import { Image } from 'expo-image'
+import { router } from 'expo-router'
 import { Lock, UserRound, Users } from 'lucide-react-native'
 import React, { useState } from 'react'
 import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native'
@@ -123,6 +124,8 @@ function CollectorRow({ user }: { user: FollowUserView }) {
     const [pending, setPending] = useState<boolean | null>(null)
     const on = pending ?? user.isFollowedByYou === true
     const name = user.fullName || (user.handle ? `@${user.handle}` : 'Collector')
+    const openProfile = () =>
+        router.push({ pathname: '/collectors/[userId]', params: { userId: user.id } } as never)
 
     const toggle = () => {
         const next = !on
@@ -139,6 +142,12 @@ function CollectorRow({ user }: { user: FollowUserView }) {
     return (
         <GroupedCard>
             <View className="flex-row items-center gap-3">
+                <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={`Open ${name}'s profile`}
+                    onPress={openProfile}
+                    className="flex-1 flex-row items-center gap-3"
+                >
                 <Avatar uri={user.avatarUrl} />
                 <View className="flex-1 gap-0.5">
                     <Text numberOfLines={1} className="font-syne-bold text-[13px] text-[#111827]">{name}</Text>
@@ -154,6 +163,7 @@ function CollectorRow({ user }: { user: FollowUserView }) {
                         )}
                     </View>
                 </View>
+                </TouchableOpacity>
                 {/* null = guest, or this row is you: no button. */}
                 {isSignedIn && user.isFollowedByYou !== null && (
                     <TouchableOpacity

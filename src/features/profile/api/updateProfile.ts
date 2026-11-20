@@ -12,7 +12,8 @@ export function useUpdateMe() {
     return useMutation({
         mutationFn: (input: UpdateMeInput) => api.patch<Me>('/api/v1/users/me', input),
         onSuccess: (me) => {
-            queryClient.setQueryData(queryKeys.me, me)
+            // PATCH answers without `stats`: keep the ones we had.
+            queryClient.setQueryData<Me>(queryKeys.me, (old) => ({ ...me, stats: old?.stats }))
         },
     })
 }
