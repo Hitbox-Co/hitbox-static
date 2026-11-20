@@ -49,7 +49,7 @@ export default function ArtistProfileScreen() {
         <ScrollView className="flex-1 bg-background" showsVerticalScrollIndicator={false}>
 
             {/* Header Hero Background, Follow Button & Socials */}
-            <ProfileSection artist={{
+            <ProfileSection artistId={typeof artistId === 'string' ? artistId : undefined} artist={{
                 name: DUMMY_ARTIST_DATA.name,
                 handle: DUMMY_ARTIST_DATA.handle,
                 bio: DUMMY_ARTIST_DATA.bio

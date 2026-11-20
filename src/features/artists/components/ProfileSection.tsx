@@ -2,18 +2,52 @@ import { InstagramSvg } from '@/components/icons/InstagramIcon';
 import { XSvg } from '@/components/icons/XIcon';
 import { YoutubeSvg } from '@/components/icons/YoutubeIcon';
 import { MultiBorderImageContainer } from '@/components/MultiBorderImageContainer';
-import { UserRoundCheck, Verified } from 'lucide-react-native';
-import React from 'react';
-import { ImageBackground, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '@clerk/clerk-expo';
+import { router } from 'expo-router';
+import { UserRoundCheck, UserRoundPlus, Verified } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { Alert, ImageBackground, Text, TouchableOpacity, View } from 'react-native';
+
+import { followErrorMessage, useFollowArtist, useIsFollowingArtist } from '@/features/follows/api/follows';
+import { isUuid } from '@/features/follows/api/routes';
 import Header from './Header';
 
-export default function ProfileSection({ artist }: {
+export default function ProfileSection({ artist, artistId }: {
     artist: {
         name: string;
         handle: string;
         bio: string
     }
+    /** The artist's id (from Discover's creators / drop cards) — drives the real Follow button. */
+    artistId?: string
 }) {
+    const { isSignedIn } = useAuth();
+    const isFollowing = useIsFollowingArtist(artistId);
+    const followArtist = useFollowArtist();
+    // Optimistic: follow/unfollow is idempotent, so the button flips at once.
+    const [pending, setPending] = useState<boolean | null>(null);
+    const on = pending ?? isFollowing === true;
+
+    const onFollowPress = () => {
+        if (!isUuid(artistId)) return;
+        if (!isSignedIn) {
+            Alert.alert('Sign in to follow', 'Sign in to follow artists.', [
+                { text: 'Not now', style: 'cancel' },
+                { text: 'Sign in', onPress: () => router.push('/(auth)/register' as never) },
+            ]);
+            return;
+        }
+        const next = !on;
+        setPending(next);
+        followArtist.mutate(
+            { artistId, follow: next },
+            {
+                onSettled: () => setPending(null),
+                onError: (err) => Alert.alert("Couldn't update", followErrorMessage(err)),
+            },
+        );
+    };
+
     return (
         <View className="bg-background w-full">
             {/* Sticky Header Section */}
@@ -67,10 +101,16 @@ export default function ProfileSection({ artist }: {
                 {/* FOLLOW ACTION BUTTON */}
                 <View className="flex-row items-center justify-between mt-4">
 
-                    <TouchableOpacity className="bg-primary px-5 py-2 gap-x-2 rounded-lg flex-row items-center justify-center">
-                        <UserRoundCheck size={20} color={"white"} />
+                    <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel={on ? 'Unfollow artist' : 'Follow artist'}
+                        onPress={onFollowPress}
+                        disabled={followArtist.isPending || !isUuid(artistId)}
+                        className={`px-5 py-2 gap-x-2 rounded-lg flex-row items-center justify-center ${on ? 'bg-zinc-800 border border-zinc-700' : 'bg-primary'}`}
+                    >
+                        {on ? <UserRoundCheck size={20} color={"white"} /> : <UserRoundPlus size={20} color={"white"} />}
                         <Text className="text-white font-semibold text-sm items-center flex justify-center">
-                            Followed
+                            {on ? 'Following' : 'Follow'}
                         </Text>
                     </TouchableOpacity>
 

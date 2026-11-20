@@ -7,6 +7,7 @@ import { TouchableOpacity, View } from 'react-native'
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Text } from '@/components/ui/text'
+import { useFollowCounts } from '@/features/follows/api/follows'
 import { useMe } from '../api/getProfile'
 
 
@@ -17,6 +18,10 @@ export default function UserHeroSection() {
     // names live in unsafeMetadata for email sign-ups (Clerk instance has those
     // attributes disabled), so that's the last Clerk-side fallback.
     const { data: me } = useMe()
+    // Followers / Following, from the Follows API's list totals.
+    const counts = useFollowCounts(me?.id)
+    const openFollows = (tab: 'followers' | 'following') =>
+        me && router.push({ pathname: '/follows/[userId]', params: { userId: me.id, tab } } as never)
     const meta = (user?.unsafeMetadata ?? {}) as {
         username?: string
         firstName?: string
@@ -119,6 +124,22 @@ export default function UserHeroSection() {
                             <Text className="text-muted-foreground text-[11px] font-medium">
                                 Member since {memberSince}
                             </Text>
+                        </View>
+                    )}
+
+                    {/* Followers · Following — tap to open the lists */}
+                    {me && (
+                        <View className="flex-row items-center gap-3 mt-1">
+                            <TouchableOpacity accessibilityRole="button" onPress={() => openFollows('followers')}>
+                                <Text className="text-muted-foreground text-xs">
+                                    <Text className="text-foreground font-bold">{counts.followers ?? '–'}</Text> Followers
+                                </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity accessibilityRole="button" onPress={() => openFollows('following')}>
+                                <Text className="text-muted-foreground text-xs">
+                                    <Text className="text-foreground font-bold">{counts.following ?? '–'}</Text> Following
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     )}
                 </View>
