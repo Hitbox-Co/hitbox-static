@@ -23,22 +23,12 @@ import { useAllMyItems, useCollectionTotal } from "../api/getCollectionProducts"
 import { useCollectionStats } from "../api/getCollectionStats";
 import { useMyCollectionInfinite } from "../api/getMyCollectionInfinite";
 import { useUpdateCollectionVisibility } from "../api/updateCollectionVisibility";
+import FilterSheet from "../components/FilterSheet";
 import { CollectionItem, CollectionVisibility } from "../types/collection";
 import { COLLECTION_PLACEHOLDER_IMAGE, rarityLabel } from "../utils/mapCollectionItem";
 
 type Sort = "latest" | "oldest" | "name";
 type Show = "all" | CollectionVisibility;
-
-const SORTS: { id: Sort; label: string }[] = [
-  { id: "latest", label: "Newest first" },
-  { id: "oldest", label: "Oldest first" },
-  { id: "name", label: "Name A–Z" },
-];
-const SHOWS: { id: Show; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "PUBLIC", label: "Public" },
-  { id: "PRIVATE", label: "Private" },
-];
 
 /** The kinds of product HitBox sells, in the order the chips show them. */
 const DEFAULT_CATEGORIES = ["FIGURE", "APPAREL", "TRADING_CARD", "ACCESSORY", "POSTER", "DIGITAL_ASSET"];
@@ -227,12 +217,18 @@ export default function CollectionScreen() {
           </TouchableOpacity>
         </View>
 
-        {filterOpen && (
-          <View className="mx-5 mt-2 gap-3 rounded border border-[#e5e7eb] bg-white p-3">
-            <OptionRow title="Sort" options={SORTS} value={sort} onChange={(v) => setSort(v as Sort)} />
-            <OptionRow title="Show" options={SHOWS} value={show} onChange={(v) => setShow(v as Show)} />
-          </View>
-        )}
+        <FilterSheet
+          visible={filterOpen}
+          values={{ category: activeCategory, show, sort }}
+          categories={categories}
+          onClose={() => setFilterOpen(false)}
+          onApply={(v) => {
+            setCategory(v.category);
+            setShow(v.show);
+            setSort(v.sort);
+            setFilterOpen(false);
+          }}
+        />
 
         {/* Collections — each opens its own page (Figma C06 → C07) */}
         {groups.size > 0 && (
@@ -304,43 +300,6 @@ export default function CollectionScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function OptionRow({
-  title,
-  options,
-  value,
-  onChange,
-}: {
-  title: string;
-  options: { id: string; label: string }[];
-  value: string;
-  onChange: (id: string) => void;
-}) {
-  return (
-    <View className="gap-1.5">
-      <Text className="font-syne-bold text-[11px] text-[#6b7280]">{title}</Text>
-      <View className="flex-row flex-wrap gap-2">
-        {options.map((o) => {
-          const active = o.id === value;
-          return (
-            <TouchableOpacity
-              key={o.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              activeOpacity={0.8}
-              onPress={() => onChange(o.id)}
-              className={`h-7 justify-center rounded border px-3 ${active ? "border-[#2563eb] bg-[#eff6ff]" : "border-[#e5e7eb] bg-white"}`}
-            >
-              <Text className={`text-[11.5px] ${active ? "font-syne-semibold text-[#2563eb]" : "font-syne-medium text-[#6b7280]"}`}>
-                {o.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
   );
 }
 
