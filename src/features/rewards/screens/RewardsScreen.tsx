@@ -7,6 +7,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
 
 import { CheckoutShell, GroupedCard, PageIntro } from '@/features/checkout/components/CheckoutParts'
 import { describeApiError } from '@/lib/api-errors'
+import ForbiddenNote from '@/features/auth/components/ForbiddenNote'
 import { useRewards } from '../api/getRewards'
 import { RewardSummary } from '../types/reward'
 import { describeCounts, formatUnlockedDate } from '../utils/format'
@@ -52,6 +53,7 @@ export default function RewardsScreen() {
                     <Text className="text-center font-syne text-sm leading-5 text-[#6b7280]">
                         {describeApiError(rewards.error, "Couldn't load your rewards.")}
                     </Text>
+                    <ForbiddenNote error={rewards.error} />
                     <TouchableOpacity onPress={() => rewards.refetch()} className="rounded-[30px] bg-[#111827] px-5 py-2">
                         <Text className="font-syne-bold text-[13px] text-white">Retry</Text>
                     </TouchableOpacity>

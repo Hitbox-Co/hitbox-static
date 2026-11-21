@@ -7,7 +7,7 @@ import { CheckoutShell, GroupedCard, PageIntro, SectionHeading } from '@/feature
 import { ApiRequestError } from '@/lib/api'
 import { orderErrorMessage } from '../api/cancelOrder'
 import { useOrderTracking } from '../api/getOrders'
-import { deliveredText, formatOrderDateTime, ORDER_STATUS_BADGES, STATUS_WORDS } from '../utils/format'
+import { deliveredText, formatOrderDateTime, orderBadge, statusWord } from '../utils/format'
 
 /**
  * Track parcel (`GET /api/v1/orders/:orderId/tracking`).
@@ -51,7 +51,7 @@ export default function TrackingScreen({ orderId }: { orderId?: string }) {
     }
 
     const { shipment } = data
-    const badge = ORDER_STATUS_BADGES[data.status]
+    const badge = orderBadge(data.status)
 
     const openTracking = async () => {
         if (!shipment?.trackingUrl) return
@@ -69,7 +69,7 @@ export default function TrackingScreen({ orderId }: { orderId?: string }) {
             <View className="flex-row items-center gap-2">
                 <View className="rounded border px-[10px] py-[5px]" style={{ backgroundColor: badge.bg, borderColor: badge.border }}>
                     <Text className="font-syne-bold text-[10px]" style={{ color: badge.text }}>
-                        {STATUS_WORDS[data.status].toUpperCase()}
+                        {statusWord(data.status).toUpperCase()}
                     </Text>
                 </View>
                 {data.deliveredAt && (
@@ -114,7 +114,7 @@ export default function TrackingScreen({ orderId }: { orderId?: string }) {
                 <SectionHeading title="Timeline" />
                 {data.timeline.map((entry) => (
                     <View key={entry.status + entry.at} className="flex-row items-center justify-between">
-                        <Text className="font-syne-semibold text-xs text-[#111827]">{STATUS_WORDS[entry.status]}</Text>
+                        <Text className="font-syne-semibold text-xs text-[#111827]">{statusWord(entry.status)}</Text>
                         <Text className="font-syne text-[11px] text-[#6b7280]">{formatOrderDateTime(entry.at)}</Text>
                     </View>
                 ))}

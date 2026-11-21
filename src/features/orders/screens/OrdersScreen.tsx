@@ -7,9 +7,10 @@ import { ActivityIndicator, Image, Text, TouchableOpacity, View } from 'react-na
 import { CheckoutShell, GroupedCard, PageIntro } from '@/features/checkout/components/CheckoutParts'
 import { formatMoney } from '@/features/checkout/utils/money'
 import { describeApiError } from '@/lib/api-errors'
+import ForbiddenNote from '@/features/auth/components/ForbiddenNote'
 import { useOrdersInfinite } from '../api/getOrders'
 import { BuyerOrderListItem, OrderTab } from '../types/order'
-import { formatOrderDate, ORDER_STATUS_BADGES } from '../utils/format'
+import { formatOrderDate, orderBadge } from '../utils/format'
 
 const TABS: { id: OrderTab; label: string }[] = [
     { id: 'all', label: 'All' },
@@ -99,6 +100,7 @@ export default function OrdersScreen() {
                     <Text className="text-center font-syne text-sm leading-5 text-[#6b7280]">
                         {describeApiError(orders.error, "Couldn't load your orders.")}
                     </Text>
+                    <ForbiddenNote error={orders.error} />
                     <TouchableOpacity onPress={() => orders.refetch()} className="rounded-[30px] bg-[#111827] px-5 py-2">
                         <Text className="font-syne-bold text-[13px] text-white">Retry</Text>
                     </TouchableOpacity>
@@ -135,7 +137,7 @@ export default function OrdersScreen() {
 }
 
 function OrderRow({ order }: { order: BuyerOrderListItem }) {
-    const badge = ORDER_STATUS_BADGES[order.status]
+    const badge = orderBadge(order.status)
     return (
         <TouchableOpacity
             accessibilityRole="button"

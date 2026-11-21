@@ -20,6 +20,10 @@ import {
     REFUND_BADGES,
     REFUND_BLOCKED_TEXT,
     STATUS_WORDS,
+    orderBadge,
+    refundBadge,
+    refundBlockedText,
+    statusWord,
 } from '../utils/format'
 
 /**
@@ -69,7 +73,7 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
         )
     }
 
-    const badge = ORDER_STATUS_BADGES[order.status]
+    const badge = orderBadge(order.status)
     const money = (amount: string) => formatMoney(amount, order.currency)
     const { actions } = order
     const payMinutes = order.payment.status === 'AWAITING_PAYMENT' ? minutesLeft(order.payment.payBy) : null
@@ -222,7 +226,7 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
                 )}
                 {!actions.canRequestRefund && actions.refundBlockedReason && order.status !== 'PENDING_PAYMENT' && order.status !== 'CANCELLED' && (
                     <Text className="font-syne text-[11px] leading-[16px] text-[#6b7280]">
-                        {REFUND_BLOCKED_TEXT[actions.refundBlockedReason]}
+                        {refundBlockedText(actions.refundBlockedReason)}
                     </Text>
                 )}
                 {actions.returnWindowEndsAt && (
@@ -259,7 +263,7 @@ function StatusSteps({ order }: { order: BuyerOrderDetail }) {
             {ended ? (
                 <View className="gap-3">
                     {order.timeline.map((entry) => (
-                        <StepRow key={entry.status + entry.at} label={STATUS_WORDS[entry.status]} at={entry.at} reached />
+                        <StepRow key={entry.status + entry.at} label={statusWord(entry.status)} at={entry.at} reached />
                     ))}
                 </View>
             ) : (
@@ -307,7 +311,7 @@ function AddressCard({ title, address }: { title: string; address: BuyerAddress 
 }
 
 function RefundCard({ refund }: { refund: BuyerOrderRefund }) {
-    const badge = REFUND_BADGES[refund.status]
+    const badge = refundBadge(refund.status)
     return (
         <GroupedCard>
             <View className="flex-row items-center justify-between gap-2">

@@ -9,6 +9,7 @@ import { useAddToCart } from '@/features/checkout/api/cartMutations'
 import { CheckoutShell, GroupedCard, PageIntro } from '@/features/checkout/components/CheckoutParts'
 import { DISCOVER_PLACEHOLDER_IMAGE, formatDiscoverPrice } from '@/features/discover/utils/format'
 import { describeApiError } from '@/lib/api-errors'
+import ForbiddenNote from '@/features/auth/components/ForbiddenNote'
 import { useRemoveWishlistItem, useUpdateWishlistItem, useWishlistInfinite } from '../api/wishlist'
 import { WishlistItemView } from '../types/wishlist'
 import { unavailableLabel } from '../utils/format'
@@ -59,6 +60,7 @@ export default function WishlistScreen() {
                     <Text className="text-center font-syne text-sm leading-5 text-[#6b7280]">
                         {describeApiError(wishlist.error, "Couldn't load your wishlist.")}
                     </Text>
+                    <ForbiddenNote error={wishlist.error} />
                     <TouchableOpacity onPress={() => wishlist.refetch()} className="rounded-[30px] bg-[#111827] px-5 py-2">
                         <Text className="font-syne-bold text-[13px] text-white">Retry</Text>
                     </TouchableOpacity>

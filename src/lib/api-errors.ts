@@ -55,8 +55,15 @@ export function validationFieldErrors(err: unknown): Record<string, string> {
 
 /** A sentence for an error the screen has no better words for. */
 export function describeApiError(err: unknown, fallback = 'Something went wrong. Please try again.'): string {
+    // fetch() itself failed: no connection, or the server is not there at all.
+    if (err instanceof TypeError || (err instanceof Error && /network request failed|failed to fetch/i.test(err.message))) {
+        return "Can't reach HitBox. Check your connection and try again."
+    }
     if (!(err instanceof ApiRequestError)) return fallback
     if (err.error.code === 'RATE_LIMITED') return 'Too many requests. Please wait a moment and try again.'
+    if (err.error.code === 'AUTHZ_FORBIDDEN') return "Your account doesn't have access to this yet."
+    // 502 / 503 / 504 come from the host in front of the API when the API itself is down.
+    if ([502, 503, 504].includes(err.status)) return "HitBox can't be reached right now. Please try again in a moment."
     if (err.status >= 500) return 'HitBox is having trouble right now. Please try again shortly.'
     return err.error.message || fallback
 }

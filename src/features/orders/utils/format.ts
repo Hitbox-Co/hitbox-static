@@ -22,7 +22,7 @@ export const ORDER_STATUS_BADGES: Record<OrderStatus, { bg: string; text: string
     PENDING_PAYMENT: { bg: '#fffaed', text: '#d97706', border: '#fcd34d' },
     PAID: { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' },
     PROCESSING: { bg: '#eff6ff', text: '#2563eb', border: '#bfdbfe' },
-    SHIPPED: { bg: '#ede9fe', text: '#7c3aed', border: 'rgba(124,58,237,0.35)' },
+    SHIPPED: { bg: '#ecfeff', text: '#0891b2', border: '#a5f3fc' },
     DELIVERED: { bg: '#b6ffd6', text: '#0fab48', border: 'rgba(24,116,69,0.4)' },
     CANCELLED: { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' },
     REFUNDED: { bg: '#fef2f2', text: '#dc2626', border: '#fecaca' },
@@ -75,3 +75,23 @@ export function minutesLeft(payBy: string | null | undefined, now = Date.now()):
 export function deliveredText(via: 'ADMIN' | 'NFC_CLAIM' | null): string {
     return via === 'NFC_CLAIM' ? 'Delivered: you tapped your item' : 'Delivered'
 }
+
+const NEUTRAL_BADGE = { bg: '#f3f4f6', text: '#6b7280', border: '#d1d5db' }
+
+/** "SOME_NEW_STATUS" → "Some new status" — for a value the app does not know yet. */
+function humanize(value: string): string {
+    const text = value.replace(/_/g, ' ').toLowerCase()
+    return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/**
+ * Safe lookups. The server may add a status, refund state or blocked reason the
+ * app has not heard of; indexing the maps directly would give `undefined` and
+ * crash the screen, so each of these falls back to something neutral.
+ */
+export const orderBadge = (status: string) => ORDER_STATUS_BADGES[status as OrderStatus] ?? NEUTRAL_BADGE
+export const statusWord = (status: string) => STATUS_WORDS[status as OrderStatus] ?? humanize(status)
+export const refundBadge = (status: string) =>
+    REFUND_BADGES[status as RefundStatus] ?? { bg: NEUTRAL_BADGE.bg, text: NEUTRAL_BADGE.text }
+export const refundBlockedText = (reason: string) =>
+    REFUND_BLOCKED_TEXT[reason as RefundBlockedReason] ?? "A refund isn't available for this order right now."

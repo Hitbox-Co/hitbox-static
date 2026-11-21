@@ -9,7 +9,7 @@ import { ApiRequestError } from '@/lib/api'
 import { invoiceErrorMessage, isStorageUnavailable, useDownloadInvoice } from '../api/downloadInvoice'
 import { useInvoice } from '../api/getInvoices'
 import { Invoice } from '../types/invoice'
-import { formatInvoiceDate, formatTax, formatTaxRate, STATUS_BADGES } from '../utils/format'
+import { formatInvoiceDate, formatTax, formatTaxRate, invoiceBadge } from '../utils/format'
 
 /**
  * One invoice (`GET /api/v1/invoices/:invoiceId`) with the PDF download
@@ -62,7 +62,7 @@ export default function InvoiceDetailScreen({ invoiceId }: { invoiceId?: string 
         )
     }
 
-    const badge = STATUS_BADGES[invoice.status]
+    const badge = invoiceBadge(invoice.status)
     const money = (amount: string) => formatMoney(amount, invoice.currency)
 
     return (

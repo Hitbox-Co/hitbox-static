@@ -41,3 +41,15 @@ export function summariseLines(lineItems: { description: string }[]): string {
     const [first, ...rest] = lineItems
     return rest.length === 0 ? first!.description : `${first!.description} + ${rest.length} more`
 }
+
+/** Safe lookup: an invoice status the app does not know yet shows neutrally instead of crashing the screen. */
+export function invoiceBadge(status: string) {
+    return (
+        STATUS_BADGES[status as InvoiceStatus] ?? {
+            label: status.replace(/_/g, ' ').toUpperCase(),
+            bg: '#f3f4f6',
+            text: '#6b7280',
+            border: '#d1d5db',
+        }
+    )
+}

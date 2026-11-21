@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { router } from 'expo-router'
 import { Check, Star } from 'lucide-react-native'
 import React, { useEffect, useRef } from 'react'
-import { Alert, Text, View } from 'react-native'
+import { Text, View } from 'react-native'
 
 import { formatRewardPoints } from '@/features/products/utils/format'
 import { MOCK_ORDER_NUMBER } from '../data/mockCheckout'
@@ -60,7 +60,10 @@ export default function OrderConfirmedScreen() {
                 <>
                     <PrimaryAction
                         label="View order details"
-                        onPress={() => Alert.alert('Order details', 'Order tracking is coming soon.')}
+                        // My orders is the real list (`GET /orders`). The order shown here is still the
+                        // static checkout's, with no server id, so the list is the closest place to open;
+                        // once checkout creates real orders this should go to `/orders/<orderId>`.
+                        onPress={() => router.push('/orders' as never)}
                     />
                     <SecondaryLink label="Continue discovering" onPress={() => router.replace('/(tabs)/discover' as never)} />
                 </>

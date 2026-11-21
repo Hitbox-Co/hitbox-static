@@ -5,11 +5,12 @@ import React, { useState } from 'react'
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
 
 import { describeApiError } from '@/lib/api-errors'
+import ForbiddenNote from '@/features/auth/components/ForbiddenNote'
 import { formatMoney } from '@/features/checkout/utils/money'
 import { CheckoutShell, GroupedCard, PageIntro } from '@/features/checkout/components/CheckoutParts'
 import { useInvoicesInfinite } from '../api/getInvoices'
 import { Invoice, InvoiceStatus } from '../types/invoice'
-import { formatInvoiceDate, STATUS_BADGES, summariseLines } from '../utils/format'
+import { formatInvoiceDate, invoiceBadge, summariseLines } from '../utils/format'
 
 /** The status chips. "Superseded" is the buyer's word for CORRECTED. */
 const FILTERS: { id: InvoiceStatus | 'all'; label: string }[] = [
@@ -90,6 +91,7 @@ export default function InvoicesScreen() {
                     <Text className="text-center font-syne text-sm leading-5 text-[#6b7280]">
                         {describeApiError(invoices.error, "Couldn't load your invoices.")}
                     </Text>
+                    <ForbiddenNote error={invoices.error} />
                     <TouchableOpacity onPress={() => invoices.refetch()} className="rounded-[30px] bg-[#111827] px-5 py-2">
                         <Text className="font-syne-bold text-[13px] text-white">Retry</Text>
                     </TouchableOpacity>
@@ -130,7 +132,7 @@ export default function InvoicesScreen() {
 }
 
 function InvoiceRow({ invoice }: { invoice: Invoice }) {
-    const badge = STATUS_BADGES[invoice.status]
+    const badge = invoiceBadge(invoice.status)
     return (
         <TouchableOpacity
             accessibilityRole="button"
