@@ -57,13 +57,13 @@ export default function PopupSsoButtons({ onSuccess }: { onSuccess: () => void }
     return (
         <View className="gap-y-3">
             <TouchableOpacity
-                className="flex-row items-center justify-between bg-white h-14 px-4 rounded-2xl w-full"
+                className="flex-row items-center justify-between bg-white h-14 px-4 rounded-[30px] border border-[#dbeafe] w-full"
                 disabled={!!pendingStrategy}
                 onPress={() => handleSSO('oauth_google')}
             >
                 <View className="flex-row items-center gap-x-3">
                     <GoogleSvg />
-                    <Text className="text-black font-semibold text-base">Continue with Google</Text>
+                    <Text className="font-syne-bold text-[14px] text-[#111827]">Continue with Google</Text>
                 </View>
                 {pendingStrategy === 'oauth_google'
                     ? <ActivityIndicator size="small" color="#000000" />
@@ -71,13 +71,13 @@ export default function PopupSsoButtons({ onSuccess }: { onSuccess: () => void }
             </TouchableOpacity>
 
             <TouchableOpacity
-                className="flex-row items-center justify-between bg-white h-14 px-4 rounded-2xl w-full"
+                className="flex-row items-center justify-between bg-white h-14 px-4 rounded-[30px] border border-[#dbeafe] w-full"
                 disabled={!!pendingStrategy}
                 onPress={() => handleSSO('oauth_apple')}
             >
                 <View className="flex-row items-center gap-x-3">
                     <AppleSvg />
-                    <Text className="text-black font-semibold text-base">Continue with Apple</Text>
+                    <Text className="font-syne-bold text-[14px] text-[#111827]">Continue with Apple</Text>
                 </View>
                 {pendingStrategy === 'oauth_apple'
                     ? <ActivityIndicator size="small" color="#000000" />

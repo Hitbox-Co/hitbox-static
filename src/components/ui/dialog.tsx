@@ -61,9 +61,12 @@ function DialogContent({
   className,
   portalHost,
   children,
+  closeClassName = 'text-accent-foreground',
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   portalHost?: string;
+  /** Colour of the corner close icon — override on light cards. */
+  closeClassName?: string;
 }) {
   return (
     <DialogPortal hostName={portalHost}>
@@ -88,7 +91,7 @@ function DialogContent({
             hitSlop={12}>
             <Icon
               as={X}
-              className={cn('text-accent-foreground web:pointer-events-none size-4 shrink-0')}
+              className={cn(closeClassName, 'web:pointer-events-none size-4 shrink-0')}
             />
             <Text className="sr-only">Close</Text>
           </DialogPrimitive.Close>

@@ -33,7 +33,7 @@ interface SignInPopupProps {
      * Email"). Default `'options'`.
      */
     initialMethod?: Method;
-    /** White card matching the light sign-up screen. Default is the dark card. */
+    /** White card matching the light sign-up screen. Default is now the light card (matches the app); pass `light={false}` for the old dark one. */
     light?: boolean;
 }
 
@@ -63,7 +63,7 @@ export default function SignInPopup({
     description = 'Sign in to your HitBox account to continue where you left off.',
     onSignedIn,
     initialMethod = 'options',
-    light = false,
+    light = true,
 }: SignInPopupProps) {
     const [method, setMethod] = useState<Method>(initialMethod);
     const { isSignedIn } = useAuth();
@@ -117,6 +117,7 @@ export default function SignInPopup({
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent
+                closeClassName={light ? 'text-[#111827]' : 'text-accent-foreground'}
                 className={light
                     ? 'bg-white opacity-100 border w-[350px] border-[#dbeafe] p-6 rounded-lg max-w-lg mx-auto shadow-xl shadow-black/20'
                     : 'bg-background opacity-100 border w-[350px] border-primary p-6 rounded-3xl max-w-lg mx-auto shadow-xl shadow-primary'}
@@ -170,20 +171,20 @@ export default function SignInPopup({
 
                             {/* --- DIVIDER --- */}
                             <View className="flex-row items-center my-2">
-                                <View className="flex-1 h-[1px] bg-neutral-800" />
-                                <Text className="text-neutral-500 text-[11px] px-3 font-semibold">OR CONTINUE WITH</Text>
-                                <View className="flex-1 h-[1px] bg-neutral-800" />
+                                <View className={`flex-1 h-[1px] ${light ? 'bg-[#dbeafe]' : 'bg-neutral-800'}`} />
+                                <Text className={light ? 'font-syne-bold text-[10px] tracking-[1px] text-[#9ca3af] px-3' : 'text-neutral-500 text-[11px] px-3 font-semibold'}>OR CONTINUE WITH</Text>
+                                <View className={`flex-1 h-[1px] ${light ? 'bg-[#dbeafe]' : 'bg-neutral-800'}`} />
                             </View>
 
                             <TouchableOpacity
-                                className="flex-row items-center justify-between bg-background border border-neutral-800 h-14 px-4 rounded-2xl w-full"
+                                className={`flex-row items-center justify-between h-14 px-4 w-full ${light ? 'bg-black rounded-[30px]' : 'bg-background border border-neutral-800 rounded-2xl'}`}
                                 onPress={() => setMethod('email')}
                             >
                                 <View className="flex-row items-center gap-x-3">
                                     <Mail size={22} color="#FFFFFF" />
-                                    <Text className="text-white font-semibold text-base">Continue with Email</Text>
+                                    <Text className={light ? 'font-syne-bold text-[14px] text-white' : 'text-white font-semibold text-base'}>Continue with Email</Text>
                                 </View>
-                                <ChevronRight size={18} color="#525252" />
+                                <ChevronRight size={18} color={light ? '#9ca3af' : '#525252'} />
                             </TouchableOpacity>
 
                             {/* <TouchableOpacity
@@ -217,16 +218,16 @@ export default function SignInPopup({
                 {method === 'options' && (
                     <View className="items-center gap-y-3 mt-2">
                         <View className="flex-row items-center gap-x-1">
-                            <Text className="text-neutral-400 text-sm">Don&apos;t have an account?</Text>
+                            <Text className={light ? 'font-syne text-[13px] text-[#6b7280]' : 'text-neutral-400 text-sm'}>Don&apos;t have an account?</Text>
                             <TouchableOpacity onPress={() => leaveTo('/(auth)/register')}>
-                                <Text className="text-primary font-semibold text-sm">Sign Up</Text>
+                                <Text className={light ? 'font-syne-bold text-[13px] text-[#2563eb]' : 'text-primary font-semibold text-sm'}>Sign Up</Text>
                             </TouchableOpacity>
                         </View>
 
-                        <Text className="text-center text-neutral-600 text-[11px] leading-relaxed">
+                        <Text className={light ? 'text-center font-syne text-[11px] leading-relaxed text-[#9ca3af]' : 'text-center text-neutral-600 text-[11px] leading-relaxed'}>
                             By continuing, you agree to HitBox&apos;s{'\n'}
-                            <Text className="text-neutral-500 underline">Terms of Service</Text> and{' '}
-                            <Text className="text-neutral-500 underline">Privacy Policy</Text>.
+                            <Text className={light ? 'text-[#6b7280] underline' : 'text-neutral-500 underline'}>Terms of Service</Text> and{' '}
+                            <Text className={light ? 'text-[#6b7280] underline' : 'text-neutral-500 underline'}>Privacy Policy</Text>.
                         </Text>
                     </View>
                 )}
