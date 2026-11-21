@@ -118,29 +118,29 @@ export default function SupportChatScreen() {
     const canSend = draft.trim().length > 0
 
     return (
-        <View className="flex-1 bg-background">
+        <View className="flex-1 bg-white">
             <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     className="flex-1"
                 >
                     {/* Header bar — same treatment as the support and legal screens */}
-                    <View className="flex-row items-center gap-3 px-5 py-4 border-b border-white/10">
+                    <View className="flex-row items-center gap-3 px-5 py-4 border-b border-[#dbeafe]">
                         <TouchableOpacity
                             accessibilityRole="button"
                             accessibilityLabel="Go back"
                             onPress={goBack}
                             hitSlop={8}
-                            className="w-10 h-10 rounded-full bg-white/10 items-center justify-center active:opacity-60"
+                            className="size-9 rounded bg-[#eff6ff] items-center justify-center active:opacity-60"
                         >
-                            <ChevronLeft size={22} color="#fff" />
+                            <ChevronLeft size={20} color="#111827" />
                         </TouchableOpacity>
 
                         <View className="flex-1">
-                            <Text className="text-white text-lg font-bold" numberOfLines={1}>
+                            <Text className="font-orbitron text-[15px] text-[#111827]" numberOfLines={1}>
                                 Support chat
                             </Text>
-                            <Text className="text-neutral-500 text-[11px] font-medium">
+                            <Text className="font-syne-medium text-[11px] text-[#9ca3af]">
                                 Automated assistant
                             </Text>
                         </View>
@@ -168,15 +168,15 @@ export default function SupportChatScreen() {
                     </ScrollView>
 
                     {/* Composer */}
-                    <View className="flex-row items-end gap-2 px-5 pt-3 pb-4 border-t border-white/10">
+                    <View className="flex-row items-end gap-2 px-5 pt-3 pb-4 border-t border-[#dbeafe]">
                         <TextInput
                             value={draft}
                             onChangeText={setDraft}
                             placeholder="Describe your issue…"
-                            placeholderTextColor="#525252"
+                            placeholderTextColor="#9ca3af"
                             multiline
                             accessibilityLabel="Message support"
-                            className="flex-1 max-h-28 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white text-sm"
+                            className="flex-1 max-h-28 rounded-[10px] border border-[#dbeafe] bg-white px-[14px] py-[13px] font-syne text-[14px] text-[#111827]"
                             onSubmitEditing={send}
                         />
 
@@ -186,7 +186,7 @@ export default function SupportChatScreen() {
                             disabled={!canSend}
                             onPress={send}
                             activeOpacity={0.8}
-                            className={`w-11 h-11 rounded-full items-center justify-center bg-primary ${canSend ? 'active:opacity-80' : 'opacity-40'}`}
+                            className={`w-11 h-11 rounded-full items-center justify-center bg-black ${canSend ? 'active:opacity-80' : 'opacity-40'}`}
                         >
                             <Send size={18} color="#ffffff" />
                         </TouchableOpacity>

@@ -28,27 +28,27 @@ export default function SupportScreen() {
     }
 
     return (
-        <View className="flex-1 bg-background">
+        <View className="flex-1 bg-white">
             <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
                 {/* Header bar */}
-                <View className="flex-row items-center gap-3 px-5 py-4 border-b border-white/10">
+                <View className="flex-row items-center gap-3 px-5 py-4 border-b border-[#dbeafe]">
                     <TouchableOpacity
                         accessibilityRole="button"
                         accessibilityLabel="Go back"
                         onPress={goBack}
                         hitSlop={8}
-                        className="w-10 h-10 rounded-full bg-white/10 items-center justify-center active:opacity-60"
+                        className="size-9 rounded bg-[#eff6ff] items-center justify-center active:opacity-60"
                     >
-                        <ChevronLeft size={22} color="#fff" />
+                        <ChevronLeft size={20} color="#111827" />
                     </TouchableOpacity>
 
                     <Image
-                        source={require('@/assets/images/HitBoxLogo.png')}
+                        source={require('@/assets/images/HitBoxLogo-dark.png')}
                         resizeMode="contain"
-                        style={{ width: 32, height: 32 }}
+                        style={{ width: 24, height: 24 }}
                     />
 
-                    <Text className="text-white text-lg font-bold flex-1" numberOfLines={1}>
+                    <Text className="font-orbitron text-[15px] text-[#111827] flex-1" numberOfLines={1}>
                         Support
                     </Text>
                 </View>
@@ -76,15 +76,15 @@ export default function SupportScreen() {
                             accessibilityLabel="Open the support chat"
                             onPress={() => router.push('/support/chat')}
                             activeOpacity={0.85}
-                            className="flex-row items-center gap-3 rounded-2xl border border-primary/40 bg-primary-10 p-4 active:opacity-80"
+                            className="flex-row items-center gap-3 rounded border border-[#2563eb] bg-[#eff6ff] p-[14px] active:opacity-80"
                         >
-                            <View className="w-10 h-10 rounded-full bg-primary items-center justify-center">
+                            <View className="w-10 h-10 rounded bg-[#2563eb] items-center justify-center">
                                 <MessagesSquare size={18} color="#ffffff" />
                             </View>
 
                             <View className="flex-1">
-                                <Text className="text-white text-base font-bold">Chat with support</Text>
-                                <Text className="text-neutral-400 text-xs mt-0.5 leading-4">
+                                <Text className="font-syne-bold text-[15px] text-[#111827]">Chat with support</Text>
+                                <Text className="font-syne text-[12px] mt-0.5 leading-4 text-[#6b7280]">
                                     Answer a couple of questions and we&apos;ll route you to the right place.
                                 </Text>
                             </View>

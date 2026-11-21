@@ -60,11 +60,11 @@ export const CollectionProgressSection = ({ artist }: {
                 const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
                 return (
-                    <View key={item.id} className="bg-zinc-900/40 rounded-2xl p-3 mr-4 w-52 border border-zinc-800">
-                        <Image source={{ uri: item.bg }} className="w-full h-24 rounded-xl mb-3 opacity-80" />
+                    <View key={item.id} className="bg-white rounded p-3 mr-4 w-52 border border-[#dbeafe]">
+                        <Image source={{ uri: item.bg }} className="w-full h-24 rounded mb-3" />
 
-                        <Text className="text-white font-bold text-sm" numberOfLines={1}>{item.title}</Text>
-                        <Text className="text-zinc-500 text-xs mb-3">{item.series}</Text>
+                        <Text className="text-[#111827] font-syne-bold text-sm" numberOfLines={1}>{item.title}</Text>
+                        <Text className="text-[#6b7280] font-syne text-xs mb-3">{item.series}</Text>
 
                         {/* Progress Layout Section */}
                         <View className="flex-row items-center gap-x-3">
@@ -77,7 +77,7 @@ export const CollectionProgressSection = ({ artist }: {
                                         cx={size / 2}
                                         cy={size / 2}
                                         r={radius}
-                                        stroke="#27272a" // zinc-800 tracking rail
+                                        stroke="#dbeafe"
                                         strokeWidth={strokeWidth}
                                         fill="transparent"
                                     />
@@ -86,7 +86,7 @@ export const CollectionProgressSection = ({ artist }: {
                                         cx={size / 2}
                                         cy={size / 2}
                                         r={radius}
-                                        stroke="#a855f7" // purple-500 active progress fill
+                                        stroke="#2563eb"
                                         strokeWidth={strokeWidth}
                                         fill="transparent"
                                         strokeDasharray={circumference}
@@ -98,8 +98,8 @@ export const CollectionProgressSection = ({ artist }: {
 
                             {/* Label Text Track Stack layout matching image_de5659.png */}
                             <View className="flex-1">
-                                <Text className="text-white font-bold text-sm leading-tight">{percentage}%</Text>
-                                <Text className="text-zinc-500 text-[11px] mt-0.5">{item.count}</Text>
+                                <Text className="text-[#111827] font-syne-bold text-sm leading-tight">{percentage}%</Text>
+                                <Text className="text-[#6b7280] font-syne text-[11px] mt-0.5">{item.count}</Text>
                             </View>
                         </View>
                     </View>

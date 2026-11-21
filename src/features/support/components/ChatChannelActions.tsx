@@ -34,15 +34,15 @@ export default function ChatChannelActions({
                         accessibilityLabel={channel.accessibilityLabel}
                         onPress={() => onOpen(channel)}
                         activeOpacity={0.8}
-                        className={`flex-row items-center gap-2 rounded-xl px-4 h-11 ${
+                        className={`flex-row items-center gap-2 rounded-[30px] px-4 h-11 ${
                             isEmail
-                                ? 'bg-primary active:opacity-80'
-                                : 'border border-white/10 bg-white/5 active:opacity-70'
+                                ? 'bg-black active:opacity-80'
+                                : 'border border-[#dbeafe] bg-white active:opacity-70'
                         }`}
                     >
-                        <Icon size={15} color={isEmail ? '#ffffff' : '#a78bfa'} />
+                        <Icon size={15} color={isEmail ? '#ffffff' : '#2563eb'} />
                         <Text
-                            className={`text-sm font-semibold ${isEmail ? 'text-white' : 'text-neutral-200'}`}
+                            className={`font-syne-bold text-[13px] ${isEmail ? 'text-white' : 'text-[#111827]'}`}
                         >
                             {isEmail ? 'Email support' : `Call ${channel.title.replace(' Support', '')}`}
                         </Text>

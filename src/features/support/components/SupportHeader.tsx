@@ -15,11 +15,11 @@ export default function SupportHeader() {
         <MotiView
             from={{ opacity: 0, translateY: 10 }}
             animate={{ opacity: 1, translateY: 0 }}
-            className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-5"
+            className="mt-6 rounded border border-[#dbeafe] bg-white p-5"
         >
             <View className="flex-row items-center gap-2 mb-3">
-                <HandHelping size={18} color="#a78bfa" />
-                <Text className="text-purple-400 text-xs font-semibold uppercase tracking-widest">
+                <HandHelping size={18} color="#2563eb" />
+                <Text className="font-syne-bold text-[11px] uppercase tracking-widest text-[#2563eb]">
                     HitBox Support
                 </Text>
             </View>
@@ -27,12 +27,12 @@ export default function SupportHeader() {
             <Text
                 role="heading"
                 aria-level={1}
-                className="text-white text-2xl font-bold tracking-tight"
+                className="font-orbitron text-[22px] leading-[27px] tracking-[-0.5px] text-[#111827]"
             >
                 {SUPPORT_HEADING}
             </Text>
 
-            <Text className="text-neutral-400 text-sm mt-3 leading-6">
+            <Text className="font-syne text-[13px] mt-3 leading-[19px] text-[#6b7280]">
                 {SUPPORT_SUBHEADING}
             </Text>
         </MotiView>

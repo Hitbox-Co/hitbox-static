@@ -42,17 +42,17 @@ export default function SupportContactCard({
             from={{ opacity: 0, translateY: 12 }}
             animate={{ opacity: 1, translateY: 0 }}
             transition={{ type: 'timing', duration: 300, delay }}
-            className={cn('rounded-2xl border border-white/10 bg-white/5 p-5', className)}
+            className={cn('rounded border border-[#dbeafe] bg-white p-5', className)}
         >
             <View className="flex-row items-center gap-3">
-                <View className="w-10 h-10 rounded-full border border-primary/40 bg-primary-10 items-center justify-center">
-                    <Icon size={18} color="#a78bfa" />
+                <View className="w-10 h-10 rounded bg-[#eff6ff] items-center justify-center">
+                    <Icon size={18} color="#2563eb" />
                 </View>
 
                 <Text
                     role="heading"
                     aria-level={2}
-                    className="text-white text-base font-bold flex-1"
+                    className="font-syne-bold text-[15px] text-[#111827] flex-1"
                     numberOfLines={1}
                 >
                     {channel.title}
@@ -63,7 +63,7 @@ export default function SupportContactCard({
                 accessibilityRole="link"
                 accessibilityLabel={channel.accessibilityLabel}
                 onPress={open}
-                className="text-purple-400 text-sm font-medium mt-4"
+                className="font-syne-medium text-[14px] text-[#2563eb] mt-4"
             >
                 {channel.value}
             </Text>
@@ -73,16 +73,16 @@ export default function SupportContactCard({
                 accessibilityLabel={channel.accessibilityLabel}
                 onPress={open}
                 activeOpacity={0.8}
-                className="mt-4 h-11 flex-row items-center justify-center gap-2 rounded-xl bg-primary active:opacity-80"
+                className="mt-4 h-11 flex-row items-center justify-center gap-2 rounded-[30px] bg-black active:opacity-80"
             >
                 <Icon size={16} color="#ffffff" />
-                <Text className="text-white font-semibold text-sm">{channel.actionLabel}</Text>
+                <Text className="font-syne-bold text-[14px] text-white">{channel.actionLabel}</Text>
             </TouchableOpacity>
 
             {failed && (
                 <Text
                     accessibilityLiveRegion="polite"
-                    className="text-amber-400 text-xs mt-3 leading-5"
+                    className="font-syne text-[12px] mt-3 leading-5 text-[#b45309]"
                 >
                     {channel.kind === 'email'
                         ? 'No email app is set up on this device. Copy the address above instead.'

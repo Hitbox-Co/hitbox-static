@@ -46,7 +46,7 @@ export default function ArtistProfileScreen() {
     const artist = DUMMY_ARTIST_DATA;
 
     return (
-        <ScrollView className="flex-1 bg-background" showsVerticalScrollIndicator={false}>
+        <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
 
             {/* Header Hero Background, Follow Button & Socials */}
             <ProfileSection artistId={typeof artistId === 'string' ? artistId : undefined} artist={{
@@ -57,16 +57,16 @@ export default function ArtistProfileScreen() {
 
 
             {/* Stats Row Grid */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="py-4 px-2 border">
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="py-4 px-2 border-y border-[#dbeafe]">
                 {artist.stats.map((stat, idx) => {
                     const IconComponent = stat.icon;
                     return (
                         <View key={idx} className="items-center justify-center mx-3 w-16">
-                            <View className="bg-zinc-900/50 p-2 rounded-xl mb-1 items-center justify-center w-12 h-12 border border-zinc-800">
-                                <IconComponent size={20} color="#a855f7" />
+                            <View className="bg-[#eff6ff] p-2 rounded mb-1 items-center justify-center w-12 h-12 border border-[#dbeafe]">
+                                <IconComponent size={20} color="#2563eb" />
                             </View>
-                            <Text className="text-white text-base font-bold">{stat.value}</Text>
-                            <Text className="text-zinc-500 text-[10px] text-center mt-0.5">{stat.label}</Text>
+                            <Text className="text-[#111827] text-base font-syne-bold">{stat.value}</Text>
+                            <Text className="text-[#6b7280] font-syne text-[10px] text-center mt-0.5">{stat.label}</Text>
                         </View>
                     );
                 })}
@@ -89,25 +89,25 @@ export default function ArtistProfileScreen() {
                     const progressPercent = total ? Math.min(Math.max((current / total) * 100, 0), 100) : 0;
 
                     return (
-                        <View key={item.id} className="bg-zinc-900/40 rounded-2xl p-2 mr-4 w-40 border border-zinc-800 relative">
-                            <Image source={{ uri: item.bg }} className="w-full h-32 rounded-xl mb-2" />
+                        <View key={item.id} className="bg-white rounded p-2 mr-4 w-40 border border-[#dbeafe] relative">
+                            <Image source={{ uri: item.bg }} className="w-full h-32 rounded mb-2" />
 
-                            <Badge className="absolute top-4 left-4 px-2 py-0.5 rounded">
-                                <Text className="text-white text-[9px] font-bold">{item.type}</Text>
+                            <Badge className="bg-[#2563eb] border-transparent absolute top-4 left-4 px-2 py-0.5 rounded">
+                                <Text className="text-white text-[9px] font-syne-bold">{item.type}</Text>
                             </Badge>
 
-                            <Text className="text-white font-bold text-xs" numberOfLines={1}>{item.title}</Text>
-                            <Text className="text-zinc-500 text-[11px] mb-2">{item.subtitle}</Text>
+                            <Text className="text-[#111827] font-syne-bold text-xs" numberOfLines={1}>{item.title}</Text>
+                            <Text className="text-[#6b7280] font-syne text-[11px] mb-2">{item.subtitle}</Text>
 
                             {/* Dynamic Progress Bar Track */}
-                            <View className="w-full h-[3px] bg-zinc-800 rounded-full mb-2 overflow-hidden">
+                            <View className="w-full h-[3px] bg-[#dbeafe] rounded-full mb-2 overflow-hidden">
                                 <View
-                                    className="h-full bg-purple-600 rounded-full"
+                                    className="h-full bg-[#2563eb] rounded-full"
                                     style={{ width: `${progressPercent}%` }}
                                 />
                             </View>
 
-                            <Text className="text-purple-400 text-xs font-semibold">🟣 {item.progress}</Text>
+                            <Text className="text-[#2563eb] text-xs font-syne-bold">{item.progress}</Text>
                         </View>
                     );
                 })}
@@ -117,14 +117,14 @@ export default function ArtistProfileScreen() {
             <SectionHeader title="Latest Releases" actionText="View All" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="pl-4 mb-6">
                 {artist.latestReleases.map((item) => (
-                    <View key={item.id} className="bg-zinc-900/40 rounded-2xl p-2 mr-4 w-36 border border-zinc-800 relative">
-                        <Image source={{ uri: item.bg }} className="w-full h-32 rounded-xl mb-2" />
-                        <Badge className="absolute top-4 left-4 px-1.5 py-0.5 rounded">
-                            <Text className="text-white text-[9px] font-bold">NEW</Text>
+                    <View key={item.id} className="bg-white rounded p-2 mr-4 w-36 border border-[#dbeafe] relative">
+                        <Image source={{ uri: item.bg }} className="w-full h-32 rounded mb-2" />
+                        <Badge className="bg-[#2563eb] border-transparent absolute top-4 left-4 px-1.5 py-0.5 rounded">
+                            <Text className="text-white text-[9px] font-syne-bold">NEW</Text>
                         </Badge>
-                        <Text className="text-white font-bold text-xs" numberOfLines={1}>{item.title}</Text>
-                        <Text className="text-zinc-500 text-[11px] mb-2" numberOfLines={1}>{item.type}</Text>
-                        <Text className="text-purple-400 text-xs font-semibold">🟣 {item.price}</Text>
+                        <Text className="text-[#111827] font-syne-bold text-xs" numberOfLines={1}>{item.title}</Text>
+                        <Text className="text-[#6b7280] font-syne text-[11px] mb-2" numberOfLines={1}>{item.type}</Text>
+                        <Text className="text-[#2563eb] text-xs font-syne-bold">{item.price}</Text>
                     </View>
                 ))}
             </ScrollView>
@@ -181,10 +181,10 @@ export default function ArtistProfileScreen() {
 
 const SectionHeader = ({ title, actionText }: { title: string, actionText: string }) => (
     <View className="flex-row justify-between items-center px-4 py-4">
-        <Text className="text-white font-bold text-base">{title}</Text>
+        <Text className="text-[#111827] font-orbitron text-[13px]">{title}</Text>
         <TouchableOpacity className="flex-row items-center">
-            <Text className="text-primary text-xs font-semibold mr-0.5">{actionText}</Text>
-            <ChevronRight size={14} color="#a855f7" />
+            <Text className="text-[#2563eb] text-xs font-syne-bold mr-0.5">{actionText}</Text>
+            <ChevronRight size={14} color="#2563eb" />
         </TouchableOpacity>
     </View>
 );

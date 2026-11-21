@@ -10,23 +10,23 @@ export default function Header() {
 
             {/* Back Button */}
             <TouchableOpacity
-                className="bg-black/50 p-2 rounded-full"
+                className="bg-white p-2 rounded border border-[#dbeafe]"
                 onPress={() => router.back()}
             >
-                <ChevronLeft size={24} color="white" />
+                <ChevronLeft size={24} color="#111827" />
             </TouchableOpacity>
 
             {/* Right Side Icons */}
             <View className="flex-row gap-x-3">
-                <TouchableOpacity className="bg-black/40 p-2 rounded-full relative">
-                    <Bell size={22} color="#fff" />
-                    <View className="absolute top-1 right-1 bg-primary w-4 h-4 rounded-full items-center justify-center">
-                        <Text className="text-[9px] text-white font-bold">3</Text>
+                <TouchableOpacity className="bg-white p-2 rounded border border-[#dbeafe] relative">
+                    <Bell size={22} color="#111827" />
+                    <View className="absolute top-1 right-1 bg-[#2563eb] w-4 h-4 rounded-full items-center justify-center">
+                        <Text className="text-[9px] text-white font-syne-bold">3</Text>
                     </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity className="bg-black/40 p-2 rounded-full">
-                    <Upload size={22} color="#fff" />
+                <TouchableOpacity className="bg-white p-2 rounded border border-[#dbeafe]">
+                    <Upload size={22} color="#111827" />
                 </TouchableOpacity>
             </View>
 

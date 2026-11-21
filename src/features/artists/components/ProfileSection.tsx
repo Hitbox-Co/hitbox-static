@@ -49,12 +49,12 @@ export default function ProfileSection({ artist, artistId }: {
     };
 
     return (
-        <View className="bg-background w-full">
+        <View className="bg-white w-full">
             {/* Sticky Header Section */}
             <Header />
 
             {/* Cover Image */}
-            <View className="relative w-full h-48 bg-zinc-800">
+            <View className="relative w-full h-48 bg-[#eff6ff]">
                 <ImageBackground
                     source={{ uri: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?q=80&w=1170&auto=format&fit=crop' }}
                     className="w-full h-full"
@@ -75,14 +75,14 @@ export default function ProfileSection({ artist, artistId }: {
 
                         {/* Name and Verification Badge */}
                         <View className="flex-row items-center gap-x-1.5 flex-wrap">
-                            <Text className="text-foreground text-2xl font-bold text-left" numberOfLines={1}>
+                            <Text className="text-[#111827] text-2xl font-orbitron text-left" numberOfLines={1}>
                                 {artist.name}
                             </Text>
-                            <Verified size={18} color="white" fill="#6d28d9" />
+                            <Verified size={18} color="white" fill="#2563eb" />
                         </View>
 
                         {/* Handle */}
-                        <Text className="text-muted-foreground text-sm font-medium mt-0.5 text-left" numberOfLines={1}>
+                        <Text className="text-[#6b7280] text-sm font-syne-semibold mt-0.5 text-left" numberOfLines={1}>
                             {artist.handle}
                         </Text>
 
@@ -90,7 +90,7 @@ export default function ProfileSection({ artist, artistId }: {
 
                     </View>
                 </View>
-                <Text className="text-foreground px-8 text-sm mt-20 font-normal text-left" numberOfLines={2}>
+                <Text className="text-[#111827] px-8 text-sm mt-20 font-syne text-left" numberOfLines={2}>
                     {artist.bio}
                 </Text>
             </View>
@@ -106,10 +106,10 @@ export default function ProfileSection({ artist, artistId }: {
                         accessibilityLabel={on ? 'Unfollow artist' : 'Follow artist'}
                         onPress={onFollowPress}
                         disabled={followArtist.isPending || !isUuid(artistId)}
-                        className={`px-5 py-2 gap-x-2 rounded-lg flex-row items-center justify-center ${on ? 'bg-zinc-800 border border-zinc-700' : 'bg-primary'}`}
+                        className={`h-[44px] px-5 gap-x-2 rounded-[30px] flex-row items-center justify-center ${on ? 'bg-white border border-[#dbeafe]' : 'bg-black'}`}
                     >
-                        {on ? <UserRoundCheck size={20} color={"white"} /> : <UserRoundPlus size={20} color={"white"} />}
-                        <Text className="text-white font-semibold text-sm items-center flex justify-center">
+                        {on ? <UserRoundCheck size={20} color={"#111827"} /> : <UserRoundPlus size={20} color={"white"} />}
+                        <Text className={`${on ? 'text-[#111827]' : 'text-white'} font-syne-bold text-sm`}>
                             {on ? 'Following' : 'Follow'}
                         </Text>
                     </TouchableOpacity>

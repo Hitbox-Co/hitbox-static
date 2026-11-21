@@ -70,19 +70,19 @@ export default function SettingsScreen({ initialTab = 'menu' }: SettingsScreenPr
       // No bottom edge: this route renders inside (tabs), so the tab bar
       // already reserves the safe area below.
       edges={["top", "left", "right"]}
-      className="flex-1 bg-background"
+      className="flex-1 bg-white"
     >
       {/* Header bar */}
-      <View className="flex-row items-center justify-between px-5 py-4 border-b border-border/20">
+      <View className="flex-row items-center justify-between px-5 py-4 border-b border-[#dbeafe]">
         <TouchableOpacity
           onPress={goBack}
           activeOpacity={0.7}
-          className="w-10 h-10 rounded-full bg-muted justify-center items-center"
+          className="w-10 h-10 rounded bg-[#eff6ff] justify-center items-center"
         >
-          <ArrowLeft size={20} color="white" />
+          <ArrowLeft size={20} color="#111827" />
         </TouchableOpacity>
 
-        <Text className="text-foreground text-lg font-bold text-center flex-1">
+        <Text className="font-orbitron text-[16px] text-[#111827] text-center flex-1">
           {getHeaderTitle()}
         </Text>
 
@@ -96,10 +96,10 @@ export default function SettingsScreen({ initialTab = 'menu' }: SettingsScreenPr
           from={{ opacity: 0, translateY: -20 }}
           animate={{ opacity: 1, translateY: 0 }}
           exit={{ opacity: 0, translateY: -20 }}
-          className="mx-4 mt-4 bg-emerald-500/20 border border-emerald-500/30 p-3 rounded-xl flex-row items-center gap-2"
+          className="mx-4 mt-4 bg-[#f0fdf4] border border-[#bbf7d0] p-3 rounded flex-row items-center gap-2"
         >
-          <CheckCircle2 size={18} color="#10b981" />
-          <Text className="text-emerald-400 font-semibold text-sm">{saveSuccess}</Text>
+          <CheckCircle2 size={18} color="#16a34a" />
+          <Text className="font-syne-semibold text-[13px] text-[#16a34a]">{saveSuccess}</Text>
         </MotiView>
       )}
 

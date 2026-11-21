@@ -12,8 +12,8 @@ import type { ChatMessage } from '../types/support'
 export default function ChatBubble({ message }: { message: ChatMessage }) {
     if (message.author === 'system') {
         return (
-            <View className="rounded-xl border border-primary/40 bg-primary-10 px-4 py-3 mb-4">
-                <Text className="text-neutral-300 text-xs leading-5 font-medium text-center">
+            <View className="rounded border border-[#dbeafe] bg-[#eff6ff] px-4 py-3 mb-4">
+                <Text className="font-syne-medium text-[12px] leading-5 text-center text-[#6b7280]">
                     {message.text}
                 </Text>
             </View>
@@ -31,10 +31,10 @@ export default function ChatBubble({ message }: { message: ChatMessage }) {
         >
             {!isUser && (
                 <View className="flex-row items-center gap-2 mb-1.5">
-                    <View className="w-6 h-6 rounded-full border border-primary/40 bg-primary-10 items-center justify-center">
-                        <HandHelping size={12} color="#a78bfa" />
+                    <View className="w-6 h-6 rounded bg-[#eff6ff] items-center justify-center">
+                        <HandHelping size={12} color="#2563eb" />
                     </View>
-                    <Text className="text-purple-400 text-[11px] font-semibold uppercase tracking-widest">
+                    <Text className="font-syne-bold text-[11px] uppercase tracking-widest text-[#2563eb]">
                         HitBox Support
                     </Text>
                 </View>
@@ -43,12 +43,12 @@ export default function ChatBubble({ message }: { message: ChatMessage }) {
             <View
                 className={
                     isUser
-                        ? 'rounded-2xl rounded-br-md bg-primary px-4 py-3'
-                        : 'rounded-2xl rounded-bl-md border border-white/10 bg-white/5 px-4 py-3'
+                        ? 'rounded-2xl rounded-br-md bg-black px-4 py-3'
+                        : 'rounded-2xl rounded-bl-md border border-[#dbeafe] bg-[#eff6ff] px-4 py-3'
                 }
             >
                 <Text
-                    className={`text-sm leading-6 ${isUser ? 'text-white font-medium' : 'text-neutral-200'}`}
+                    className={`leading-6 text-[14px] ${isUser ? 'font-syne-medium text-white' : 'font-syne text-[#111827]'}`}
                 >
                     {message.text}
                 </Text>

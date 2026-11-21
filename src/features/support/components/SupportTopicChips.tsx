@@ -26,9 +26,9 @@ export default function SupportTopicChips({
                     accessibilityLabel={topic.label}
                     onPress={() => onPick(topic)}
                     activeOpacity={0.8}
-                    className="rounded-full border border-primary/40 bg-primary-10 px-4 py-2.5 active:opacity-70"
+                    className="rounded-full border border-[#dbeafe] bg-[#eff6ff] px-4 py-2.5 active:opacity-70"
                 >
-                    <Text className="text-purple-300 text-[13px] font-semibold">{topic.label}</Text>
+                    <Text className="font-syne-semibold text-[13px] text-[#2563eb]">{topic.label}</Text>
                 </TouchableOpacity>
             ))}
         </View>
