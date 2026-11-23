@@ -6,6 +6,9 @@ import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from 'r
 import { CheckoutShell, Divider, GroupedCard, PageIntro, SectionHeading } from '@/features/checkout/components/CheckoutParts'
 import { formatMoney } from '@/features/checkout/utils/money'
 import { invoiceErrorMessage, isStorageUnavailable, useDownloadInvoice } from '@/features/invoices/api/downloadInvoice'
+import { paymentErrorMessage } from '@/features/payments/api/errors'
+import { useResumeCheckout } from '@/features/payments/api/checkout'
+import { usePaymentSheet } from '@/features/payments/hooks/usePaymentSheet'
 import { ApiRequestError } from '@/lib/api'
 import { orderErrorMessage, useCancelOrder } from '../api/cancelOrder'
 import { useOrder } from '../api/getOrders'
@@ -34,13 +37,37 @@ import {
  * Polls while the order is PENDING_PAYMENT: the app never decides an order is
  * paid, it waits for the server (Stripe's webhook) to move it on.
  *
- * Complete payment and Request a refund need the payments API (`/checkout/:id/resume`,
- * `/refunds`), which is not connected yet — those two buttons say so.
+ * Complete payment resumes the Stripe payment (`/checkout/:id/resume`); refunds open
+ * the refund screen (`/refunds`).
  */
 export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
     const { data: order, isLoading, isError, error, refetch } = useOrder(orderId, { poll: true })
     const cancel = useCancelOrder()
     const download = useDownloadInvoice()
+    const resume = useResumeCheckout()
+    const presentSheet = usePaymentSheet()
+    const [paying, setPaying] = React.useState(false)
+
+    /** Complete payment: same order and charge, fresh client secret, then wait for the webhook. */
+    const onResumePayment = async () => {
+        if (!orderId || paying) return
+        setPaying(true)
+        try {
+            const checkout = await resume.mutateAsync(orderId)
+            const result = await presentSheet(checkout)
+            if (result.status === 'success') {
+                router.replace({ pathname: '/checkout/confirmed', params: { orderId } } as never)
+            } else if (result.status === 'failed') {
+                Alert.alert('Payment unsuccessful', result.message)
+                refetch()
+            }
+        } catch (err) {
+            Alert.alert("Couldn't resume payment", paymentErrorMessage(err))
+            refetch()
+        } finally {
+            setPaying(false)
+        }
+    }
 
     if (isLoading) {
         return (
@@ -192,7 +219,8 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
                     <ActionButton
                         label="Complete payment"
                         primary
-                        onPress={() => Alert.alert('Complete payment', 'Payments are not connected in the app yet.')}
+                        disabled={paying}
+                        onPress={onResumePayment}
                     />
                 )}
                 {actions.canTrack && (
@@ -221,7 +249,7 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
                 {actions.canRequestRefund && (
                     <ActionButton
                         label={order.status === 'SHIPPED' || order.status === 'DELIVERED' ? 'Request a refund' : 'Cancel & refund'}
-                        onPress={() => Alert.alert('Request a refund', 'Refunds are not connected in the app yet.')}
+                        onPress={() => router.push({ pathname: '/orders/[orderId]/refund', params: { orderId: order.id } } as never)}
                     />
                 )}
                 {!actions.canRequestRefund && actions.refundBlockedReason && order.status !== 'PENDING_PAYMENT' && order.status !== 'CANCELLED' && (

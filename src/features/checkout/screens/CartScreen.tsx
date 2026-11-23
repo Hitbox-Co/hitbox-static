@@ -137,7 +137,7 @@ export default function CartScreen() {
 
     /** Each row is its own order: hand just this drop to the checkout flow. */
     const onCheckout = (item: CartItemView) => {
-        checkoutActions.startWith(item.productId, item.variant?.label ?? null)
+        checkoutActions.startWith(item.productId, item.variant?.label ?? null, item.variant?.id ?? null)
         router.push('/checkout/delivery' as never)
     }
 

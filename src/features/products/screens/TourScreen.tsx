@@ -115,7 +115,7 @@ export default function TourScreen({ tourId }: TourScreenProps) {
   /** Buy Now: straight to Delivery, skipping the cart (Figma: "enters here"). */
   const doBuyNow = () => {
     if (!product) return;
-    checkoutActions.startWith(product.id, chosenVariant?.label ?? null);
+    checkoutActions.startWith(product.id, chosenVariant?.label ?? null, chosenVariant?.id ?? null);
     router.push("/checkout/delivery" as never);
   };
 

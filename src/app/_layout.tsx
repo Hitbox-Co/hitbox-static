@@ -1,5 +1,6 @@
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router, Stack, usePathname, type ErrorBoundaryProps } from 'expo-router';
 import React from 'react';
@@ -220,7 +221,13 @@ export default function RootLayout() {
         tokenCache={tokenCache}
       >
         <QueryClientProvider client={queryClient}>
-          <RootNavigator />
+          {/* Stripe's payment sheet. The publishable key (pk_…) is public; set in .env. */}
+          <StripeProvider
+            publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''}
+            urlScheme="hitboxstatic"
+          >
+            <RootNavigator />
+          </StripeProvider>
           {/* Scanning is reached from the Scan tab now, so there is no floating
               button here — one hovering over its own tab button read as a
               duplicate. `src/components/ScanFab.tsx` is kept but unused. */}

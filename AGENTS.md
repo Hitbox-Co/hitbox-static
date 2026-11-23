@@ -198,6 +198,9 @@ so expo-router regenerates `.expo/types/router.d.ts` (typed routes are on —
 | `collections` | `/api/v1/collections` | ✅ wired (some legacy `data/*.js` remains) |
 | `products` | `/api/v1/products` | ✅ detail screen wired |
 | `profile` | `/api/v1/users` | ✅ wired incl. avatar upload |
+| `payments` | `/api/v1/checkout`, `/refunds` | ✅ Stripe PaymentSheet checkout + resume, refunds/returns with photo upload |
+| `orders` | `/api/v1/orders` | ✅ My orders, detail, tracking, cancel |
+| `invoices` | `/api/v1/invoices` | ✅ list, detail, PDF download |
 | `nfc-claim` | `/api/v1/claim`, `/api/v1/verify?b=&e=&c=` | ✅ wired (tap-URL flow) |
 | `auth` | Clerk + `/api/v1/auth` | ✅ email, phone OTP, Google/Apple/Facebook SSO |
 | `notifications` | — | local `data/notices.ts`; `api/routes.ts` holds only a query key, **no endpoint yet** |
@@ -400,6 +403,17 @@ adb shell am start -a android.intent.action.VIEW -d "https://hitboxcollectibles.
 
 ---
 
+### Buying (Stripe)
+
+`ReviewScreen` → `POST /checkout` (holds one piece 15 min, returns a PaymentIntent
+`clientToken`) → `usePaymentSheet` (`@stripe/stripe-react-native`) → `/checkout/confirmed?orderId`,
+which polls `GET /orders/:id` until the **server** (Stripe webhook) marks it PAID — the app never
+decides an order is paid. Closed sheet → order stays `PENDING_PAYMENT`; **Complete payment** on the
+order detail calls `/checkout/:id/resume`. Refunds: `orders/[orderId]/refund` (return = 20+ char
+reason + 1–8 photos PUT to presigned URLs; unshipped = cancel & refund). The Stripe SDK is a native
+module: needs a dev/release build, not Expo Go. No address-book API exists yet, so checkout sends no
+`shippingAddressId`/`billingAddressId` (the Delivery step's address is local only).
+
 ## 9. Backend contract
 
 Base URL from **`EXPO_PUBLIC_API_URL`**; all routes under `/api/v1`.
@@ -416,6 +430,10 @@ Base URL from **`EXPO_PUBLIC_API_URL`**; all routes under `/api/v1`.
 | `GET /collections/me`, `/collections/me/stats` | 🔒 | collections |
 | `PATCH /collections/me/:productId` | 🔒 | visibility toggle |
 | `GET /auth/me` | 🔒 | session probe |
+| `POST /checkout`, `POST /checkout/:orderId/resume` | 🔒 | payments |
+| `POST /refunds`, `/refunds/evidence/upload-url`, `GET /refunds/:id` | 🔒 | payments |
+| `GET /orders`, `/orders/:id`, `/orders/:id/tracking`, `POST /orders/:id/cancel` | 🔒 | orders |
+| `GET /invoices`, `/invoices/:id`, `/invoices/:id/download` | 🔒 | invoices |
 
 ### Notes on the tap endpoints
 
@@ -438,6 +456,7 @@ Base URL from **`EXPO_PUBLIC_API_URL`**; all routes under `/api/v1`.
 ```dotenv
 EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_…
 EXPO_PUBLIC_API_URL=https://hitbox-backend-qa.up.railway.app
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_…   # Stripe publishable key; the API does not serve it
 ```
 
 - Must be **publicly reachable from the phone** — `localhost` / `127.0.0.1` point

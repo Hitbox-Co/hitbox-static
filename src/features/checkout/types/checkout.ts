@@ -22,14 +22,6 @@ export interface DeliveryAddress {
     zip: string
 }
 
-export type PaymentMethodId = 'card' | 'apple_pay' | 'google_pay'
-
-export interface SavedCard {
-    brand: string
-    last4: string
-    holder: string
-}
-
 /** The one drop being bought. Cart and Buy Now both put a product id here. */
 export interface CheckoutItem {
     productId: string

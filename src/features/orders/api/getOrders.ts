@@ -48,7 +48,7 @@ export function useOrder(orderId: string | undefined, options?: { poll?: boolean
         retry: retryAuthAware,
         staleTime: 1000 * 10,
         refetchInterval: (query) =>
-            options?.poll && query.state.data?.status === 'PENDING_PAYMENT' ? 5000 : false,
+            options?.poll && query.state.data?.status === 'PENDING_PAYMENT' ? 3000 : false,
     })
 }
 

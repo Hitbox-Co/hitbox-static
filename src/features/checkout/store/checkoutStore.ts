@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 
 import { MOCK_SAVED_ADDRESS } from '../data/mockCheckout'
-import { DeliveryAddress, PaymentMethodId } from '../types/checkout'
+import { DeliveryAddress } from '../types/checkout'
 
 /**
  * Where the buyer is in the cart → checkout flow. In-memory and per session:
@@ -14,19 +14,20 @@ interface CheckoutState {
     productId: string | null
     /** The chosen variant's label ("Size M"), shown on the item rows. */
     variantLabel: string | null
+    /** The chosen variant's id — what `POST /checkout` takes. */
+    variantId: string | null
     quantity: number
     addresses: DeliveryAddress[]
     selectedAddressId: string
-    paymentMethod: PaymentMethodId
 }
 
 let state: CheckoutState = {
     productId: null,
     variantLabel: null,
+    variantId: null,
     quantity: 1,
     addresses: [MOCK_SAVED_ADDRESS],
     selectedAddressId: MOCK_SAVED_ADDRESS.id,
-    paymentMethod: 'card',
 }
 
 const listeners = new Set<() => void>()
@@ -40,14 +41,14 @@ export const checkoutActions = {
      * Buy Now, and "Checkout" on a cart row, both start here: one drop, one unit.
      * (Each cart row is paid for on its own, so the flow only ever holds one.)
      */
-    startWith(productId: string, variantLabel: string | null = null) {
-        set({ productId, variantLabel, quantity: 1 })
+    startWith(productId: string, variantLabel: string | null = null, variantId: string | null = null) {
+        set({ productId, variantLabel, variantId, quantity: 1 })
     },
     setQuantity(quantity: number) {
         set({ quantity: Math.max(1, quantity) })
     },
     clearCart() {
-        set({ productId: null, variantLabel: null, quantity: 1 })
+        set({ productId: null, variantLabel: null, variantId: null, quantity: 1 })
     },
     /** Saves an address and makes it the one the order ships to. */
     saveAddress(address: DeliveryAddress) {
@@ -61,9 +62,6 @@ export const checkoutActions = {
     },
     selectAddress(id: string) {
         set({ selectedAddressId: id })
-    },
-    selectPayment(paymentMethod: PaymentMethodId) {
-        set({ paymentMethod })
     },
 }
 
