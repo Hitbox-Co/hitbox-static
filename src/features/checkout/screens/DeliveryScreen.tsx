@@ -3,7 +3,6 @@ import { Plus, Truck } from 'lucide-react-native'
 import React from 'react'
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
 
-import MarketRow from '@/features/market/components/MarketRow'
 import NoPriceMarketSheet from '@/features/market/components/NoPriceMarketSheet'
 import ChangeRegionButton from '@/features/market/components/ChangeRegionButton'
 import { apiErrorCode } from '@/lib/api-errors'
@@ -59,7 +58,6 @@ export default function DeliveryScreen() {
         >
             <CheckoutProgress stage={1} />
             <PageIntro title="Delivery" />
-            <MarketRow compact />
             <OrderItemRow item={item} price={quote ? formatMoney(quote.unitPrice, quote.currency) : undefined} />
 
             <View className="gap-[10px]">

@@ -424,7 +424,7 @@ Confirmed ── polls GET /orders/:id until the SERVER (Stripe webhook) says PA
   country picks the tax; `PAYMENTS_BILLING_ADDRESS_REQUIRED` is returned without one.
 - **Market (`features/market`).** `useActiveMarket()` is the one source: `manual` = the market chosen
   in the sheet (persisted in `marketStore`), `auto` = default address country → device region → first
-  `GET /markets` item. `MarketRow` (Settings row, Delivery header chip) opens `MarketSheet`. The market
+  `GET /markets` item. The region is changed only in **Settings** (a Market row opens `MarketSheet`); no region chip in Discover, Marketplace, product or Delivery headers. The market
   id goes to `/checkout/quote` and `/checkout`; if a quote answers a different `marketId`, the store
   adopts it. `ORDERS_NO_PRICE` with `details.marketIds` opens the sheet limited to those markets
   (`NoPriceMarketSheet`), and Review retries once the quote moves. `useSyncMarket()` (root layout)
@@ -437,8 +437,7 @@ Confirmed ── polls GET /orders/:id until the SERVER (Stripe webhook) says PA
   when the market changes. A product page for a drop not sold there still loads but has
   `price: null`, `availableInMarket: false`, `unavailableReason: "NOT_AVAILABLE_IN_REGION"` → "not
   available in your region", Buy / Add disabled. A cart row like that is greyed and not checkable.
-  Empty lists show `RegionEmpty` ("Nothing available in India yet" + Change region); `MarketRow`
-  chips sit in the Discover, Marketplace, product and Delivery headers; `ORDERS_NO_PRICE` offers
+  Empty lists show `RegionEmpty` ("Nothing available in India yet" + Change region); `ORDERS_NO_PRICE` offers
   Change region. **All prices render through `features/market/components/PriceText` /
   `usePriceView`** (the price's own currency, "Free", hidden when null). Nothing converts currency
   on the device (`initCurrency` is no longer called; `lib/currency.ts` only supplies

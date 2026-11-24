@@ -1,6 +1,5 @@
 import { router, useIsFocused } from 'expo-router';
 import RegionEmpty from '@/features/market/components/RegionEmpty'
-import MarketRow from '@/features/market/components/MarketRow'
 import { StatusBar } from 'expo-status-bar';
 import { ChevronRight, Search, X } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
@@ -119,7 +118,6 @@ const MarketPlaceScreen = () => {
                         <Text className="font-syne text-[13px] leading-[19px] text-[#6b7280]">
                             Buy, sell and trade with collectors worldwide.
                         </Text>
-                        <MarketRow compact />
                     </View>
 
                     {/* Search — GET /marketplace/listings?search= */}

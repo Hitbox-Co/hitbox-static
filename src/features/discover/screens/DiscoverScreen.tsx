@@ -1,6 +1,5 @@
 import { useAuth } from "@clerk/clerk-expo";
 import RegionEmpty from '@/features/market/components/RegionEmpty'
-import MarketRow from '@/features/market/components/MarketRow'
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -148,11 +147,6 @@ export default function DiscoverScreen() {
                     {/* Leaderboard banner: hidden for the MVP (mock content, no API). Uncomment to bring it back.
                     <LeaderboardBanner />
                     */}
-
-                    {/* The region every price and drop below comes from */}
-                    <View className="mb-3 px-5">
-                        <MarketRow compact />
-                    </View>
 
                     {/* Category chips — each one asks the server for that category */}
                     <ScrollView

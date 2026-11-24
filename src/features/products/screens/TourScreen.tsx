@@ -1,5 +1,4 @@
 import { useAuth } from "@clerk/clerk-expo";
-import MarketRow from "@/features/market/components/MarketRow";
 import { usePriceView } from "@/features/market/hooks/usePriceView";
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -360,7 +359,6 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   ) : (
                     <Text className="font-syne-bold text-[28px] text-[#111827]">{price ?? "—"}</Text>
                   )}
-                  <MarketRow compact />
                   {priceView.note && (
                     <Text className="font-syne-semibold text-[10px] text-[#d97706]">{priceView.note}</Text>
                   )}
