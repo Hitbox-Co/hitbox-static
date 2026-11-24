@@ -1,4 +1,5 @@
 import { router, useIsFocused } from "expo-router";
+import PriceText from '@/features/market/components/PriceText'
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft, Search, SearchX, ShoppingBag, Star, X } from "lucide-react-native";
 import React, { useState } from "react";
@@ -22,7 +23,7 @@ import {
     RecentSearchItem,
     useRecentSearches,
 } from "../utils/recentSearches";
-import { DISCOVER_PLACEHOLDER_IMAGE, formatDiscoverPrice, formatRewardPoints } from "../utils/format";
+import { DISCOVER_PLACEHOLDER_IMAGE, formatRewardPoints } from "../utils/format";
 
 /** Figma "Product type" chips. Each id is a real `?category=` filter on Discover. */
 const PRODUCT_TYPES: { id: DiscoverCategory | "all"; label: string }[] = [
@@ -249,7 +250,7 @@ export default function SearchScreen() {
 
 function ResultCard({ item, onPress }: { item: RecentSearchItem; onPress: () => void }) {
     const points = formatRewardPoints(item.rewardPoints);
-    const price = formatDiscoverPrice(item.price);
+    const price = item.price;
     return (
         <TouchableOpacity
             accessibilityRole="button"
@@ -271,7 +272,7 @@ function ResultCard({ item, onPress }: { item: RecentSearchItem; onPress: () => 
                     <Text numberOfLines={1} className="font-syne text-[11px] text-[#6b7280]">{item.artistName}</Text>
                 )}
                 <View className="flex-row items-center gap-3">
-                    {price && <Text className="font-syne-bold text-[12px] text-[#111827]">{price}</Text>}
+                    {price && <PriceText price={price} className="font-syne-bold text-[12px] text-[#111827]" />}
                     {points && (
                         <View className="flex-row items-center gap-1">
                             <Star size={10} color="#f5b301" fill="#f5b301" />

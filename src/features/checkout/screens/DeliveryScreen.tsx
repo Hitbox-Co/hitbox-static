@@ -3,6 +3,10 @@ import { Plus, Truck } from 'lucide-react-native'
 import React from 'react'
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
 
+import MarketRow from '@/features/market/components/MarketRow'
+import NoPriceMarketSheet from '@/features/market/components/NoPriceMarketSheet'
+import ChangeRegionButton from '@/features/market/components/ChangeRegionButton'
+import { apiErrorCode } from '@/lib/api-errors'
 import { paymentErrorMessage } from '@/features/payments/api/errors'
 import {
     CheckoutProgress,
@@ -21,6 +25,7 @@ import { Radio } from '../components/Radio'
 import { useCheckoutItem } from '../hooks/useCheckoutItem'
 import { useCheckoutPlan } from '../hooks/useCheckoutQuote'
 import { checkoutActions } from '../store/checkoutStore'
+import { formatMoney } from '../utils/money'
 
 /** 02 · Delivery (Figma). Buy Now enters here and skips the cart. Addresses are the buyer's saved address book. */
 export default function DeliveryScreen() {
@@ -54,7 +59,8 @@ export default function DeliveryScreen() {
         >
             <CheckoutProgress stage={1} />
             <PageIntro title="Delivery" />
-            <OrderItemRow item={item} />
+            <MarketRow compact />
+            <OrderItemRow item={item} price={quote ? formatMoney(quote.unitPrice, quote.currency) : undefined} />
 
             <View className="gap-[10px]">
                 <SectionHeading
@@ -120,9 +126,13 @@ export default function DeliveryScreen() {
 
             {plan.quoteLoading && <ActivityIndicator color="#2563eb" />}
             {plan.quoteError != null && (
-                <Text className="font-syne text-xs text-[#dc2626]">{paymentErrorMessage(plan.quoteError)}</Text>
+                <View className="items-start gap-3">
+                    <Text className="font-syne text-xs text-[#dc2626]">{paymentErrorMessage(plan.quoteError)}</Text>
+                    {apiErrorCode(plan.quoteError) === 'ORDERS_NO_PRICE' && <ChangeRegionButton />}
+                </View>
             )}
             {quote && <QuoteSummary quote={quote} />}
+            <NoPriceMarketSheet error={plan.quoteError} />
         </CheckoutShell>
     )
 }

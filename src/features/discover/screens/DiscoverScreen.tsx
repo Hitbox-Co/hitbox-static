@@ -1,4 +1,6 @@
 import { useAuth } from "@clerk/clerk-expo";
+import RegionEmpty from '@/features/market/components/RegionEmpty'
+import MarketRow from '@/features/market/components/MarketRow'
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -147,6 +149,11 @@ export default function DiscoverScreen() {
                     <LeaderboardBanner />
                     */}
 
+                    {/* The region every price and drop below comes from */}
+                    <View className="mb-3 px-5">
+                        <MarketRow compact />
+                    </View>
+
                     {/* Category chips — each one asks the server for that category */}
                     <ScrollView
                         horizontal
@@ -202,11 +209,7 @@ export default function DiscoverScreen() {
                     )}
 
                     {isFeedEmpty && (
-                        <View className="mt-16 items-center px-8">
-                            <Text className="text-center font-syne text-sm text-[#6b7280]">
-                                No drops in this category yet.
-                            </Text>
-                        </View>
+                        <RegionEmpty />
                     )}
 
                     {feed && !isFeedEmpty && (

@@ -54,7 +54,7 @@ export default function PaymentScreen() {
         >
             <CheckoutProgress stage={2} />
             <PageIntro title="Payment" subtitle="Choose how you'd like to pay." />
-            <OrderItemRow item={item} />
+            <OrderItemRow item={item} price={quote ? formatMoney(quote.unitPrice, quote.currency) : undefined} />
 
             <View className="gap-[10px]">
                 <SectionHeading title="Payment method" />

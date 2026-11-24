@@ -12,6 +12,8 @@ export interface DiscoverPrice {
     amount: string
     currency: string
     isFree: boolean
+    /** The market this amount belongs to; not the selected one → the drop is not sold there. */
+    marketId?: string | null
 }
 
 export interface DiscoverArtist {

@@ -4,7 +4,7 @@ import { MotiView } from 'moti';
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { formatMoneyFromUsd } from '@/lib/currency';
+import { formatMoney } from '@/features/checkout/utils/money';
 import { ClaimOwner, TapProduct } from '../types/claim';
 
 /** Pieces shared by the claim and verify result screens (light, per the Figma). */
@@ -45,7 +45,7 @@ export function ProductBox({ product, serial }: { product: TapProduct; serial?: 
             </Text>
             <View className="mt-3 flex-row items-center justify-between">
                 {product.priceInDollars ? (
-                    <Text className="font-syne-bold text-2xl text-[#111827]">{formatMoneyFromUsd(product.priceInDollars)}</Text>
+                    <Text className="font-syne-bold text-2xl text-[#111827]">{formatMoney(product.priceInDollars, 'USD')}</Text>
                 ) : <View />}
                 {rarity ? (
                     <View className="flex-row items-center gap-[6px] rounded border border-[#bfdbfe] bg-[#eff6ff] px-[10px] py-[6px]">

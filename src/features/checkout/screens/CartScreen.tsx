@@ -25,7 +25,9 @@ import {
 } from '../components/CheckoutParts'
 import { checkoutActions } from '../store/checkoutStore'
 import { CartItemView } from '../types/checkout'
-import { formatDropPrice, formatMoney } from '../utils/money'
+import PriceText from '@/features/market/components/PriceText'
+import { usePriceView } from '@/features/market/hooks/usePriceView'
+import { formatMoney } from '../utils/money'
 
 /**
  * 01 · Your cart (Figma), on the Cart API (`GET/DELETE /cart`).
@@ -141,10 +143,12 @@ export default function CartScreen() {
         router.push('/checkout/delivery' as never)
     }
 
-    // Subtotals are per currency; usually one entry.
+    // The footer joins currencies; the order summary below lists one line each.
     const subtotalText = summary.subtotals.length
         ? summary.subtotals.map((s) => formatMoney(s.amount, s.currency)).join(' + ')
         : '—'
+    // One line per currency: two appear when some rows are priced in another market.
+    const subtotalLabel = `Subtotal · ${summary.purchasableCount} item${summary.purchasableCount === 1 ? '' : 's'}`
 
     const pendingPoints = items.reduce(
         (sum, item) => sum + (item.product?.isPurchasable ? (item.product.rewardPoints ?? 0) : 0),
@@ -197,10 +201,22 @@ export default function CartScreen() {
 
             <GroupedCard>
                 <SectionHeading title="Order summary" />
-                <AmountRow
-                    label={`Subtotal · ${summary.purchasableCount} item${summary.purchasableCount === 1 ? '' : 's'}`}
-                    value={subtotalText}
-                />
+                {summary.subtotals.length ? (
+                    summary.subtotals.map((s, i) => (
+                        <AmountRow
+                            key={s.currency}
+                            label={i === 0 ? subtotalLabel : `And in ${s.currency}`}
+                            value={formatMoney(s.amount, s.currency)}
+                        />
+                    ))
+                ) : (
+                    <AmountRow label={subtotalLabel} value="—" />
+                )}
+                {summary.subtotals.length > 1 && (
+                    <Text className="font-syne text-[11px] leading-[16px] text-[#d97706]">
+                        Some drops are not sold in your market, so they are priced in another currency.
+                    </Text>
+                )}
                 <Text className="font-syne text-[11px] leading-[16px] text-[#6b7280]">
                     Delivery and tax are calculated at checkout. Prices are the current ones and can change.
                 </Text>
@@ -224,9 +240,12 @@ function CartRow({
     onCheckout: () => void
 }) {
     const product = item.product
+    // Not sold in the selected market (the server fell back to another market's price): no Checkout.
+    const soldHere = usePriceView(product?.price).soldHere
+    const outOfRegion = product?.unavailableReason === 'NOT_AVAILABLE_IN_REGION'
 
     return (
-        <GroupedCard>
+        <GroupedCard className={outOfRegion ? 'opacity-60' : undefined}>
             {product ? (
                 <View className="flex-row items-center gap-3">
                     <View style={{ width: 112, height: 112, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eef2ff' }}>
@@ -241,7 +260,11 @@ function CartRow({
                         {product.artist && <Text className="font-syne text-[11px] text-[#2563eb]">{product.artist.name}</Text>}
                         {item.variant && <Text className="font-syne text-[11px] text-[#6b7280]">{item.variant.label}</Text>}
                         <View className="flex-row items-center justify-between">
-                            <Text className="font-syne-bold text-[17px] text-[#111827]">{formatDropPrice(product.price)}</Text>
+                            {product.price ? (
+                                <PriceText price={product.price} className="font-syne-bold text-[17px] text-[#111827]" />
+                            ) : (
+                                <Text className="font-syne-bold text-[17px] text-[#111827]">—</Text>
+                            )}
                             <RarityChip rarity={product.rarity} />
                         </View>
                     </View>
@@ -280,7 +303,7 @@ function CartRow({
             </View>
 
             {product && (
-                <PrimaryAction label="Checkout" onPress={onCheckout} disabled={!product.isPurchasable} />
+                <PrimaryAction label="Checkout" onPress={onCheckout} disabled={!product.isPurchasable || !soldHere} />
             )}
         </GroupedCard>
     )

@@ -1,4 +1,6 @@
 import { useAuth } from "@clerk/clerk-expo";
+import MarketRow from "@/features/market/components/MarketRow";
+import { usePriceView } from "@/features/market/hooks/usePriceView";
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -114,12 +116,13 @@ export default function TourScreen({ tourId }: TourScreenProps) {
 
   /** Buy Now: straight to Delivery, skipping the cart (Figma: "enters here"). */
   const doBuyNow = () => {
-    if (!product) return;
+    if (!product || !soldHere) return;
     checkoutActions.startWith(product.id, chosenVariant?.label ?? null, chosenVariant?.id ?? null);
     router.push("/checkout/delivery" as never);
   };
 
   const addToCart = () => {
+    if (!soldHere) return;
     if (canProceed("cart")) doAddToCart();
   };
   const buyNow = () => {
@@ -142,7 +145,13 @@ export default function TourScreen({ tourId }: TourScreenProps) {
     setImageIndex(Math.round(e.nativeEvent.contentOffset.x / innerSize));
   };
 
-  const price = product ? formatProductPrice(product) : undefined;
+  // The one price rule (see `usePriceView`): shown in the price's own currency, and when it is
+  // not the selected market's price the drop is not sold there — flagged and not buyable.
+  const priceView = usePriceView(product?.price);
+  const price = priceView.text ?? (product ? formatProductPrice(product) : undefined);
+  // Not priced in the selected region: the call succeeds but `price` is null — say so, hide the price, block buying.
+  const notInRegion = product?.availableInMarket === false;
+  const soldHere = priceView.soldHere && !notInRegion;
   // `ACTIVE` is on sale. `PUBLISHED` (coming soon) and `ENDED` can be opened but not bought.
   const onSale = !product || !product.status || product.status === "ACTIVE";
   const points = product ? formatRewardPoints(product.rewardPoints) : null;
@@ -343,7 +352,19 @@ export default function TourScreen({ tourId }: TourScreenProps) {
 
               {/* Price, rarity and reward points */}
               <View className="flex-row items-center justify-between gap-2">
-                <Text className="font-syne-bold text-[28px] text-[#111827]">{price ?? "—"}</Text>
+                <View>
+                  {notInRegion ? (
+                    <Text className="max-w-[200px] font-syne-semibold text-[13px] leading-[18px] text-[#d97706]">
+                      This product is not available in your region
+                    </Text>
+                  ) : (
+                    <Text className="font-syne-bold text-[28px] text-[#111827]">{price ?? "—"}</Text>
+                  )}
+                  <MarketRow compact />
+                  {priceView.note && (
+                    <Text className="font-syne-semibold text-[10px] text-[#d97706]">{priceView.note}</Text>
+                  )}
+                </View>
                 <View className="flex-row items-center gap-2">
                   {rarityLabel && rarityStyle && (
                     <View
@@ -408,10 +429,10 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   accessibilityRole="button"
                   accessibilityLabel="Add to cart"
                   activeOpacity={0.85}
-                  disabled={addMutation.isPending || !onSale}
+                  disabled={addMutation.isPending || !onSale || !soldHere}
                   onPress={addToCart}
                   className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-[30px] border border-[#bfdbfe] bg-[#eff6ff]"
-                  style={{ opacity: addMutation.isPending || !onSale ? 0.5 : 1 }}
+                  style={{ opacity: addMutation.isPending || !onSale || !soldHere ? 0.5 : 1 }}
                 >
                   <Text className="font-syne-bold text-[13px] text-[#2563eb]">
                     {addMutation.isPending ? "Adding…" : "Add to Cart"}
@@ -422,10 +443,10 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                   accessibilityRole="button"
                   accessibilityLabel="Buy now"
                   activeOpacity={0.85}
-                  disabled={!onSale}
+                  disabled={!onSale || !soldHere}
                   onPress={buyNow}
                   className="h-12 flex-1 flex-row items-center justify-center gap-2 rounded-[30px] border border-[#2563eb] bg-[#2563eb]"
-                  style={{ opacity: onSale ? 1 : 0.5 }}
+                  style={{ opacity: onSale && soldHere ? 1 : 0.5 }}
                 >
                   <Text className="font-syne-bold text-[13px] text-white">
                     {onSale ? "Buy Now" : product?.status === "ENDED" ? "Ended" : "Coming soon"}

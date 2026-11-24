@@ -13,7 +13,7 @@ export function paymentErrorMessage(err: unknown): string {
             case 'ORDERS_OUT_OF_STOCK':
                 return 'Sold out — check back soon.'
             case 'ORDERS_NO_PRICE':
-                return 'This drop has no price in your region yet.'
+                return 'Not available in your region'
             case 'PAYMENTS_BILLING_ADDRESS_REQUIRED':
                 return 'Add a billing address to continue — it decides the tax on your invoice.'
             case 'USERS_ADDRESS_ARCHIVED':

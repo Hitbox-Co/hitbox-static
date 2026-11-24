@@ -1,9 +1,15 @@
 import { useUser } from '@clerk/clerk-expo'
 import { router } from 'expo-router'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native'
 
 import { formatRewardPoints } from '@/features/products/utils/format'
+import NoPriceMarketSheet from '@/features/market/components/NoPriceMarketSheet'
+import { getMarketState } from '@/features/market/store/marketStore'
+import ChangeRegionButton from '@/features/market/components/ChangeRegionButton'
+import { apiErrorCode } from '@/lib/api-errors'
+import { marketIdsFromNoPrice } from '@/features/market/utils/format'
+import { ApiRequestError } from '@/lib/api'
 import { paymentErrorMessage } from '@/features/payments/api/errors'
 import { useCheckout, useRefreshAfterPayment } from '@/features/payments/api/checkout'
 import { usePaymentSheet } from '@/features/payments/hooks/usePaymentSheet'
@@ -41,6 +47,22 @@ export default function ReviewScreen() {
     const presentSheet = usePaymentSheet()
     const refreshAfterPayment = useRefreshAfterPayment()
     const { user } = useUser()
+    // ORDERS_NO_PRICE: the drop is sold in several markets and none fit — the sheet offers `details.marketIds`.
+    const [noPriceError, setNoPriceError] = useState<unknown>(null)
+    // ORDERS_NO_PRICE with no market list: not sold in this region — say so and offer Change region.
+    const [regionBlocked, setRegionBlocked] = useState(false)
+    const [retryMarketId, setRetryMarketId] = useState<string | null>(null)
+    const payRef = useRef<() => void>(() => {})
+
+    useEffect(() => setRegionBlocked(false), [quote?.marketId])
+
+    // After the buyer picks a market, retry once the quote has moved to it.
+    useEffect(() => {
+        if (retryMarketId && quote?.marketId === retryMarketId && !paying) {
+            setRetryMarketId(null)
+            payRef.current()
+        }
+    }, [retryMarketId, quote?.marketId, paying])
 
     if (!item) {
         return (
@@ -89,11 +111,26 @@ export default function ReviewScreen() {
                 ])
             }
         } catch (err) {
-            Alert.alert("Couldn't start payment", paymentErrorMessage(err))
+            if (marketIdsFromNoPrice(err)) {
+                setNoPriceError(err)
+                return
+            }
+            if (apiErrorCode(err) === 'ORDERS_NO_PRICE') {
+                setRegionBlocked(true)
+                return
+            }
+            // A 5xx here is a backend fault (the quote above worked): log what it said so it can be found in the server logs.
+            if (err instanceof ApiRequestError) console.warn('[checkout] failed', err.status, err.error.code, err.error.message, err.error.details)
+            const detail = err instanceof ApiRequestError && err.status >= 500 ? `
+
+(${err.status} ${err.error.code})` : ''
+            Alert.alert("Couldn't start payment", paymentErrorMessage(err) + detail)
         } finally {
             setPaying(false)
         }
     }
+
+    payRef.current = onPay
 
     return (
         <CheckoutShell
@@ -102,7 +139,7 @@ export default function ReviewScreen() {
                     <Text className="w-full pb-1 text-center font-syne text-[10px] text-[#6b7280]">
                         {"By paying, you agree to HitBox's Terms of service."}
                     </Text>
-                    <PrimaryAction label={paying ? "Starting payment…" : quote ? `Pay ${formatMoney(quote.totalAmount, quote.currency)}` : "Pay"} onPress={onPay} disabled={paying || !ready} />
+                    <PrimaryAction label={paying ? "Starting payment…" : quote ? `Pay ${formatMoney(quote.totalAmount, quote.currency)}` : "Pay"} onPress={onPay} disabled={paying || !ready || regionBlocked} />
                 </>
             }
         >
@@ -111,7 +148,7 @@ export default function ReviewScreen() {
 
             <View className="gap-[10px]">
                 <SectionHeading title="Your drop" action="Edit" onAction={() => router.push('/cart' as never)} />
-                <OrderItemRow item={item} />
+                <OrderItemRow item={item} price={quote ? formatMoney(quote.unitPrice, quote.currency) : undefined} />
             </View>
 
             <GroupedCard className="gap-4">
@@ -146,6 +183,14 @@ export default function ReviewScreen() {
             ) : quote ? (
                 <QuoteSummary quote={quote} />
             ) : null}
+
+            {regionBlocked && (
+                <View className="items-start gap-3 rounded border border-[#fcd34d] bg-[#fffaed] p-3">
+                    <Text className="font-syne-semibold text-xs text-[#d97706]">Not available in your region</Text>
+                    <ChangeRegionButton />
+                </View>
+            )}
+            <NoPriceMarketSheet error={noPriceError} onChosen={() => { setRetryMarketId(getMarketState().marketId); setNoPriceError(null) }} />
 
             {points && <RewardsBox title={`${points} pending with this purchase`} caption="Awarded after successful payment." />}
         </CheckoutShell>

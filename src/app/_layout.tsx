@@ -19,7 +19,7 @@ import {
   useFonts,
 } from '@expo-google-fonts/syne';
 import { PortalHost } from '@rn-primitives/portal';
-import { initCurrency } from '@/lib/currency';
+import { useSyncMarket } from '@/features/market/hooks/useSyncMarket';
 import AccountStateWatcher from '@/features/auth/components/AccountStateWatcher';
 import { takeOnboarding } from '@/lib/onboarding-gate';
 import { retryDelayAuthAware } from '@/lib/queries';
@@ -37,6 +37,8 @@ const queryClient = new QueryClient({
 
 function RootNavigator() {
   const { isLoaded, isSignedIn } = useAuth();
+  // Keeps prices and cached quotes in step with the active market.
+  useSyncMarket();
 
   // Resolve the display currency before any price renders: `formatPrice` reads
   // the result synchronously, so a price shown before this lands would be stuck
@@ -69,14 +71,10 @@ function RootNavigator() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Prices are no longer converted on the device: every amount is shown in the currency the
+  // backend priced it in (the selected market's), so there is nothing to resolve before first paint.
   React.useEffect(() => {
-    let cancelled = false;
-    void initCurrency().finally(() => {
-      if (!cancelled) setCurrencyReady(true);
-    });
-    return () => {
-      cancelled = true;
-    };
+    setCurrencyReady(true);
   }, []);
 
   // A sign-up screen armed the onboarding flag and a session has just gone

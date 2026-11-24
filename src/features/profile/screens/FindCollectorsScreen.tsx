@@ -1,4 +1,5 @@
 import { useAuth } from '@clerk/clerk-expo'
+import PriceText from '@/features/market/components/PriceText'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { ArrowLeft, ChevronRight, Globe, Lock, Search, SearchX, UserRound, X } from 'lucide-react-native'
@@ -8,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { useDiscoverProducts } from '@/features/discover/api/getDiscoverProducts'
 import { useDebouncedValue } from '@/features/discover/hooks/useDebouncedValue'
-import { DISCOVER_PLACEHOLDER_IMAGE, formatDiscoverPrice } from '@/features/discover/utils/format'
+import { DISCOVER_PLACEHOLDER_IMAGE } from '@/features/discover/utils/format'
 import { useFollowersInfinite, useFollowingInfinite } from '@/features/follows/api/follows'
 import { FollowUserView } from '@/features/follows/types/follow'
 import { ApiRequestError } from '@/lib/api'
@@ -307,9 +308,7 @@ function ProductsTab({ term }: { term: string }) {
                     <View className="flex-1 gap-0.5">
                         <Text numberOfLines={2} className="font-syne-bold text-[14px] text-[#111827]">{item.name}</Text>
                         {!!item.artist?.name && <Text numberOfLines={1} className="font-syne text-[12px] text-[#6b7280]">{item.artist.name}</Text>}
-                        {!!formatDiscoverPrice(item.price) && (
-                            <Text className="font-syne-bold text-[13px] text-[#111827]">{formatDiscoverPrice(item.price)}</Text>
-                        )}
+                        {!!item.price && <PriceText price={item.price} className="font-syne-bold text-[13px] text-[#111827]" />}
                     </View>
                     <ChevronRight size={18} color="#4b5563" />
                 </TouchableOpacity>

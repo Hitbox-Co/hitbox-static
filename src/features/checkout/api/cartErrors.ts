@@ -9,6 +9,7 @@ export const UNAVAILABLE_LABELS: Record<UnavailableReason, string> = {
     NOT_RELEASED_YET: 'Not released yet',
     CLOSED: 'Sale has closed',
     NO_PRICE: 'No price yet',
+    NOT_AVAILABLE_IN_REGION: 'Not available in your region',
 }
 
 export function unavailableLabel(reason: string | null | undefined): string {
@@ -29,7 +30,7 @@ export function cartErrorMessage(err: unknown): string {
             return `This drop can't be added: ${unavailableLabel(reason).toLowerCase()}.`
         }
         case 'ORDERS_NO_PRICE':
-            return "This drop doesn't have a price yet, so it can't be added."
+            return 'This drop is not available in your region.'
         case 'ORDERS_NOT_FOUND':
             return "This drop isn't available."
         case 'ORDERS_VARIANT_NOT_FOUND':

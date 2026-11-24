@@ -68,6 +68,7 @@ export interface ProductPrice {
     amount: string
     currency: string
     isFree: boolean
+    marketId?: string | null
 }
 
 /** Matches GET /api/v1/products/:id and /code/:productCode (single product). */
@@ -123,6 +124,10 @@ export interface Product {
     organizationId?: string | null
     /** Base price in the default market. Null when none — hide the price. */
     price?: ProductPrice | null
+    /** False when the drop is not priced in the selected market (then `price` is null). */
+    availableInMarket?: boolean
+    /** "NOT_AVAILABLE_IN_REGION" when not sold in the selected market. */
+    unavailableReason?: string | null
     /** `variantMode: "REQUIRED"` means a variant must be chosen to buy. */
     dropType?: { code: string; name: string; variantMode: string } | null
 }

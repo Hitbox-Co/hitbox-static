@@ -199,6 +199,7 @@ so expo-router regenerates `.expo/types/router.d.ts` (typed routes are on —
 | `products` | `/api/v1/products` | ✅ detail screen wired |
 | `profile` | `/api/v1/users` | ✅ wired incl. avatar upload |
 | `addresses` | `/api/v1/users/me/addresses` | ✅ address book (list/create/edit/delete/default), used at checkout |
+| `market` | `/api/v1/markets` | ✅ one active market (auto from address/device region, or chosen in Settings / Delivery); sent to quote + checkout |
 | `payments` | `/api/v1/checkout`, `/markets`, `/refunds` | ✅ quote, Stripe PaymentSheet checkout + resume, refunds/returns with photo upload |
 | `orders` | `/api/v1/orders` | ✅ My orders, detail, tracking, cancel |
 | `invoices` | `/api/v1/invoices` | ✅ list, detail, PDF download |
@@ -421,6 +422,27 @@ Confirmed ── polls GET /orders/:id until the SERVER (Stripe webhook) says PA
   Disable Pay unless `availability === 'IN_STOCK'` and an address is chosen.
 - **One address is used for shipping and billing** (saved with `usage: 'BOTH'`). The billing
   country picks the tax; `PAYMENTS_BILLING_ADDRESS_REQUIRED` is returned without one.
+- **Market (`features/market`).** `useActiveMarket()` is the one source: `manual` = the market chosen
+  in the sheet (persisted in `marketStore`), `auto` = default address country → device region → first
+  `GET /markets` item. `MarketRow` (Settings row, Delivery header chip) opens `MarketSheet`. The market
+  id goes to `/checkout/quote` and `/checkout`; if a quote answers a different `marketId`, the store
+  adopts it. `ORDERS_NO_PRICE` with `details.marketIds` opens the sheet limited to those markets
+  (`NoPriceMarketSheet`), and Review retries once the quote moves. `useSyncMarket()` (root layout)
+  drops cached quotes and refetches price queries when the market changes.
+  **The market is the buyer's REGION.** `lib/market-param.ts` appends `?marketId=` to the priced reads
+  (discover, marketplace, products/:id & /code/:code, GET+POST /cart — not the plain `/products`
+  list, wishlist or DELETEs) inside `useApi().request`, only for a valid id from `GET /markets` (a
+  stale id is never sent); quote/checkout take it in the JSON body. With a market, Discover and
+  Marketplace return ONLY products priced there. `useSyncMarket()` resets those caches (and quotes)
+  when the market changes. A product page for a drop not sold there still loads but has
+  `price: null`, `availableInMarket: false`, `unavailableReason: "NOT_AVAILABLE_IN_REGION"` → "not
+  available in your region", Buy / Add disabled. A cart row like that is greyed and not checkable.
+  Empty lists show `RegionEmpty` ("Nothing available in India yet" + Change region); `MarketRow`
+  chips sit in the Discover, Marketplace, product and Delivery headers; `ORDERS_NO_PRICE` offers
+  Change region. **All prices render through `features/market/components/PriceText` /
+  `usePriceView`** (the price's own currency, "Free", hidden when null). Nothing converts currency
+  on the device (`initCurrency` is no longer called; `lib/currency.ts` only supplies
+  `regionFromLocale` and number grouping).
 - `POST /checkout` is safe to repeat: an unpaid order with a live hold for the drop is returned.
 - Closed sheet → order stays `PENDING_PAYMENT`; **Complete payment** on the order detail calls
   `/checkout/:id/resume`. Refunds: `orders/[orderId]/refund` (return = 20+ char reason + 1–8

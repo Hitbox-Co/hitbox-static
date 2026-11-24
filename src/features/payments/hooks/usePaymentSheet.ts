@@ -26,19 +26,32 @@ export function usePaymentSheet() {
                 return { status: 'failed', message: 'Payments are not available on this server right now.' }
             }
 
-            const init = await initPaymentSheet({
-                paymentIntentClientSecret: checkout.clientToken,
-                merchantDisplayName: 'HitBox',
-                returnURL: Linking.createURL('stripe-redirect'),
-                allowsDelayedPaymentMethods: false,
-                defaultBillingDetails: { name: customer?.name, email: customer?.email },
-            })
-            if (init.error) return { status: 'failed', message: init.error.message }
+            try {
+                const init = await initPaymentSheet({
+                    paymentIntentClientSecret: checkout.clientToken,
+                    merchantDisplayName: 'HitBox',
+                    returnURL: Linking.createURL('stripe-redirect'),
+                    allowsDelayedPaymentMethods: false,
+                    defaultBillingDetails: { name: customer?.name, email: customer?.email },
+                })
+                if (init.error) {
+                    console.warn('[stripe] initPaymentSheet failed', init.error)
+                    return { status: 'failed', message: init.error.message }
+                }
 
-            const { error } = await presentPaymentSheet()
-            if (!error) return { status: 'success' }
-            if (error.code === PaymentSheetError.Canceled) return { status: 'canceled' }
-            return { status: 'failed', message: error.message }
+                const { error } = await presentPaymentSheet()
+                if (!error) return { status: 'success' }
+                if (error.code === PaymentSheetError.Canceled) return { status: 'canceled' }
+                console.warn('[stripe] presentPaymentSheet failed', error)
+                return { status: 'failed', message: error.message }
+            } catch (err) {
+                // Typically the native Stripe module is missing: an old dev build, or Expo Go.
+                console.warn('[stripe] payment sheet threw', err)
+                return {
+                    status: 'failed',
+                    message: `Stripe could not open (${err instanceof Error ? err.message : 'unknown error'}). Reinstall the app from a fresh build.`,
+                }
+            }
         },
         [initPaymentSheet, presentPaymentSheet],
     )

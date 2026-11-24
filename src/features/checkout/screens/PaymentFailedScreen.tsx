@@ -65,7 +65,7 @@ export default function PaymentFailedScreen() {
 
             <GroupedCard className="gap-[14px]">
                 <SectionHeading title="Your checkout" />
-                <OrderItemRow item={item} />
+                <OrderItemRow item={item} price={quote ? formatMoney(quote.unitPrice, quote.currency) : undefined} />
                 <Divider />
                 {quote && <TotalRow label={`Amount to pay · ${quote.currency}`} value={formatMoney(quote.totalAmount, quote.currency)} />}
             </GroupedCard>

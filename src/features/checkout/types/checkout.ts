@@ -36,7 +36,7 @@ export type PaymentOutcome = 'success' | 'failure'
 /* ------------------------------------------------------------------ */
 
 /** Why a cart row cannot be checked out right now. */
-export type UnavailableReason = 'REMOVED' | 'NOT_ON_SALE' | 'NOT_RELEASED_YET' | 'CLOSED' | 'NO_PRICE'
+export type UnavailableReason = 'REMOVED' | 'NOT_ON_SALE' | 'NOT_RELEASED_YET' | 'CLOSED' | 'NO_PRICE' | 'NOT_AVAILABLE_IN_REGION'
 
 export interface CartDropVariant {
     id: string
@@ -52,7 +52,7 @@ export interface CartDropCard {
     rarity: string | null
     artist: { id: string; name: string; slug: string } | null
     /** Decimal-as-string amount, e.g. "225.00". */
-    price: { amount: string; currency: string; isFree: boolean } | null
+    price: { amount: string; currency: string; isFree: boolean; marketId?: string | null } | null
     totalSupply: number
     mintedCount: number
     rewardPoints: number | null
