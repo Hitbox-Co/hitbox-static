@@ -6,22 +6,6 @@
  * replace the mock data / store in this feature (see `data/mockCheckout.ts`).
  */
 
-export interface DeliveryAddress {
-    id: string
-    /** "Home", "Work"… shown after the name. */
-    label: string
-    fullName: string
-    email: string
-    phone: string
-    country: string
-    street: string
-    /** Apartment, suite, etc. */
-    unit: string
-    city: string
-    state: string
-    zip: string
-}
-
 /** The one drop being bought. Cart and Buy Now both put a product id here. */
 export interface CheckoutItem {
     productId: string

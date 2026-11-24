@@ -17,7 +17,8 @@ import {
 } from '../components/CheckoutParts'
 import { Radio } from '../components/Radio'
 import { useCheckoutItem } from '../hooks/useCheckoutItem'
-import { formatUsd } from '../utils/money'
+import { formatMoney } from '../utils/money'
+import { useCheckoutPlan } from '../hooks/useCheckoutQuote'
 
 /**
  * 04 · Payment method (Figma). Payment is taken by Stripe's payment sheet, which
@@ -25,9 +26,10 @@ import { formatUsd } from '../utils/money'
  * there is nothing to pick or store here.
  */
 export default function PaymentScreen() {
-    const { item, totals, isLoading, isError, notForSale, refetch } = useCheckoutItem()
+    const { item, isLoading, isError, notForSale, refetch } = useCheckoutItem()
+    const { quote } = useCheckoutPlan()
 
-    if (!item || !totals) {
+    if (!item) {
         return (
             <CheckoutShell>
                 <PageIntro title="Payment" />
@@ -44,7 +46,7 @@ export default function PaymentScreen() {
                         {"You'll review your order before making a payment."}
                     </Text>
                     <View className="w-full">
-                        <TotalRow label="Order total · USD" value={formatUsd(totals.total)} />
+                        {quote && <TotalRow label={`Order total · ${quote.currency}`} value={formatMoney(quote.totalAmount, quote.currency)} />}
                     </View>
                     <PrimaryAction label="Continue to review" onPress={() => router.push('/checkout/review' as never)} />
                 </>

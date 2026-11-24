@@ -16,7 +16,8 @@ import {
     TotalRow,
 } from '../components/CheckoutParts'
 import { useCheckoutItem } from '../hooks/useCheckoutItem'
-import { formatUsd } from '../utils/money'
+import { formatMoney } from '../utils/money'
+import { useCheckoutPlan } from '../hooks/useCheckoutQuote'
 
 /**
  * 06 · Payment unsuccessful — the recovery state. Stripe reported the payment
@@ -26,9 +27,10 @@ import { formatUsd } from '../utils/money'
  */
 export default function PaymentFailedScreen() {
     const { message } = useLocalSearchParams<{ orderId?: string; message?: string }>()
-    const { item, totals, isLoading, isError, notForSale, refetch } = useCheckoutItem()
+    const { item, isLoading, isError, notForSale, refetch } = useCheckoutItem()
+    const { quote } = useCheckoutPlan()
 
-    if (!item || !totals) {
+    if (!item) {
         return (
             <CheckoutShell>
                 <PageIntro title="Payment unsuccessful" />
@@ -42,7 +44,7 @@ export default function PaymentFailedScreen() {
             footer={
                 <>
                     <PrimaryAction
-                        label={`Try again · ${formatUsd(totals.total)}`}
+                        label={quote ? `Try again · ${formatMoney(quote.totalAmount, quote.currency)}` : 'Try again'}
                         onPress={() => router.replace('/checkout/review' as never)}
                     />
                     <SecondaryLink label="View my orders" onPress={() => router.replace('/orders' as never)} />
@@ -65,7 +67,7 @@ export default function PaymentFailedScreen() {
                 <SectionHeading title="Your checkout" />
                 <OrderItemRow item={item} />
                 <Divider />
-                <TotalRow label="Amount to pay · USD" value={formatUsd(totals.total)} />
+                {quote && <TotalRow label={`Amount to pay · ${quote.currency}`} value={formatMoney(quote.totalAmount, quote.currency)} />}
             </GroupedCard>
 
             <Text className="font-syne text-[11px] leading-[16px] text-[#6b7280]">

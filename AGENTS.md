@@ -198,7 +198,8 @@ so expo-router regenerates `.expo/types/router.d.ts` (typed routes are on —
 | `collections` | `/api/v1/collections` | ✅ wired (some legacy `data/*.js` remains) |
 | `products` | `/api/v1/products` | ✅ detail screen wired |
 | `profile` | `/api/v1/users` | ✅ wired incl. avatar upload |
-| `payments` | `/api/v1/checkout`, `/refunds` | ✅ Stripe PaymentSheet checkout + resume, refunds/returns with photo upload |
+| `addresses` | `/api/v1/users/me/addresses` | ✅ address book (list/create/edit/delete/default), used at checkout |
+| `payments` | `/api/v1/checkout`, `/markets`, `/refunds` | ✅ quote, Stripe PaymentSheet checkout + resume, refunds/returns with photo upload |
 | `orders` | `/api/v1/orders` | ✅ My orders, detail, tracking, cancel |
 | `invoices` | `/api/v1/invoices` | ✅ list, detail, PDF download |
 | `nfc-claim` | `/api/v1/claim`, `/api/v1/verify?b=&e=&c=` | ✅ wired (tap-URL flow) |
@@ -405,16 +406,31 @@ adb shell am start -a android.intent.action.VIEW -d "https://hitboxcollectibles.
 
 ### Buying (Stripe)
 
-`ReviewScreen` → `POST /checkout` (holds one piece 15 min, returns a PaymentIntent
-`clientToken`) → `usePaymentSheet` (`@stripe/stripe-react-native`) → `/checkout/confirmed?orderId`,
-which polls `GET /orders/:id` until the **server** (Stripe webhook) marks it PAID — the app never
-decides an order is paid. Closed sheet → order stays `PENDING_PAYMENT`; **Complete payment** on the
-order detail calls `/checkout/:id/resume`. Refunds: `orders/[orderId]/refund` (return = 20+ char
-reason + 1–8 photos PUT to presigned URLs; unshipped = cancel & refund). The Stripe SDK is a native
-module: needs a dev/release build, not Expo Go. No address-book API exists yet, so checkout sends no
-`shippingAddressId`/`billingAddressId` (the Delivery step's address is local only).
+```text
+Delivery  ── address from the saved address book (GET/POST /users/me/addresses)
+          ── GET /markets → market for the address's country → POST /checkout/quote
+Payment   ── explains Stripe's sheet (no card/wallet choice in the app)
+Review    ── POST /checkout { productId, variantId, marketId, shipping/billingAddressId }
+          ── Stripe PaymentSheet (clientToken) ── /checkout/confirmed?orderId
+Confirmed ── polls GET /orders/:id until the SERVER (Stripe webhook) says PAID
+```
 
-## 9. Backend contract
+- **The quote is the price.** `useCheckoutPlan()` (`checkout/hooks/useCheckoutQuote.ts`)
+  resolves address → market → quote; screens render `QuoteSummary` and never compute
+  money. Prices are **tax-inclusive**: `totalAmount` = the card charge = the invoice total.
+  Disable Pay unless `availability === 'IN_STOCK'` and an address is chosen.
+- **One address is used for shipping and billing** (saved with `usage: 'BOTH'`). The billing
+  country picks the tax; `PAYMENTS_BILLING_ADDRESS_REQUIRED` is returned without one.
+- `POST /checkout` is safe to repeat: an unpaid order with a live hold for the drop is returned.
+- Closed sheet → order stays `PENDING_PAYMENT`; **Complete payment** on the order detail calls
+  `/checkout/:id/resume`. Refunds: `orders/[orderId]/refund` (return = 20+ char reason + 1–8
+  photos PUT to presigned URLs; unshipped = cancel & refund).
+- Only Stripe's PaymentSheet takes payment — no Apple Pay / Google Pay code in the app. The
+  Stripe SDK is a native module: dev/release build, not Expo Go.
+- The `OrderItemRow` still shows the product's USD price (`priceInDollars`); the quote/total is
+  in the market currency.
+
+## 9. Backend contract## 9. Backend contract
 
 Base URL from **`EXPO_PUBLIC_API_URL`**; all routes under `/api/v1`.
 🔒 = needs a Clerk session JWT.
@@ -430,7 +446,9 @@ Base URL from **`EXPO_PUBLIC_API_URL`**; all routes under `/api/v1`.
 | `GET /collections/me`, `/collections/me/stats` | 🔒 | collections |
 | `PATCH /collections/me/:productId` | 🔒 | visibility toggle |
 | `GET /auth/me` | 🔒 | session probe |
-| `POST /checkout`, `POST /checkout/:orderId/resume` | 🔒 | payments |
+| `GET /markets` | public | payments — market (currency) for the buyer's country |
+| `POST /checkout/quote`, `POST /checkout`, `POST /checkout/:orderId/resume` | 🔒 | payments |
+| `GET/POST /users/me/addresses`, `GET/PATCH/DELETE /users/me/addresses/:id`, `POST …/:id/default` | 🔒 | addresses |
 | `POST /refunds`, `/refunds/evidence/upload-url`, `GET /refunds/:id` | 🔒 | payments |
 | `GET /orders`, `/orders/:id`, `/orders/:id/tracking`, `POST /orders/:id/cancel` | 🔒 | orders |
 | `GET /invoices`, `/invoices/:id`, `/invoices/:id/download` | 🔒 | invoices |

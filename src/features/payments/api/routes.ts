@@ -4,6 +4,10 @@
  * server-to-server and never called by the app.
  */
 export const PAYMENT_ROUTES = {
+    /** GET — public: the markets (currencies) a buyer can shop in. */
+    markets: '/api/v1/markets',
+    /** POST — the price breakdown before paying; no hold, no Stripe call. */
+    quote: '/api/v1/checkout/quote',
     /** POST — place an order, hold one piece for 15 min, start a Stripe payment. */
     checkout: '/api/v1/checkout',
     /** POST — back to paying for an unpaid order (same order, same charge). */
@@ -15,6 +19,11 @@ export const PAYMENT_ROUTES = {
     /** GET — one of my refunds, with its photos. */
     refund: (refundId: string) => `/api/v1/refunds/${encodeURIComponent(refundId)}`,
 } as const
+
+export const quoteKeys = {
+    markets: ['markets'] as const,
+    quote: (input: unknown) => ['checkout', 'quote', input] as const,
+}
 
 export const refundKeys = {
     detail: (refundId: string) => ['refunds', 'detail', refundId] as const,

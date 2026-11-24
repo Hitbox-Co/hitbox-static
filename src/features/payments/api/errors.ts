@@ -14,6 +14,12 @@ export function paymentErrorMessage(err: unknown): string {
                 return 'Sold out — check back soon.'
             case 'ORDERS_NO_PRICE':
                 return 'This drop has no price in your region yet.'
+            case 'PAYMENTS_BILLING_ADDRESS_REQUIRED':
+                return 'Add a billing address to continue — it decides the tax on your invoice.'
+            case 'USERS_ADDRESS_ARCHIVED':
+                return 'That address was deleted. Pick another one.'
+            case 'USERS_ADDRESS_USAGE_MISMATCH':
+                return 'That address is saved for a different use. Pick another one.'
             case 'PAYMENTS_NO_GATEWAY':
             case 'PAYMENTS_GATEWAY_UNAVAILABLE':
                 return 'Payments are not available for this drop right now.'

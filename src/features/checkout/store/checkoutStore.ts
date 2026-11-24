@@ -1,13 +1,9 @@
 import { useSyncExternalStore } from 'react'
 
-import { MOCK_SAVED_ADDRESS } from '../data/mockCheckout'
-import { DeliveryAddress } from '../types/checkout'
-
 /**
- * Where the buyer is in the cart → checkout flow. In-memory and per session:
- * with no cart or order API there is nothing to persist to. When one exists,
- * replace this with TanStack Query hooks (`features/checkout/api/…`) and keep
- * only the in-progress choices (selected address / payment method) here.
+ * Where the buyer is in the cart → checkout flow. In-memory and per session: it
+ * holds only the in-progress choices. Addresses, prices and orders are server
+ * state (`features/addresses`, `features/payments`) and are never copied here.
  */
 interface CheckoutState {
     /** The product in the cart (or being bought now); null when nothing is. */
@@ -17,8 +13,11 @@ interface CheckoutState {
     /** The chosen variant's id — what `POST /checkout` takes. */
     variantId: string | null
     quantity: number
-    addresses: DeliveryAddress[]
-    selectedAddressId: string
+    /**
+     * The saved address the order ships to and is billed from (`Address.id`).
+     * Null until the buyer picks one; the Delivery step falls back to their default.
+     */
+    selectedAddressId: string | null
 }
 
 let state: CheckoutState = {
@@ -26,8 +25,7 @@ let state: CheckoutState = {
     variantLabel: null,
     variantId: null,
     quantity: 1,
-    addresses: [MOCK_SAVED_ADDRESS],
-    selectedAddressId: MOCK_SAVED_ADDRESS.id,
+    selectedAddressId: null,
 }
 
 const listeners = new Set<() => void>()
@@ -50,17 +48,7 @@ export const checkoutActions = {
     clearCart() {
         set({ productId: null, variantLabel: null, variantId: null, quantity: 1 })
     },
-    /** Saves an address and makes it the one the order ships to. */
-    saveAddress(address: DeliveryAddress) {
-        const exists = state.addresses.some((a) => a.id === address.id)
-        set({
-            addresses: exists
-                ? state.addresses.map((a) => (a.id === address.id ? address : a))
-                : [...state.addresses, address],
-            selectedAddressId: address.id,
-        })
-    },
-    selectAddress(id: string) {
+    selectAddress(id: string | null) {
         set({ selectedAddressId: id })
     },
 }
@@ -74,9 +62,4 @@ const subscribe = (listener: () => void) => {
 
 export function useCheckoutState(): CheckoutState {
     return useSyncExternalStore(subscribe, () => state, () => state)
-}
-
-/** The address the order will ship to. */
-export function selectedAddressOf(s: CheckoutState): DeliveryAddress {
-    return s.addresses.find((a) => a.id === s.selectedAddressId) ?? s.addresses[0]
 }

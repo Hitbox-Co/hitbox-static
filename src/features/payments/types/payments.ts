@@ -15,6 +15,46 @@ export interface CheckoutInput {
     billingAddressId?: string
 }
 
+export interface Market {
+    id: string
+    /** USD | INR | GBP */
+    currency: string
+    countryCodes: string[]
+}
+
+export interface CheckoutQuoteInput {
+    productId: string
+    variantId?: string
+    marketId?: string
+    shippingAddressId?: string
+    billingAddressId?: string
+}
+
+export type QuoteUnavailableReason = 'NOT_PUBLISHED' | 'NOT_OPEN_YET' | 'CLOSED' | 'SOLD_OUT'
+
+/** The price before paying. Money and rates are strings; prices are tax-inclusive. */
+export interface CheckoutQuote {
+    productId: string
+    variantId: string | null
+    /** Send it back to /checkout. */
+    marketId: string
+    currency: string
+    unitPrice: string
+    /** The price without tax. */
+    subtotal: string
+    taxType: 'GST' | 'SALES_TAX' | 'EXEMPT' | null
+    taxRate: string
+    /** The part of the price that is tax. */
+    taxAmount: string
+    shippingAmount: string
+    /** Exactly what the card is charged. */
+    totalAmount: string
+    availability: 'IN_STOCK' | 'SOLD_OUT' | 'NOT_ON_SALE'
+    unavailableReason: QuoteUnavailableReason | null
+    /** true: POST /checkout refuses without a billing address. */
+    billingAddressRequired: boolean
+}
+
 /** The result of checkout and resume. */
 export interface CheckoutView {
     orderId: string

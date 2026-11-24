@@ -1,5 +1,4 @@
 import { OrderTotals } from '../types/checkout'
-import { MOCK_DELIVERY_FEE_USD, MOCK_TAX_RATE } from '../data/mockCheckout'
 
 /**
  * Checkout amounts are always shown in **USD**, with a "USD" label, on purpose.
@@ -27,8 +26,8 @@ export function formatItemPrice(amount: number): string {
 /** Subtotal, delivery, tax and total for a quantity of one item. */
 export function computeTotals(unitPriceUsd: number, quantity: number): OrderTotals {
     const subtotal = round2(unitPriceUsd * quantity)
-    const delivery = MOCK_DELIVERY_FEE_USD
-    const tax = round2(subtotal * MOCK_TAX_RATE)
+    const delivery = 0
+    const tax = 0
     return { subtotal, delivery, tax, total: round2(subtotal + delivery + tax) }
 }
 
