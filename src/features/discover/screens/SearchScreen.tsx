@@ -75,8 +75,42 @@ interface Filters {
     pointsMin: string;
     pointsMax: string;
     sort: DiscoverSection;
+    /** Artists only: profile countries to match. Empty = any country. */
+    countries: string[];
 }
-const NO_FILTERS: Filters = { categories: [], priceMin: "", priceMax: "", pointsMin: "", pointsMax: "", sort: "trending" };
+const NO_FILTERS: Filters = {
+    categories: [],
+    priceMin: "",
+    priceMax: "",
+    pointsMin: "",
+    pointsMax: "",
+    sort: "trending",
+    countries: [],
+};
+
+/** The countries offered for artists (Figma 722-3xx lists the first four, then "Show all countries"). */
+const COUNTRIES = [
+    "Japan",
+    "United States",
+    "United Kingdom",
+    "South Korea",
+    "Australia",
+    "Brazil",
+    "Canada",
+    "China",
+    "France",
+    "Germany",
+    "India",
+    "Indonesia",
+    "Italy",
+    "Mexico",
+    "Netherlands",
+    "Philippines",
+    "Singapore",
+    "Spain",
+    "Sweden",
+    "Thailand",
+];
 
 const toNum = (s: string): number | null => {
     const clean = s.replace(/[^0-9.]/g, "");
@@ -153,8 +187,16 @@ export default function SearchScreen() {
             within(p.rewardPoints ?? 0, pointsMin, pointsMax),
     );
     const needle = debounced.toLowerCase();
-    const creatorItems = (creators.data?.data ?? [])
+    const allCreators = creators.data?.data ?? [];
+    // The API does not send a country yet. Until it does, a country filter cannot
+    // narrow anything, and hiding everyone would be wrong — so it is left off and
+    // the screen says so.
+    const locationKnown = allCreators.some((c) => !!c.country);
+    const countryFilter = filters.countries.length > 0;
+    const wantedCountries = filters.countries.map((c) => c.toLowerCase());
+    const creatorItems = allCreators
         .filter((c) => !searching || c.name.toLowerCase().includes(needle))
+        .filter((c) => !(countryFilter && locationKnown) || wantedCountries.includes((c.country ?? "").toLowerCase()))
         .slice(0, searching || !showProducts ? 10 : IDLE_CREATORS);
 
     const remember = () => {
@@ -178,6 +220,13 @@ export default function SearchScreen() {
             key: `cat-${c}`,
             label: CATEGORIES.find((x) => x.id === c)?.label ?? c,
             clear: () => setFilters((f) => ({ ...f, categories: f.categories.filter((x) => x !== c) })),
+        });
+    }
+    for (const country of filters.countries) {
+        activeChips.push({
+            key: `country-${country}`,
+            label: country,
+            clear: () => setFilters((f) => ({ ...f, countries: f.countries.filter((x) => x !== country) })),
         });
     }
     if (priceActive)
@@ -399,6 +448,11 @@ export default function SearchScreen() {
                                 <Text className="font-orbitron text-[17px] text-[#111827]">
                                     {scope === "artists" ? "Artists" : searching || !showProducts ? "Creators" : "Discover creators"}
                                 </Text>
+                                {countryFilter && !locationKnown && (
+                                    <Text className="font-syne text-[11px] leading-[16px] text-[#6b7280]">
+                                        Artist locations aren&apos;t on file yet, so the country filter can&apos;t narrow this list.
+                                    </Text>
+                                )}
                                 {creators.isLoading && (
                                     <View className="items-center py-6">
                                         <ActivityIndicator size="small" color="#2563eb" />
@@ -597,6 +651,7 @@ function FiltersPage({
         set("categories", draft.categories.includes(id) ? draft.categories.filter((c) => c !== id) : [...draft.categories, id]);
 
     const selected =
+        draft.countries.length +
         draft.categories.length +
         (toNum(draft.priceMin) !== null || toNum(draft.priceMax) !== null ? 1 : 0) +
         (toNum(draft.pointsMin) !== null || toNum(draft.pointsMax) !== null ? 1 : 0) +
@@ -624,6 +679,10 @@ function FiltersPage({
                         <ScopeChips value={draftScope} onPick={setDraftScope} />
                     </View>
 
+                    {draftScope === "artists" ? (
+                        <CountrySection selected={draft.countries} onChange={(next) => set("countries", next)} />
+                    ) : draftScope === "creators" ? null : (
+                    <>
                     <View className="gap-3">
                         <Text className="font-orbitron text-[17px] text-[#111827]">Category</Text>
                         <View className="flex-row flex-wrap gap-[10px]">
@@ -704,6 +763,8 @@ function FiltersPage({
                             </View>
                         )}
                     </View>
+                    </>
+                    )}
                 </ScrollView>
 
                 <View className="gap-3 border-t border-[#dbeafe] px-5 pb-2 pt-3">
@@ -772,5 +833,89 @@ function RangeField({
                 {suffix ? <Text className="font-syne text-[13px] text-[#6b7280]">{suffix}</Text> : null}
             </View>
         </View>
+    );
+}
+
+/**
+ * Artists' Country / region (Figma 722-3xx): a country search, checkboxes with
+ * "Any country" on top, "Show all countries", then an optional city. There is
+ * no city data, so the city box only shows what it would do.
+ */
+function CountrySection({ selected, onChange }: { selected: string[]; onChange: (next: string[]) => void }) {
+    const [query, setQuery] = useState("");
+    const [showAll, setShowAll] = useState(false);
+    const q = query.trim().toLowerCase();
+    const pool = q ? COUNTRIES.filter((c) => c.toLowerCase().includes(q)) : showAll ? COUNTRIES : COUNTRIES.slice(0, 4);
+    const toggle = (country: string) =>
+        onChange(selected.includes(country) ? selected.filter((c) => c !== country) : [...selected, country]);
+    const anyCountry = selected.length === 0;
+
+    const Row = ({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) => (
+        <TouchableOpacity
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: on }}
+            activeOpacity={0.8}
+            onPress={onPress}
+            className={`h-[48px] flex-row items-center gap-3 rounded border px-3 ${on ? "border-[#2563eb] bg-[#eff6ff]" : "border-[#dbeafe] bg-white"}`}
+        >
+            <View className={`size-5 items-center justify-center rounded-[3px] border ${on ? "border-[#2563eb] bg-[#2563eb]" : "border-[#9ca3af] bg-white"}`}>
+                {on && <Check size={14} color="#fff" strokeWidth={3} />}
+            </View>
+            <Text className={`text-[13px] text-[#111827] ${on ? "font-syne-bold" : "font-syne"}`}>{label}</Text>
+        </TouchableOpacity>
+    );
+
+    return (
+        <>
+            <View className="gap-3">
+                <View className="gap-1">
+                    <Text className="font-orbitron text-[17px] text-[#111827]">Country / region</Text>
+                    <Text className="font-syne text-[12px] text-[#6b7280]">Find artists by their profile location.</Text>
+                </View>
+
+                <View className="h-[46px] flex-row items-center gap-[10px] rounded border border-[#dbeafe] bg-white px-3">
+                    <Search size={16} color="#2563eb" />
+                    <TextInput
+                        accessibilityLabel="Search countries"
+                        value={query}
+                        onChangeText={setQuery}
+                        placeholder="Search countries"
+                        placeholderTextColor="#9ca3af"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        style={{ minWidth: 0 }}
+                        className="h-full flex-1 font-syne text-[13px] text-[#111827]"
+                    />
+                </View>
+
+                <View className="gap-2">
+                    {!q && <Row label="Any country" on={anyCountry} onPress={() => onChange([])} />}
+                    {pool.map((c) => (
+                        <Row key={c} label={c} on={selected.includes(c)} onPress={() => toggle(c)} />
+                    ))}
+                    {pool.length === 0 && <Text className="font-syne text-[12px] text-[#6b7280]">No country matches.</Text>}
+                </View>
+
+                {!q && !showAll && (
+                    <TouchableOpacity accessibilityRole="button" hitSlop={8} onPress={() => setShowAll(true)} className="self-start">
+                        <Text className="font-syne-bold text-[12px] text-[#2563eb]">Show all countries</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <View className="gap-3">
+                <Text className="font-orbitron text-[17px] text-[#111827]">City (optional)</Text>
+                <View
+                    accessibilityState={{ disabled: true }}
+                    className="h-[46px] flex-row items-center justify-between rounded border border-[#dbeafe] bg-[#f6f9fc] px-3"
+                >
+                    <Text className="font-syne text-[13px] text-[#6b7280]">
+                        {selected.length === 1 ? `Any city in ${selected[0]}` : "Any city"}
+                    </Text>
+                    <ChevronDown size={18} color="#9ca3af" />
+                </View>
+                <Text className="font-syne text-[11px] text-[#6b7280]">City filtering needs artist locations, which aren&apos;t available yet.</Text>
+            </View>
+        </>
     );
 }

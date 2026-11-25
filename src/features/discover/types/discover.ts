@@ -62,6 +62,10 @@ export interface DiscoverCreatorItem {
     coverUrl: string | null
     /** "12 drops" — public drops only. */
     dropCount: number
+    /** The artist's profile country, when the API sends one (it does not yet). */
+    country?: string | null
+    /** The artist's profile city, when the API sends one (it does not yet). */
+    city?: string | null
 }
 
 /**
