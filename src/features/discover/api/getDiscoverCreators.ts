@@ -9,7 +9,7 @@ import { buildDiscoverCreatorsPath, discoverKeys } from './routes'
  * least one public drop, most drops first). Backs "Explore" next to **Meet the
  * creators**. Public; there is nothing per-user on it.
  */
-export function useDiscoverCreators(filters: DiscoverCreatorFilters = {}) {
+export function useDiscoverCreators(filters: DiscoverCreatorFilters = {}, options?: { enabled?: boolean }) {
     const api = useApi()
 
     return useQuery({
@@ -17,6 +17,7 @@ export function useDiscoverCreators(filters: DiscoverCreatorFilters = {}) {
         queryFn: () => api.getPage<DiscoverCreatorItem>(buildDiscoverCreatorsPath(filters)),
         placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 2,
+        enabled: options?.enabled ?? true,
     })
 }
 

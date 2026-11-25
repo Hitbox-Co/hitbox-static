@@ -99,8 +99,9 @@ export default function DiscoverScreen() {
         });
     };
 
-    // Figma P01: the search icon opens "Find collectors", whose Products tab is the drop search.
-    const openSearch = () => router.push('/find-collectors' as never);
+    // Figma 722-246: the search icon opens Search (products + creators).
+    // "Find collectors" stays reachable from its own routes.
+    const openSearch = () => router.push('/(tabs)/discover/search' as never);
 
     // Figma sizes: carousel cards 170 wide / 150 tall artwork; grid is two square cards.
     const carouselCardWidth = 170;

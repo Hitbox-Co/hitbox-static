@@ -6,6 +6,12 @@ import React from 'react';
 import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
 import {
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+} from '@expo-google-fonts/dm-sans';
+import {
   Orbitron_700Bold,
   Orbitron_900Black,
 } from '@expo-google-fonts/orbitron';
@@ -45,12 +51,16 @@ function RootNavigator() {
   const [currencyReady, setCurrencyReady] = React.useState(false);
 
   // Syne is the body typeface; Orbitron is the display face the Figma uses for
-  // headlines, the wordmark and small caps labels. Held behind the same spinner
+  // headlines, the wordmark and small caps labels; DM Sans sets numbers and prices. Held behind the same spinner
   // so no screen paints in the system font first; a load error falls through to
   // the system font rather than leaving the user on the spinner.
   const [fontsLoaded, fontError] = useFonts({
     Orbitron_700Bold,
     Orbitron_900Black,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
     Syne_400Regular,
     Syne_500Medium,
     Syne_600SemiBold,

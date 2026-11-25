@@ -14,6 +14,11 @@ module.exports = {
         // Display face (Figma: headlines, wordmark, section labels).
         orbitron: ["Orbitron_700Bold"],
         "orbitron-black": ["Orbitron_900Black"],
+        // Numbers and prices (Figma: "$185 · 925 pts", counts, range fields).
+        dm: ["DMSans_400Regular"],
+        "dm-medium": ["DMSans_500Medium"],
+        "dm-semibold": ["DMSans_600SemiBold"],
+        "dm-bold": ["DMSans_700Bold"],
         syne: ["Syne_400Regular"],
         "syne-medium": ["Syne_500Medium"],
         "syne-semibold": ["Syne_600SemiBold"],
