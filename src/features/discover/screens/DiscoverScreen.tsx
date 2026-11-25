@@ -118,7 +118,9 @@ export default function DiscoverScreen() {
                 showsVerticalScrollIndicator={false}
                 onScroll={onScroll}
                 scrollEventThrottle={32}
-                contentContainerStyle={{ paddingBottom: 122 }}
+                // flexGrow lets the gradient below fill the screen when the feed is short; the
+                // room under the last card for the tab bar is inside it, so it is tinted, not white.
+                contentContainerStyle={{ flexGrow: 1 }}
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefetching && !isPlaceholderData}
@@ -142,7 +144,7 @@ export default function DiscoverScreen() {
                     // Figma "Background mesh": white fading to a pale blue.
                     colors={["#ffffff", "#ffffff", "#eef4ff"]}
                     locations={[0, 0.4, 1]}
-                    style={{ paddingTop: 12 }}
+                    style={{ flexGrow: 1, paddingTop: 12, paddingBottom: 122 }}
                 >
                     {/* Leaderboard banner: hidden for the MVP (mock content, no API). Uncomment to bring it back.
                     <LeaderboardBanner />
