@@ -1,11 +1,14 @@
 import { router } from 'expo-router'
-import { Check, Download, FileText, MapPin, Package } from 'lucide-react-native'
+import { ArrowLeft, Check, Download, FileText, MapPin, Package, Star } from 'lucide-react-native'
 import React from 'react'
 import { ActivityIndicator, Alert, Image, Text, TouchableOpacity, View } from 'react-native'
 
 import { CheckoutShell, Divider, GroupedCard, PageIntro, SectionHeading } from '@/features/checkout/components/CheckoutParts'
 import { formatMoney } from '@/features/checkout/utils/money'
 import { invoiceErrorMessage, isStorageUnavailable, useDownloadInvoice } from '@/features/invoices/api/downloadInvoice'
+import { useInvoice } from '@/features/invoices/api/getInvoices'
+import { useProduct } from '@/features/products/api/getProduct'
+import { formatRewardPoints } from '@/features/products/utils/format'
 import { ApiRequestError } from '@/lib/api'
 import { orderErrorMessage, useCancelOrder } from '../api/cancelOrder'
 import { useOrder } from '../api/getOrders'
@@ -41,6 +44,10 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
     const { data: order, isLoading, isError, error, refetch } = useOrder(orderId, { poll: true })
     const cancel = useCancelOrder()
     const download = useDownloadInvoice()
+    // The Figma order page also shows the edition number, the points earned and the
+    // tax split — none of them are on the order, so they come from the drop and the invoice.
+    const product = useProduct(order?.product.id)
+    const invoice = useInvoice(order?.invoice?.id)
 
     if (isLoading) {
         return (
@@ -99,33 +106,103 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
 
     return (
         <CheckoutShell showBag={false}>
-            <PageIntro title="Order" subtitle={order.reference ? `#${order.reference}` : undefined} />
+            <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel="Back to my orders"
+                activeOpacity={0.7}
+                onPress={() => router.back()}
+                className="flex-row items-center gap-[6px] self-start"
+            >
+                <ArrowLeft size={14} color="#2563eb" />
+                <Text className="font-syne-bold text-[12px] text-[#2563eb]">Back to my orders</Text>
+            </TouchableOpacity>
+
+            <PageIntro
+                title="Order details"
+                subtitle={[order.reference ? `#${order.reference}` : null, `Placed ${formatOrderDate(order.placedAt)}`].filter(Boolean).join(' · ')}
+            />
+
+            {/* Delivered banner (Figma) — other states keep their badge under the name */}
+            {order.status === 'DELIVERED' && (
+                <View className="flex-row items-center gap-3 rounded border border-[#a3e635] bg-[#4bf389] p-3">
+                    <View className="size-[34px] items-center justify-center rounded bg-[rgba(0,0,0,0.08)]">
+                        <Check size={20} color="#fff" strokeWidth={3} />
+                    </View>
+                    <View className="flex-1 gap-[3px]">
+                        <Text className="font-syne-bold text-xs leading-[17px] text-[#052e16]">
+                            {`Delivered on ${formatOrderDate(order.deliveredAt ?? order.tracking?.deliveredAt)}`}
+                        </Text>
+                        <Text className="font-syne text-[10px] text-[rgba(5,46,22,0.6)]">
+                            Your drop has arrived. Enjoy your new collectible.
+                        </Text>
+                    </View>
+                </View>
+            )}
 
             {/* The drop */}
-            <GroupedCard>
-                <View className="flex-row items-center gap-3">
-                    <View style={{ width: 88, height: 88, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eef2ff' }}>
-                        {order.product.imageUrl ? (
-                            <Image source={{ uri: order.product.imageUrl }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
-                        ) : null}
-                    </View>
-                    <View className="flex-1 gap-[5px]">
-                        <Text numberOfLines={2} className="font-syne-bold text-[16px] leading-[20px] text-[#111827]">{order.product.name}</Text>
-                        {(order.product.artistName || order.variantLabel) && (
-                            <Text numberOfLines={1} className="font-syne text-[11px] text-[#6b7280]">
-                                {[order.product.artistName, order.variantLabel].filter(Boolean).join(' · ')}
-                            </Text>
-                        )}
+            <View className="gap-3">
+                <View style={{ width: '100%', aspectRatio: 1, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eef2ff' }}>
+                    {order.product.imageUrl ? (
+                        <Image source={{ uri: order.product.imageUrl }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+                    ) : null}
+                </View>
+                <View className="gap-[6px]">
+                    <Text className="font-orbitron text-[24px] leading-[29px] text-[#111827]">{order.product.name}</Text>
+                    {(order.product.artistName || order.unit) && (
+                        <Text className="font-syne text-[12px] text-[#6b7280]">
+                            {[
+                                order.product.artistName,
+                                order.unit && product.data?.totalSupply
+                                    ? `Edition ${String(order.unit.serialNumber).padStart(3, '0')} / ${product.data.totalSupply}`
+                                    : order.unit
+                                        ? `Edition #${order.unit.serialNumber}`
+                                        : null,
+                            ]
+                                .filter(Boolean)
+                                .join(' · ')}
+                        </Text>
+                    )}
+                    <Text className="font-syne text-[12px] text-[#6b7280]">
+                        {[order.variantLabel, `Qty ${order.quantity}`].filter(Boolean).join(' · ')}
+                    </Text>
+                    <Text className="font-syne-bold text-[24px] text-[#111827]">{money(order.amount)}</Text>
+                    {order.status !== 'DELIVERED' && (
                         <View className="self-start rounded border px-[8px] py-[3px]" style={{ backgroundColor: badge.bg, borderColor: badge.border }}>
                             <Text className="font-syne-bold text-[8px]" style={{ color: badge.text }}>{order.statusLabel.toUpperCase()}</Text>
                         </View>
+                    )}
+                </View>
+            </View>
+
+            {/* Points */}
+            {formatRewardPoints((product.data?.rewardPoints ?? 0) * order.quantity) && (
+                <View className="flex-row items-center gap-3 rounded border border-[#ffd470] bg-[#fffaed] p-[14px]">
+                    <Star size={20} color="#f5b301" />
+                    <View className="gap-[3px]">
+                        <Text className="font-syne-bold text-base text-[#f59e0b]">
+                            {`${formatRewardPoints((product.data?.rewardPoints ?? 0) * order.quantity)} ${order.payment.status === 'PAID' ? 'earned' : 'to earn'}`}
+                        </Text>
+                        <Text className="font-syne text-[10px] text-[#6b7280]">For VIP experiences on HitBox.</Text>
                     </View>
                 </View>
-                <Divider />
-                <Row label="Placed" value={formatOrderDateTime(order.placedAt)} />
-                {/* The order's own amount is what was paid (the invoice can differ: it adds tax on top). */}
-                <Row label={order.payment.status === 'PAID' || order.status === 'DELIVERED' ? 'Paid' : 'Amount'} value={money(order.amount)} bold />
-            </GroupedCard>
+            )}
+
+            {/* Return window (Figma) — the buttons themselves still come from `actions` */}
+            {actions.returnWindowEndsAt && actions.canRequestRefund && (
+                <View className="gap-3 rounded border border-[#dbeafe] bg-white p-[14px]">
+                    <View className="gap-1">
+                        <Text className="font-syne-bold text-[13px] text-[#16a34a]">Return available</Text>
+                        <Text className="font-syne text-[11px] leading-[16px] text-[#6b7280]">
+                            {`Eligible until ${formatOrderDate(actions.returnWindowEndsAt)}. Item must meet the return policy.`}
+                        </Text>
+                    </View>
+                    <ActionButton
+                        label="Start a return"
+                        primary
+                        onPress={() => Alert.alert('Start a return', 'Returns are not connected in the app yet.')}
+                    />
+                </View>
+            )}
 
             {/* Awaiting payment: the hold, and a declined attempt if there was one */}
             {order.status === 'PENDING_PAYMENT' && (
@@ -138,6 +215,16 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
             {order.payment.failureReason && order.payment.status !== 'PAID' && (
                 <Notice tone="red">{`Last attempt: ${order.payment.failureReason}`}</Notice>
             )}
+
+            {/* Order summary (Figma). Subtotal and tax are the invoice's; shipping and the card are not on the order. */}
+            <GroupedCard>
+                <SectionHeading title="Order summary" />
+                {invoice.data && <Row label="Item subtotal" value={money(invoice.data.subtotal)} />}
+                {invoice.data && <Row label="Tax" value={money(invoice.data.taxAmount)} />}
+                <Divider />
+                <Row label={order.payment.status === 'PAID' || order.status === 'DELIVERED' ? 'Total paid' : 'Total'} value={money(order.amount)} bold />
+                <Row label="Placed" value={formatOrderDateTime(order.placedAt)} />
+            </GroupedCard>
 
             <StatusSteps order={order} />
 
@@ -172,7 +259,7 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
 
             {(order.shippingAddress || order.billingAddress) && (
                 <View className="gap-5">
-                    {order.shippingAddress && <AddressCard title="Ships to" address={order.shippingAddress} />}
+                    {order.shippingAddress && <AddressCard title="Delivery details" address={order.shippingAddress} />}
                     {order.billingAddress && <AddressCard title="Billing address" address={order.billingAddress} />}
                 </View>
             )}
@@ -232,6 +319,15 @@ export default function OrderDetailScreen({ orderId }: { orderId?: string }) {
                 {actions.returnWindowEndsAt && (
                     <Text className="font-syne text-[11px] text-[#6b7280]">{`Return by ${formatOrderDate(actions.returnWindowEndsAt)}`}</Text>
                 )}
+                <ActionButton label="Get help with this order" onPress={() => router.push('/support' as never)} />
+                <TouchableOpacity
+                    accessibilityRole="link"
+                    activeOpacity={0.7}
+                    onPress={() => router.push('/terms-of-use' as never)}
+                    className="h-9 items-center justify-center"
+                >
+                    <Text className="font-syne-bold text-xs text-[#2563eb]">View return policy</Text>
+                </TouchableOpacity>
                 {actions.canCancel && (
                     <TouchableOpacity
                         accessibilityRole="button"
