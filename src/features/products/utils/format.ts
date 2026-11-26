@@ -1,4 +1,5 @@
-import { formatMoneyFromUsd, groupThousands } from '@/lib/currency'
+import { formatMoney } from '@/features/checkout/utils/money'
+import { groupThousands } from '@/lib/currency'
 import { MarketplaceStatus, Product, ProductCategory } from '../types/product'
 
 /** Shown when a product has no images. */
@@ -13,7 +14,8 @@ export const PRODUCT_PLACEHOLDER_IMAGE =
 export function formatPrice(priceInDollars: string | null | undefined): string | undefined {
     // No price is "nothing to show", not "$0" — Number(null) would be 0.
     if (priceInDollars == null || priceInDollars === '') return undefined
-    return formatMoneyFromUsd(priceInDollars)
+    // The legacy field is the drop's USD price: shown as USD, never converted.
+    return formatMoney(priceInDollars, 'USD')
 }
 
 /**

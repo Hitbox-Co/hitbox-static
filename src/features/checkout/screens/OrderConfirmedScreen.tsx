@@ -1,70 +1,85 @@
-import { useUser } from '@clerk/clerk-expo'
-import { LinearGradient } from 'expo-linear-gradient'
-import { router } from 'expo-router'
-import { Check, Star } from 'lucide-react-native'
+import { useLocalSearchParams, router } from 'expo-router'
+import { Check, Clock } from 'lucide-react-native'
 import React, { useEffect, useRef } from 'react'
-import { Text, View } from 'react-native'
+import { ActivityIndicator, Image, Text, View } from 'react-native'
 
-import { formatRewardPoints } from '@/features/products/utils/format'
-import { MOCK_ORDER_NUMBER } from '../data/mockCheckout'
-import {
-    AmountRow,
-    CheckoutShell,
-    Divider,
-    NothingToCheckout,
-    OrderItemRow,
-    PageIntro,
-    PrimaryAction,
-    SecondaryLink,
-    SectionHeading,
-    TotalRow,
-} from '../components/CheckoutParts'
-import { AddressLines } from '../components/AddressLines'
-import { useCheckoutItem } from '../hooks/useCheckoutItem'
-import { checkoutActions, selectedAddressOf, useCheckoutState } from '../store/checkoutStore'
-import { MOCK_SAVED_CARD } from '../data/mockCheckout'
-import { formatUsd } from '../utils/money'
+import { useOrder } from '@/features/orders/api/getOrders'
+import { formatOrderDate } from '@/features/orders/utils/format'
+import { CheckoutShell, Divider, PageIntro, PrimaryAction, SecondaryLink, TotalRow } from '../components/CheckoutParts'
+import { checkoutActions } from '../store/checkoutStore'
+import { formatMoney } from '../utils/money'
 
 /**
- * 07 · Order confirmed (Figma). Order number, date and "paid with" are mock
- * until there is an order API; the item, amounts and points are from the real
- * product. The cart is emptied when the buyer leaves this screen.
+ * 07 · Order confirmed. The app never decides an order is paid: after Stripe's
+ * sheet reports success this screen shows "Confirming payment…" and polls
+ * `GET /orders/:orderId` until the server's webhook moves it on. The in-progress
+ * checkout is cleared when the buyer leaves.
  */
 export default function OrderConfirmedScreen() {
-    const { item, totals, isLoading, isError, notForSale, refetch } = useCheckoutItem()
-    const checkout = useCheckoutState()
-    const address = selectedAddressOf(checkout)
-    const { user } = useUser()
+    const { orderId } = useLocalSearchParams<{ orderId?: string }>()
+    const { data: order, isError, refetch } = useOrder(orderId, { poll: true })
 
-    // Empty the cart once the buyer has left — clearing it now would blank this screen.
     const leaving = useRef(() => checkoutActions.clearCart())
     useEffect(() => () => leaving.current(), [])
 
-    if (!item || !totals) {
+    const goOrders = () => router.replace((orderId ? `/orders/${orderId}` : '/orders') as never)
+
+    if (!order) {
         return (
             <CheckoutShell showBag={false}>
-                <PageIntro title="Order confirmed" />
-                <NothingToCheckout loading={isLoading} error={isError} notForSale={notForSale} onRetry={refetch} />
+                <PageIntro title="Order" />
+                <View className="mt-24 items-center gap-3">
+                    {isError ? (
+                        <>
+                            <Text className="font-syne text-xs text-[#6b7280]">Could not load your order.</Text>
+                            <SecondaryLink label="Try again" onPress={() => refetch()} />
+                        </>
+                    ) : (
+                        <ActivityIndicator size="large" color="#2563eb" />
+                    )}
+                </View>
             </CheckoutShell>
         )
     }
 
-    const firstName = user?.firstName ?? address.fullName.split(' ')[0]
-    const date = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-    const earned = item.rewardPoints != null ? formatRewardPoints(item.rewardPoints * item.quantity) : null
+    if (order.status === 'PENDING_PAYMENT') {
+        return (
+            <CheckoutShell showBag={false} footer={<SecondaryLink label="View my orders" onPress={goOrders} />}>
+                <PageIntro title="Confirming payment…" subtitle="This usually takes a few seconds." />
+                <View className="items-center gap-3 rounded border border-[#e5e7eb] bg-white p-6">
+                    <ActivityIndicator size="large" color="#2563eb" />
+                    <Clock size={16} color="#6b7280" />
+                    <Text className="text-center font-syne text-[11px] leading-[16px] text-[#6b7280]">
+                        {"Stripe has your payment. We're waiting for it to be confirmed. You can safely leave this screen — your order will update on its own."}
+                    </Text>
+                </View>
+            </CheckoutShell>
+        )
+    }
+
+    if (order.status === 'CANCELLED') {
+        return (
+            <CheckoutShell
+                showBag={false}
+                footer={<PrimaryAction label="Back to discover" onPress={() => router.replace('/(tabs)/discover' as never)} />}
+            >
+                <PageIntro title="Payment unsuccessful" />
+                <View className="gap-2 rounded border border-[#fecaca] bg-[#fef2f2] p-[14px]">
+                    <Text className="font-syne-bold text-[13px] text-[#dc2626]">This order was cancelled</Text>
+                    <Text className="font-syne text-xs leading-[18px] text-[#6b7280]">
+                        {order.payment.failureReason ?? 'The payment was not completed, so the item was released.'}
+                    </Text>
+                </View>
+            </CheckoutShell>
+        )
+    }
 
     return (
         <CheckoutShell
             showBag={false}
             footer={
                 <>
-                    <PrimaryAction
-                        label="View order details"
-                        // My orders is the real list (`GET /orders`). The order shown here is still the
-                        // static checkout's, with no server id, so the list is the closest place to open;
-                        // once checkout creates real orders this should go to `/orders/<orderId>`.
-                        onPress={() => router.push('/orders' as never)}
-                    />
+                    <PrimaryAction label="View order details" onPress={goOrders} />
                     <SecondaryLink label="Continue discovering" onPress={() => router.replace('/(tabs)/discover' as never)} />
                 </>
             }
@@ -76,51 +91,35 @@ export default function OrderConfirmedScreen() {
                     <Check size={20} color="#fff" strokeWidth={3} />
                 </View>
                 <View className="flex-1 gap-[3px]">
-                    <Text className="font-syne-bold text-xs leading-[17px] text-[#052e16]">
-                        {`Thanks, ${firstName}. Your drop is ordered.`}
+                    <Text className="font-syne-bold text-xs leading-[17px] text-[#052e16]">Thanks. Your drop is ordered.</Text>
+                    <Text className="font-syne text-[10px] text-[rgba(5,46,22,0.6)]">
+                        {[order.reference ? `Order ${order.reference}` : null, formatOrderDate(order.placedAt)].filter(Boolean).join(' · ')}
                     </Text>
-                    <Text className="font-syne text-[10px] text-[rgba(5,46,22,0.6)]">{`Order ${MOCK_ORDER_NUMBER} · ${date}`}</Text>
                 </View>
             </View>
 
-            <LinearGradient
-                colors={['#0b1235', '#070b22']}
-                style={{ borderRadius: 4, padding: 16, gap: 12, borderWidth: 1, borderColor: '#1e2a5a' }}
-            >
-                <OrderItemRow item={item} dark />
-                <Divider dark />
-                <View className="gap-[10px]">
-                    <AmountRow dark label={`Subtotal · ${item.quantity} item${item.quantity === 1 ? '' : 's'}`} value={formatUsd(totals.subtotal)} />
-                    <AmountRow dark label="Standard delivery" value={formatUsd(totals.delivery)} />
-                    <AmountRow dark label="Tax" value={formatUsd(totals.tax)} />
-                </View>
-                <Divider dark />
-                <TotalRow dark label="Total paid · USD" value={formatUsd(totals.total)} />
-                <Text className="font-syne text-[10px] text-[#9ca3af]">{`Paid with card ending in ${MOCK_SAVED_CARD.last4}`}</Text>
-            </LinearGradient>
-
-            {earned && (
-                <View className="flex-row items-center gap-3 rounded border border-[#ffd470] bg-[#fffaed] p-[14px]">
-                    <Star size={20} color="#f5b301" />
-                    <View className="gap-[3px]">
-                        <Text className="font-syne-bold text-base text-[#f59e0b]">{`${earned} earned`}</Text>
-                        <Text className="font-syne text-[10px] text-[#6b7280]">For VIP experiences on HitBox.</Text>
+            <View className="gap-3 rounded border border-[#e5e7eb] bg-white p-4">
+                <View className="flex-row items-center gap-3">
+                    <View style={{ width: 76, height: 76, borderRadius: 4, overflow: 'hidden', backgroundColor: '#eef2ff' }}>
+                        {order.product.imageUrl ? (
+                            <Image source={{ uri: order.product.imageUrl }} resizeMode="cover" style={{ width: '100%', height: '100%' }} />
+                        ) : null}
+                    </View>
+                    <View className="flex-1 gap-1">
+                        <Text numberOfLines={2} className="font-syne-bold text-base text-[#111827]">{order.product.name}</Text>
+                        {order.product.artistName && (
+                            <Text className="font-syne text-[11px] text-[#2563eb]">{order.product.artistName}</Text>
+                        )}
+                        {order.variantLabel && <Text className="font-syne text-[11px] text-[#6b7280]">{order.variantLabel}</Text>}
                     </View>
                 </View>
-            )}
-
-            <View className="gap-[10px]">
-                <SectionHeading title="Delivery details" />
-                <View className="flex-row">
-                    <AddressLines address={address} />
-                </View>
-                <Text className="font-syne text-[11px] leading-[16px] text-[#6b7280]">
-                    Standard delivery · Follow updates in order details.
-                </Text>
-                <Text className="pt-2 font-syne text-[11px] leading-[16px] text-[#6b7280]">
-                    {"Once your item arrives, tap its NFC tag to claim it on HitBox. Purchasing doesn't verify or claim the item."}
-                </Text>
+                <Divider />
+                <TotalRow label="Total paid" value={formatMoney(order.amount, order.currency)} />
             </View>
+
+            <Text className="font-syne text-[11px] leading-[16px] text-[#6b7280]">
+                {"Your invoice is issued a moment after payment. Once your item arrives, tap its NFC tag to claim it on HitBox. Purchasing doesn't verify or claim the item."}
+            </Text>
         </CheckoutShell>
     )
 }

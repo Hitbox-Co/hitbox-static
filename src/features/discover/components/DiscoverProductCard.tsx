@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient'
+import PriceText from '@/features/market/components/PriceText'
 import { Star } from 'lucide-react-native'
 import React from 'react'
 import { Image, Text, TouchableOpacity, View } from 'react-native'
@@ -6,7 +7,6 @@ import { Image, Text, TouchableOpacity, View } from 'react-native'
 import { DiscoverProductItem } from '../types/discover'
 import {
     DISCOVER_PLACEHOLDER_IMAGE,
-    formatDiscoverPrice,
     formatEdition,
     formatRewardPoints,
     rarityLabel,
@@ -38,7 +38,7 @@ export default function DiscoverProductCard({
     onPress,
 }: DiscoverProductCardProps) {
     const points = formatRewardPoints(item.rewardPoints)
-    const price = formatDiscoverPrice(item.price)
+    const price = !!item.price
     const rarity = rarityLabel(item.rarity)
     const edition = formatEdition(item.totalSupply)
     const artistLine =
@@ -120,7 +120,7 @@ export default function DiscoverProductCard({
                 {(price || points) && (
                     <View className="flex-row items-center justify-between">
                         {price ? (
-                            <Text className="font-syne-bold text-[15px] text-[#111827]">{price}</Text>
+                            <PriceText price={item.price} className="font-syne-bold text-[15px] text-[#111827]" />
                         ) : (
                             <View />
                         )}

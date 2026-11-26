@@ -6,30 +6,6 @@
  * replace the mock data / store in this feature (see `data/mockCheckout.ts`).
  */
 
-export interface DeliveryAddress {
-    id: string
-    /** "Home", "Work"… shown after the name. */
-    label: string
-    fullName: string
-    email: string
-    phone: string
-    country: string
-    street: string
-    /** Apartment, suite, etc. */
-    unit: string
-    city: string
-    state: string
-    zip: string
-}
-
-export type PaymentMethodId = 'card' | 'apple_pay' | 'google_pay'
-
-export interface SavedCard {
-    brand: string
-    last4: string
-    holder: string
-}
-
 /** The one drop being bought. Cart and Buy Now both put a product id here. */
 export interface CheckoutItem {
     productId: string
@@ -60,7 +36,7 @@ export type PaymentOutcome = 'success' | 'failure'
 /* ------------------------------------------------------------------ */
 
 /** Why a cart row cannot be checked out right now. */
-export type UnavailableReason = 'REMOVED' | 'NOT_ON_SALE' | 'NOT_RELEASED_YET' | 'CLOSED' | 'NO_PRICE'
+export type UnavailableReason = 'REMOVED' | 'NOT_ON_SALE' | 'NOT_RELEASED_YET' | 'CLOSED' | 'NO_PRICE' | 'NOT_AVAILABLE_IN_REGION'
 
 export interface CartDropVariant {
     id: string
@@ -76,7 +52,7 @@ export interface CartDropCard {
     rarity: string | null
     artist: { id: string; name: string; slug: string } | null
     /** Decimal-as-string amount, e.g. "225.00". */
-    price: { amount: string; currency: string; isFree: boolean } | null
+    price: { amount: string; currency: string; isFree: boolean; marketId?: string | null } | null
     totalSupply: number
     mintedCount: number
     rewardPoints: number | null

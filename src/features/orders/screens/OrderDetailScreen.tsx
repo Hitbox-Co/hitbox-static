@@ -18,15 +18,11 @@ import {
     formatOrderDate,
     formatOrderDateTime,
     minutesLeft,
-    ORDER_STATUS_BADGES,
     ORDER_STEPS,
-    REFUND_BADGES,
-    REFUND_BLOCKED_TEXT,
-    STATUS_WORDS,
     orderBadge,
     refundBadge,
     refundBlockedText,
-    statusWord,
+    statusWord
 } from '../utils/format'
 
 /**

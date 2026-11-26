@@ -1,6 +1,8 @@
 import { useAuth } from '@clerk/clerk-expo'
 import { useCallback } from 'react'
 
+import { withMarketParam } from './market-param'
+
 export const API_URL = process.env.EXPO_PUBLIC_API_URL
 
 export interface ApiError {
@@ -149,8 +151,10 @@ export function useApi() {
 
     const request = useCallback(
         async <T>(path: string, options: RequestInit = {}): Promise<T> => {
+            // Every priced read carries the selected market (see `withMarketParam`).
+            const url = withMarketParam(path, options.method)
             const send = (token: string | null) =>
-                fetch(`${API_URL}${path}`, {
+                fetch(`${API_URL}${url}`, {
                     ...options,
                     headers: {
                         'Content-Type': 'application/json',

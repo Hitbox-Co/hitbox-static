@@ -1,4 +1,5 @@
 import { useAuth } from "@clerk/clerk-expo";
+import RegionEmpty from '@/features/market/components/RegionEmpty'
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useIsFocused } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -205,11 +206,7 @@ export default function DiscoverScreen() {
                     )}
 
                     {isFeedEmpty && (
-                        <View className="mt-16 items-center px-8">
-                            <Text className="text-center font-syne text-sm text-[#6b7280]">
-                                No drops in this category yet.
-                            </Text>
-                        </View>
+                        <RegionEmpty />
                     )}
 
                     {feed && !isFeedEmpty && (

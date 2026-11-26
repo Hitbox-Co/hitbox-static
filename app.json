@@ -64,7 +64,8 @@
           "locationWhenInUsePermission": "HitBox uses your location once to show prices in your local currency."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      ["@stripe/stripe-react-native", {}]
     ],
     "experiments": {
       "typedRoutes": true,

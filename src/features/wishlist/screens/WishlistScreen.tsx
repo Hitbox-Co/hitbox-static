@@ -1,4 +1,5 @@
 import { useAuth } from '@clerk/clerk-expo'
+import PriceText from '@/features/market/components/PriceText'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { Heart, ShoppingBag, Trash2 } from 'lucide-react-native'
@@ -7,7 +8,7 @@ import { ActivityIndicator, Alert, Switch, Text, TouchableOpacity, View } from '
 
 import { useAddToCart } from '@/features/checkout/api/cartMutations'
 import { CheckoutShell, GroupedCard, PageIntro } from '@/features/checkout/components/CheckoutParts'
-import { DISCOVER_PLACEHOLDER_IMAGE, formatDiscoverPrice } from '@/features/discover/utils/format'
+import { DISCOVER_PLACEHOLDER_IMAGE } from '@/features/discover/utils/format'
 import { describeApiError } from '@/lib/api-errors'
 import ForbiddenNote from '@/features/auth/components/ForbiddenNote'
 import { useRemoveWishlistItem, useUpdateWishlistItem, useWishlistInfinite } from '../api/wishlist'
@@ -125,7 +126,7 @@ function WishlistRow({ item }: { item: WishlistItemView }) {
         )
     }
 
-    const price = formatDiscoverPrice(product.price)
+    const price = product.price
     const reason = unavailableLabel(product.unavailableReason, product.status)
     const artist = product.artist?.name
 
@@ -159,7 +160,7 @@ function WishlistRow({ item }: { item: WishlistItemView }) {
                     {item.variant && (
                         <Text numberOfLines={1} className="font-syne-semibold text-[11px] text-[#2563eb]">{item.variant.label}</Text>
                     )}
-                    {!!price && <Text className="font-syne-bold text-[14px] text-[#111827]">{price}</Text>}
+                    {!!price && <PriceText price={price} className="font-syne-bold text-[14px] text-[#111827]" />}
                 </View>
                 <TouchableOpacity
                     accessibilityRole="button"

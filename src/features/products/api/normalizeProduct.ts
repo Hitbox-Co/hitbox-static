@@ -68,6 +68,8 @@ export function normalizeProduct(raw: unknown): Product {
         collectionId: p.collectionId ?? null,
         organizationId: p.organizationId ?? null,
         price: p.price && typeof p.price === 'object' ? p.price : null,
+        availableInMarket: typeof p.availableInMarket === 'boolean' ? p.availableInMarket : undefined,
+        unavailableReason: p.unavailableReason ?? null,
         variants: Array.isArray(p.variants) ? p.variants : [],
         dropType: p.dropType ?? null,
     } as Product

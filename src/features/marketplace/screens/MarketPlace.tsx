@@ -1,4 +1,5 @@
 import { router, useIsFocused } from 'expo-router';
+import RegionEmpty from '@/features/market/components/RegionEmpty'
 import { StatusBar } from 'expo-status-bar';
 import { ChevronRight, Search, X } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
@@ -249,9 +250,7 @@ const MarketPlaceScreen = () => {
                             )}
 
                             {isFeedEmpty && (
-                                <Text className="mt-8 px-8 text-center font-syne text-sm text-[#6b7280]">
-                                    No listings in this category yet.
-                                </Text>
+                                <RegionEmpty className="mt-8" />
                             )}
 
                             {featured.length > 0 && (

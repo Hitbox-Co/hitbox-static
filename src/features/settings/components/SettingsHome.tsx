@@ -20,6 +20,9 @@ import React from 'react'
 import { Image as RNImage, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import MarketSheet from '@/features/market/components/MarketSheet'
+import { useActiveMarket } from '@/features/market/hooks/useActiveMarket'
+import { flagEmoji, marketLabel } from '@/features/market/utils/format'
 import { useMe } from '@/features/profile/api/getProfile'
 
 type Row = { icon: React.ReactNode; label: string; onPress: () => void }
@@ -42,6 +45,8 @@ export default function SettingsHome({ onOpen }: { onOpen: (tab: 'security' | 'n
     const queryClient = useQueryClient()
     const { user } = useUser()
     const { data: me } = useMe()
+    const { market, markets, mode } = useActiveMarket()
+    const [marketOpen, setMarketOpen] = React.useState(false)
 
     const name = me?.fullName || user?.fullName || (me?.handle ? `@${me.handle}` : null) || 'HitBox Collector'
     const handle = me?.handle ?? user?.username ?? null
@@ -60,6 +65,13 @@ export default function SettingsHome({ onOpen }: { onOpen: (tab: 'security' | 'n
             title: 'Account & Profile',
             rows: [
                 { icon: <Pencil size={ICON} color={BLUE} />, label: 'Edit Profile', onPress: go('/edit-profile') },
+                ...(market
+                    ? [{
+                        icon: <Text className="text-[16px]">{flagEmoji(market.countryCodes[0])}</Text>,
+                        label: `Market · ${marketLabel(market)}${mode === 'auto' ? ' (auto)' : ''}`,
+                        onPress: () => setMarketOpen(true),
+                    }]
+                    : []),
                 { icon: <ShieldCheck size={ICON} color={BLUE} />, label: 'Security Settings', onPress: () => onOpen('security') },
             ],
         },
@@ -184,6 +196,13 @@ export default function SettingsHome({ onOpen }: { onOpen: (tab: 'security' | 'n
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+            <MarketSheet
+                visible={marketOpen}
+                onClose={() => setMarketOpen(false)}
+                markets={markets}
+                selectedId={market?.id}
+                automatic={mode === 'auto'}
+            />
         </SafeAreaView>
     )
 }

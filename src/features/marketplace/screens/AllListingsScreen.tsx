@@ -1,4 +1,5 @@
 import { router, useIsFocused } from "expo-router";
+import RegionEmpty from '@/features/market/components/RegionEmpty'
 import { StatusBar } from "expo-status-bar";
 import { ArrowLeft } from "lucide-react-native";
 import React from "react";
@@ -149,11 +150,7 @@ export default function AllListingsScreen({ category, sort, featured, title }: A
                         if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
                     }}
                     ListEmptyComponent={
-                        <View className="mt-24 items-center px-8">
-                            <Text className="text-center font-syne text-sm text-[#6b7280]">
-                                Nothing here yet. Pull to refresh.
-                            </Text>
-                        </View>
+                        <RegionEmpty className="mt-24" />
                     }
                     ListFooterComponent={
                         hasNextPage ? (

@@ -1,14 +1,15 @@
 import { router } from 'expo-router'
 import { Plus, Truck } from 'lucide-react-native'
 import React from 'react'
-import { Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
 
-import { MOCK_DELIVERY_FEE_USD } from '../data/mockCheckout'
+import NoPriceMarketSheet from '@/features/market/components/NoPriceMarketSheet'
+import ChangeRegionButton from '@/features/market/components/ChangeRegionButton'
+import { apiErrorCode } from '@/lib/api-errors'
+import { paymentErrorMessage } from '@/features/payments/api/errors'
 import {
-    AmountRow,
     CheckoutProgress,
     CheckoutShell,
-    Divider,
     GroupedCard,
     NothingToCheckout,
     OrderItemRow,
@@ -16,20 +17,22 @@ import {
     PrimaryAction,
     SecondaryLink,
     SectionHeading,
-    TotalRow,
 } from '../components/CheckoutParts'
+import { AddressLines } from '../components/AddressLines'
+import { QuoteSummary } from '../components/QuoteSummary'
 import { Radio } from '../components/Radio'
 import { useCheckoutItem } from '../hooks/useCheckoutItem'
-import { checkoutActions, useCheckoutState } from '../store/checkoutStore'
-import { formatUsd } from '../utils/money'
-import { AddressLines } from '../components/AddressLines'
+import { useCheckoutPlan } from '../hooks/useCheckoutQuote'
+import { checkoutActions } from '../store/checkoutStore'
+import { formatMoney } from '../utils/money'
 
-/** 02 · Delivery (Figma). Buy Now enters here and skips the cart. */
+/** 02 · Delivery (Figma). Buy Now enters here and skips the cart. Addresses are the buyer's saved address book. */
 export default function DeliveryScreen() {
-    const { item, totals, isLoading, isError, notForSale, refetch } = useCheckoutItem()
-    const { addresses, selectedAddressId } = useCheckoutState()
+    const { item, isLoading, isError, notForSale, refetch } = useCheckoutItem()
+    const plan = useCheckoutPlan()
+    const { address, addresses, quote } = plan
 
-    if (!item || !totals) {
+    if (!item) {
         return (
             <CheckoutShell>
                 <PageIntro title="Delivery" />
@@ -38,44 +41,61 @@ export default function DeliveryScreen() {
         )
     }
 
+    const canContinue = !!address && quote?.availability === 'IN_STOCK'
+
     return (
         <CheckoutShell
             footer={
                 <>
-                    <PrimaryAction label="Continue to payment" onPress={() => router.push('/checkout/payment' as never)} />
+                    <PrimaryAction
+                        label="Continue to payment"
+                        disabled={!canContinue}
+                        onPress={() => router.push('/checkout/payment' as never)}
+                    />
                     <SecondaryLink label="Back to shopping" onPress={() => router.replace('/(tabs)/discover' as never)} />
                 </>
             }
         >
             <CheckoutProgress stage={1} />
             <PageIntro title="Delivery" />
-            <OrderItemRow item={item} />
+            <OrderItemRow item={item} price={quote ? formatMoney(quote.unitPrice, quote.currency) : undefined} />
 
             <View className="gap-[10px]">
                 <SectionHeading
                     title="Deliver to"
-                    action="Change"
-                    onAction={() => router.push({ pathname: '/checkout/address', params: { edit: selectedAddressId } } as never)}
+                    action={address ? 'Edit' : undefined}
+                    onAction={address ? () => router.push({ pathname: '/checkout/address', params: { edit: address.id } } as never) : undefined}
                 />
-                {addresses.map((address) => {
-                    const selected = address.id === selectedAddressId
-                    return (
-                        <TouchableOpacity
-                            key={address.id}
-                            accessibilityRole="radio"
-                            accessibilityState={{ selected }}
-                            activeOpacity={0.85}
-                            onPress={() => checkoutActions.selectAddress(address.id)}
-                        >
-                            <GroupedCard selected={selected}>
-                                <View className="flex-row items-start gap-3">
-                                    <Radio selected={selected} />
-                                    <AddressLines address={address} />
-                                </View>
-                            </GroupedCard>
-                        </TouchableOpacity>
-                    )
-                })}
+                {plan.addressesLoading ? (
+                    <ActivityIndicator color="#2563eb" />
+                ) : plan.addressesError ? (
+                    <Text className="font-syne text-xs text-[#dc2626]">Could not load your addresses. Pull back and try again.</Text>
+                ) : (
+                    addresses.map((a) => {
+                        const selected = a.id === address?.id
+                        return (
+                            <TouchableOpacity
+                                key={a.id}
+                                accessibilityRole="radio"
+                                accessibilityState={{ selected }}
+                                activeOpacity={0.85}
+                                onPress={() => checkoutActions.selectAddress(a.id)}
+                            >
+                                <GroupedCard selected={selected}>
+                                    <View className="flex-row items-start gap-3">
+                                        <Radio selected={selected} />
+                                        <AddressLines address={a} />
+                                    </View>
+                                </GroupedCard>
+                            </TouchableOpacity>
+                        )
+                    })
+                )}
+                {!plan.addressesLoading && addresses.length === 0 && !plan.addressesError && (
+                    <Text className="font-syne text-xs leading-[17px] text-[#6b7280]">
+                        Add a delivery address to continue. It is also used for billing, which decides the tax on your invoice.
+                    </Text>
+                )}
                 <TouchableOpacity
                     accessibilityRole="button"
                     activeOpacity={0.7}
@@ -97,18 +117,20 @@ export default function DeliveryScreen() {
                             <Text className="font-syne-bold text-xs text-[#111827]">Standard delivery</Text>
                             <Text className="font-syne text-[10px] text-[#6b7280]">Delivery updates with your order</Text>
                         </View>
-                        <Text className="font-syne-bold text-xs text-[#2563eb]">{formatUsd(MOCK_DELIVERY_FEE_USD)}</Text>
+                        <Text className="font-syne-bold text-xs text-[#2563eb]">Free</Text>
                     </View>
                 </GroupedCard>
             </View>
 
-            <View className="gap-[10px]">
-                <AmountRow label={`Subtotal · ${item.quantity} item${item.quantity === 1 ? '' : 's'}`} value={formatUsd(totals.subtotal)} />
-                <AmountRow label="Standard delivery" value={formatUsd(totals.delivery)} />
-                <AmountRow label="Tax" value={formatUsd(totals.tax)} />
-                <Divider />
-                <TotalRow label="Total · USD" value={formatUsd(totals.total)} />
-            </View>
+            {plan.quoteLoading && <ActivityIndicator color="#2563eb" />}
+            {plan.quoteError != null && (
+                <View className="items-start gap-3">
+                    <Text className="font-syne text-xs text-[#dc2626]">{paymentErrorMessage(plan.quoteError)}</Text>
+                    {apiErrorCode(plan.quoteError) === 'ORDERS_NO_PRICE' && <ChangeRegionButton />}
+                </View>
+            )}
+            {quote && <QuoteSummary quote={quote} />}
+            <NoPriceMarketSheet error={plan.quoteError} />
         </CheckoutShell>
     )
 }

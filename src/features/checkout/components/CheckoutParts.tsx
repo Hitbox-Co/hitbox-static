@@ -187,8 +187,11 @@ export function OrderItemRow({
     item,
     size = 76,
     dark = false,
+    price,
 }: {
     item: CheckoutItem
+    /** The price to show instead of the product's USD one — the quote's, in the market currency. */
+    price?: string
     /** Artwork edge: 76 in the flow, 112 in the cart. */
     size?: number
     /** Light-on-navy text for the confirmation card. */
@@ -214,7 +217,7 @@ export function OrderItemRow({
                 </Text>
                 <View className="flex-row items-center justify-between">
                     <Text className={`font-syne-bold text-[17px] ${dark ? 'text-white' : 'text-[#111827]'}`}>
-                        {formatItemPrice(item.unitPriceUsd)}
+                        {price ?? formatItemPrice(item.unitPriceUsd)}
                     </Text>
                     <RarityChip rarity={item.rarity} />
                 </View>

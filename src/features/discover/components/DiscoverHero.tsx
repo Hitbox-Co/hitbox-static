@@ -1,4 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient'
+import PriceText from '@/features/market/components/PriceText'
 import { ArrowUpRight, Bell, Search, Star } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import React, { useEffect, useState } from 'react'
@@ -6,7 +7,7 @@ import { Image, Text, TouchableOpacity, useWindowDimensions, View } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DiscoverProductItem } from '../types/discover'
-import { formatDiscoverPrice, formatRewardPoints, rarityLabel } from '../utils/format'
+import { formatRewardPoints, rarityLabel } from '../utils/format'
 import WishlistHeart from './WishlistHeart'
 
 /** Figma: the carousel is 499 tall including the 44px status bar. */
@@ -65,7 +66,7 @@ export default function DiscoverHero({
     }, [index, featured.length])
 
     const points = active ? formatRewardPoints(active.rewardPoints) : null
-    const price = active ? formatDiscoverPrice(active.price) : null
+    const price = active?.price ?? null
     const rarity = active ? rarityLabel(active.rarity) : null
     const subtitle = active
         ? [active.name, active.artist ? `by ${active.artist.name}` : null].filter(Boolean).join(' · ')
@@ -181,7 +182,7 @@ export default function DiscoverHero({
 
                     <View className="h-[42px] flex-row items-center gap-[10px]">
                         <View className="flex-1 gap-[3px]">
-                            {price ? <Text className="font-syne-extrabold text-[20px] text-white">{price}</Text> : null}
+                            {price ? <PriceText price={price} className="font-syne-extrabold text-[20px] text-white" noteClassName="font-syne-semibold text-[10px] text-[#fcd34d]" /> : null}
                             {points ? (
                                 <View className="flex-row items-center gap-[3px]">
                                     <Star size={10} color={LIME} fill={LIME} />

@@ -79,7 +79,7 @@ let activeCurrency: CurrencyConfig = USD
  * *honour* a requested locale — which is why the formatting below is by hand —
  * but it does faithfully report the device's own locale, which is all this needs.
  */
-function regionFromLocale(): string | null {
+export function regionFromLocale(): string | null {
     try {
         const locale = Intl.DateTimeFormat().resolvedOptions().locale
         const region = locale.replace('_', '-').split('-').pop()
