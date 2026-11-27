@@ -1,9 +1,10 @@
 import { Image } from 'expo-image'
 import { router, useIsFocused } from 'expo-router'
+import { LinearGradient } from 'expo-linear-gradient'
 import { StatusBar } from 'expo-status-bar'
 import { UserRound, X } from 'lucide-react-native'
 import React from 'react'
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ScrollView } from 'react-native'
 
@@ -41,7 +42,23 @@ export default function PurchaseStoryScreen({ userId }: { userId?: string }) {
     const loading = profile.isLoading || shelf.isLoading
 
     return (
-        <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={{ flex: 1, backgroundColor: '#0c1b31' }}>
+        <View style={{ flex: 1, backgroundColor: '#0c1b31' }}>
+            {/* The item photo, blurred and tinted, fills the page behind the story. */}
+            {!!newest && (
+                <>
+                    <Image
+                        source={{ uri: newest.product.imageUrl ?? DISCOVER_PLACEHOLDER_IMAGE }}
+                        blurRadius={60}
+                        contentFit="cover"
+                        style={StyleSheet.absoluteFill}
+                    />
+                    <LinearGradient
+                        colors={['rgba(59,130,246,0.55)', 'rgba(15,23,42,0.25)', 'rgba(15,23,42,0.72)']}
+                        style={StyleSheet.absoluteFill}
+                    />
+                </>
+            )}
+        <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={{ flex: 1 }}>
             {isFocused && <StatusBar style="light" />}
 
             {/* Story progress */}
@@ -125,7 +142,7 @@ export default function PurchaseStoryScreen({ userId }: { userId?: string }) {
                     {isSelf ? (
                         <>
                             <StoryButton label="Back to my profile" onPress={() => router.replace('/(tabs)/profile' as never)} />
-                            <StoryButton label="Open My Collections" onPress={() => router.replace('/(tabs)/collections' as never)} />
+                            <StoryButton secondary label="Open My Collections" onPress={() => router.replace('/(tabs)/collections' as never)} />
                         </>
                     ) : (
                         <>
@@ -137,7 +154,7 @@ export default function PurchaseStoryScreen({ userId }: { userId?: string }) {
                                         : router.replace({ pathname: '/collectors/[userId]', params: { userId: userId! } } as never)
                                 }
                             />
-                            <StoryButton label="Back to collectors" onPress={() => router.replace('/find-collectors' as never)} />
+                            <StoryButton secondary label="Back to collectors" onPress={() => router.replace('/find-collectors' as never)} />
                         </>
                     )}
 
@@ -145,16 +162,18 @@ export default function PurchaseStoryScreen({ userId }: { userId?: string }) {
                 </ScrollView>
             )}
         </SafeAreaView>
+        </View>
     )
 }
 
-function StoryButton({ label, onPress }: { label: string; onPress: () => void }) {
+function StoryButton({ label, onPress, secondary = false }: { label: string; onPress: () => void; secondary?: boolean }) {
     return (
         <TouchableOpacity
             accessibilityRole="button"
             activeOpacity={0.85}
             onPress={onPress}
-            className="h-[46px] justify-center rounded-[2px] bg-black px-3.5"
+            style={{ backgroundColor: secondary ? 'rgba(255,255,255,0.18)' : '#000000' }}
+            className="h-[46px] justify-center rounded-[2px] px-3.5"
         >
             <Text className="font-syne-bold text-[13px] text-white">{label}</Text>
         </TouchableOpacity>
