@@ -44,6 +44,7 @@ import { useAddToCart } from "@/features/checkout/api/cartMutations";
 import { checkoutActions } from "@/features/checkout/store/checkoutStore";
 import { ProductRarity } from "../types/product";
 import RewardTeaserCard from "@/features/rewards/components/RewardTeaserCard";
+import VariantPicker from "../components/VariantPicker";
 import { RARITY_STYLES } from "../utils/rarity";
 
 interface TourScreenProps {
@@ -328,6 +329,11 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                 )}
               </View>
 
+              {/* Size chips + colour swatches (Figma 208:6012), for drops that have variants. */}
+              {variants.length > 0 && (
+                <VariantPicker variants={variants} chosenId={chosenVariant?.id ?? null} onChange={setVariantId} />
+              )}
+
               {/* Identity */}
               <View className="gap-2">
                 <Text className="font-syne-bold text-[28px] leading-[32px] text-[#111827]">
@@ -386,39 +392,6 @@ export default function TourScreen({ tourId }: TourScreenProps) {
                 </View>
               </View>
             </View>
-
-            {/* Size / colour options, for drops that have variants. */}
-            {variants.length > 0 && (
-              <View className="gap-[10px]">
-                <Text className="font-syne-semibold text-[11px] text-[#6b7280]">
-                  {variantRequired ? "Choose an option" : "Options"}
-                </Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {variants.map((v) => {
-                    const active = v.id === chosenVariant?.id;
-                    return (
-                      <TouchableOpacity
-                        key={v.id}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: active }}
-                        activeOpacity={0.8}
-                        onPress={() => setVariantId(active ? null : v.id)}
-                        className={`h-8 justify-center rounded border px-[14px] ${active
-                          ? "border-[#2563eb] bg-[#eff6ff]"
-                          : "border-[#e5e7eb] bg-[#f3f4f6]"
-                          }`}
-                      >
-                        <Text
-                          className={`text-[12.5px] ${active ? "font-syne-semibold text-[#2563eb]" : "font-syne-medium text-[#6b7280]"}`}
-                        >
-                          {v.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
 
             {/* Purchase actions (Figma). Add to Cart is the Cart API; Buy Now starts checkout. */}
             <View className="gap-3">
