@@ -78,6 +78,9 @@ export default function CollectorProfileScreen({ userId, preview = false }: { us
     )
 }
 
+/** Collection groups shown before "View All". */
+const PREVIEW_GROUPS = 2
+
 const displayName = (p: Profile) => p.fullName || (p.handle ? `@${p.handle}` : 'Collector')
 
 /** The page frame: back + HitBox + "PROFILE" on white, the light page below. */
@@ -149,13 +152,17 @@ function PublicProfile({ profile, preview }: { profile: Profile; preview: boolea
     const openFollows = (tab: 'followers' | 'following') =>
         router.push({ pathname: '/follows/[userId]', params: { userId: profile.id, tab } } as never)
 
-    // Their newest public item, if any — what the story card shows (the list is newest-first).
-    const newestItem = useUserCollection(profile.id, { limit: 50 }).data?.data.find(
-        (i) => !preview || i.visibility === 'PUBLIC',
-    )
+    // Their public items (newest first): the newest feeds the story button, and the
+    // points on them are HIT POINTS (the Users API returns no total, so it is summed
+    // like on your own profile). A shelf over one page shows a "+".
+    const shelf = useUserCollection(profile.id, { limit: 50 })
+    const visibleItems = (shelf.data?.data ?? []).filter((i) => !preview || i.visibility === 'PUBLIC')
+    const newestItem = visibleItems[0]
+    const hitPoints = visibleItems.reduce((sum, i) => sum + (i.product.rewardPoints || 0), 0)
+    const morePointsOnShelf = (shelf.data?.meta.total ?? 0) > (shelf.data?.data.length ?? 0)
 
     const stats = [
-        { value: profile.stats.claimedItems, label: 'Items\nowned', onPress: undefined as (() => void) | undefined },
+        { value: profile.stats.claimedItems, label: 'Items owned', onPress: undefined as (() => void) | undefined },
         { value: profile.stats.artistCollections, label: 'Collections', onPress: undefined },
         { value: followers, label: 'Followers', onPress: () => openFollows('followers') },
     ]
@@ -185,11 +192,19 @@ function PublicProfile({ profile, preview }: { profile: Profile; preview: boolea
 
                 <View className="mt-3 flex-row items-center justify-between">
                     <Text className="font-syne text-[11px] text-[#94a3b8]">Member since {memberSince}</Text>
-                    <View className="flex-row items-center gap-1.5">
-                        <Globe size={13} color="#4ade80" />
+                    <View className="flex-row items-center gap-1.5 rounded px-2 py-1" style={{ backgroundColor: 'rgba(74,222,128,0.15)' }}>
+                        <Globe size={12} color="#4ade80" />
                         <Text className="font-syne-bold text-[11px] text-[#4ade80]">Public</Text>
                     </View>
                 </View>
+
+                {/* HIT POINTS: the points on the items they have shared */}
+                <Text
+                    accessibilityLabel={hitPoints + ' hit points'}
+                    className="mt-3 font-syne-extrabold text-[20px] tracking-[0.4px] text-[#4ade80]"
+                >
+                    {hitPoints.toLocaleString('en-US') + (morePointsOnShelf ? '+' : '') + ' HIT POINTS'}
+                </Text>
 
                 <View className="mt-4 h-px bg-[#1f2f4d]" />
 
@@ -277,6 +292,7 @@ function Showcase({ userId, publicOnly = false }: { userId: string; publicOnly?:
     const { data, isLoading, isError, error } = useUserCollection(userId, { limit: 50 })
     const items = (data?.data ?? []).filter((item) => !publicOnly || item.visibility === 'PUBLIC')
     const infoById = useOwnedProductInfo(items.map((i) => i.product.id))
+    const [showAll, setShowAll] = useState(false)
 
     const groups = new Map<string, { title: string; items: CollectionItem[] }>()
     for (const item of items) {
@@ -290,7 +306,14 @@ function Showcase({ userId, publicOnly = false }: { userId: string; publicOnly?:
 
     return (
         <View className="gap-3">
-            <Text className="font-syne-bold text-[24px] text-[#111827]">Collection</Text>
+            <View className="flex-row items-center justify-between">
+                <Text className="font-syne-bold text-[24px] text-[#111827]">Collection</Text>
+                {groups.size > PREVIEW_GROUPS && (
+                    <TouchableOpacity accessibilityRole="button" onPress={() => setShowAll((v) => !v)} hitSlop={8}>
+                        <Text className="font-syne-bold text-[12px] text-[#111827]">{showAll ? 'Show less' : 'View All'}</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
             {isLoading && <ActivityIndicator size="small" color="#2563eb" />}
             {isError && <Text className="font-syne text-[12px] text-[#6b7280]">{collectionErrorMessage(error)}</Text>}
             {!isLoading && !isError && items.length === 0 && (
@@ -299,7 +322,7 @@ function Showcase({ userId, publicOnly = false }: { userId: string; publicOnly?:
                     <Text className="font-syne text-[12px] text-[#6b7280]">Nothing shared yet.</Text>
                 </View>
             )}
-            {[...groups.entries()].map(([key, g]) => (
+            {[...groups.entries()].slice(0, showAll ? undefined : PREVIEW_GROUPS).map(([key, g]) => (
                 <View key={key} className="gap-2.5">
                     <View className="flex-row items-center justify-between">
                         <Text numberOfLines={1} className="flex-1 font-syne-bold text-[16px] text-[#111827]">{g.title}</Text>
