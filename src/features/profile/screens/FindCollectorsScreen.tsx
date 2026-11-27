@@ -3,7 +3,7 @@ import PriceText from '@/features/market/components/PriceText'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { ArrowLeft, ChevronRight, Globe, Lock, Search, SearchX, UserRound, X } from 'lucide-react-native'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { ActivityIndicator, Image as RNImage, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -17,16 +17,16 @@ import { useMe, useUserByHandle } from '../api/getProfile'
 
 type Tab = 'collectors' | 'products'
 
-/** A username is 3–50 chars of letters, digits, "_" and "."; shorter input is not worth a request. */
-const MIN_HANDLE = 3
+/** A username is 3–50 chars of letters, digits, "_" and "."; anything else is not worth a lookup request. */
+const HANDLE_RE = /^[A-Za-z0-9_.]{3,50}$/
 
 /**
  * Find collectors — Figma C11 / P06 / P07. Two tabs:
  *
- *  - **Collectors**: type a username and the collector comes up with their real
- *    stats (`GET /users/handle/:handle`). There is no endpoint that lists or
- *    searches people, so "Collectors to discover" is the people in your own
- *    network — who you follow and who follows you.
+ *  - **Collectors**: an exact username comes up with the collector's real stats
+ *    (`GET /users/handle/:handle`), and any text is also matched (name or
+ *    username, partial) against your network — who you follow and who follows
+ *    you. There is no endpoint that lists or searches all people.
  *  - **Products**: the drop search (`GET /discover/products?search=`).
  *
  * A collector opens their page at `/collectors/:id` (public or private).
@@ -114,12 +114,65 @@ export default function FindCollectorsScreen() {
 /* ------------------------------------------------------------------ */
 
 function CollectorsTab({ term }: { term: string }) {
-    const handle = term.replace(/^@/, '')
-    const searching = handle.length >= MIN_HANDLE
+    const q = term.replace(/^@/, '').trim()
+    const searching = q.length > 0
+    const network = useNetwork(searching)
+    // Exact username lookup runs alongside; partial text is matched against your network.
+    const exact = useUserByHandle(HANDLE_RE.test(q) ? q : undefined)
+
+    const rows: CollectorRowData[] = []
+    const seen = new Set<string>()
+    if (searching) {
+        const lower = q.toLowerCase()
+        if (exact.data && exact.data.id !== network.meId) {
+            const p = exact.data
+            const items = p.stats.claimedItems
+            const collections = p.stats.artistCollections
+            seen.add(p.id)
+            rows.push({
+                id: p.id,
+                name: p.fullName || (p.handle ? `@${p.handle}` : 'Collector'),
+                handle: p.handle,
+                avatarUrl: p.avatarUrl,
+                isPrivate: p.isPrivate,
+                detail: `${items} ${items === 1 ? 'item' : 'items'} · ${collections} ${collections === 1 ? 'collection' : 'collections'}`,
+            })
+        }
+        for (const p of network.people) {
+            if (seen.has(p.id)) continue
+            if (!`${p.fullName ?? ''} ${p.handle ?? ''}`.toLowerCase().includes(lower)) continue
+            seen.add(p.id)
+            rows.push(toRow(p))
+        }
+    } else {
+        for (const p of network.people) rows.push(toRow(p))
+    }
+
+    const loading = searching ? exact.isLoading || network.loading : network.loading
 
     return (
         <View className="gap-4">
-            {searching ? <HandleResult handle={handle} /> : <Network />}
+            <View className="gap-3">
+                <Text className="font-syne-bold text-[20px] text-[#111827]">
+                    {searching ? (loading && rows.length === 0 ? 'Searching…' : `${rows.length} ${rows.length === 1 ? 'collector' : 'collectors'} found`) : 'Collectors to discover'}
+                </Text>
+                {loading && <ActivityIndicator size="small" color="#2563eb" />}
+                {!loading && rows.length === 0 && (
+                    <View className="items-center gap-2 py-6">
+                        {searching && <SearchX size={30} color="#9ca3af" />}
+                        <Text className="text-center font-syne text-[13px] leading-5 text-[#6b7280]">
+                            {searching
+                                ? `No collector matches "${q}". Try their exact username.`
+                                : network.signedIn
+                                  ? 'Type a name or username above to find a collector. People you follow, and your followers, will appear here.'
+                                  : 'Type a username above to find a collector.'}
+                        </Text>
+                    </View>
+                )}
+                {rows.map((r) => (
+                    <CollectorRow key={r.id} {...r} />
+                ))}
+            </View>
 
             <View className="mt-2 gap-1.5 rounded bg-[#eef2f7] p-4">
                 <Globe size={17} color="#111827" />
@@ -132,54 +185,48 @@ function CollectorsTab({ term }: { term: string }) {
     )
 }
 
-/** One exact-username lookup, with the collector's real stats. */
-function HandleResult({ handle }: { handle: string }) {
-    const { data, isLoading, isError, error } = useUserByHandle(handle)
-
-    if (isLoading) return <ActivityIndicator size="small" color="#2563eb" />
-
-    if (isError || !data) {
-        const notFound = error instanceof ApiRequestError && error.status === 404
-        return (
-            <View className="items-center gap-2 py-6">
-                <SearchX size={30} color="#9ca3af" />
-                <Text className="text-center font-syne text-[13px] leading-5 text-[#6b7280]">
-                    {notFound ? `No collector with the username "${handle}".` : "Couldn't search right now. Please try again."}
-                </Text>
-            </View>
-        )
-    }
-
-    const items = data.stats.claimedItems
-    const collections = data.stats.artistCollections
-    return (
-        <View className="gap-3">
-            <Text className="font-syne-bold text-[20px] text-[#111827]">1 collector found</Text>
-            <CollectorRow
-                id={data.id}
-                name={data.fullName || (data.handle ? `@${data.handle}` : 'Collector')}
-                handle={data.handle}
-                avatarUrl={data.avatarUrl}
-                isPrivate={data.isPrivate}
-                detail={`${items} ${items === 1 ? 'item' : 'items'} · ${collections} ${collections === 1 ? 'collection' : 'collections'}`}
-            />
-        </View>
-    )
+type CollectorRowData = {
+    id: string
+    name: string
+    handle: string | null
+    avatarUrl: string | null
+    isPrivate: boolean
+    detail?: string
 }
 
-/** "Collectors to discover": the people in your own network, since nothing lists everyone. */
-function Network() {
+const toRow = (p: FollowUserView): CollectorRowData => ({
+    id: p.id,
+    name: p.fullName || (p.handle ? `@${p.handle}` : 'Collector'),
+    handle: p.handle,
+    avatarUrl: p.avatarUrl,
+    isPrivate: p.isPrivate,
+})
+
+/**
+ * Everyone in your own network (who you follow + your followers), deduped. While
+ * a search is typed every page is pulled in, so partial name / username matches
+ * cover the whole network, not just the first page.
+ */
+function useNetwork(loadAll: boolean) {
     const { isSignedIn } = useAuth()
     const { data: me } = useMe()
-    const following = useFollowingInfinite(me?.id, 'users', 20)
-    const followers = useFollowersInfinite(me?.id, 20)
+    const following = useFollowingInfinite(me?.id, 'users', 50)
+    const followers = useFollowersInfinite(me?.id, 50)
+
+    const { hasNextPage: moreFollowing, isFetchingNextPage: fetchingFollowing, fetchNextPage: nextFollowing } = following
+    const { hasNextPage: moreFollowers, isFetchingNextPage: fetchingFollowers, fetchNextPage: nextFollowers } = followers
+    useEffect(() => {
+        if (!loadAll) return
+        if (moreFollowing && !fetchingFollowing) void nextFollowing()
+        if (moreFollowers && !fetchingFollowers) void nextFollowers()
+    }, [loadAll, moreFollowing, fetchingFollowing, nextFollowing, moreFollowers, fetchingFollowers, nextFollowers])
 
     const seen = new Set<string>()
     const people: FollowUserView[] = []
     for (const list of [following.data, followers.data]) {
         for (const page of list?.pages ?? []) {
             for (const person of page.data as FollowUserView[]) {
-                // `isFollowedByYou` is null on your own row; never list yourself twice.
+                // `isFollowedByYou` is null on your own row; never list yourself.
                 if (person.id === me?.id || seen.has(person.id)) continue
                 seen.add(person.id)
                 people.push(person)
@@ -187,48 +234,11 @@ function Network() {
         }
     }
 
-    const loading = isSignedIn && (following.isLoading || followers.isLoading)
-
-    return (
-        <View className="gap-3">
-            <Text className="font-syne-bold text-[20px] text-[#111827]">Collectors to discover</Text>
-            {loading && <ActivityIndicator size="small" color="#2563eb" />}
-            {!loading && people.length === 0 && (
-                <Text className="font-syne text-[13px] leading-5 text-[#6b7280]">
-                    {isSignedIn
-                        ? 'Type a username above to find a collector. People you follow, and your followers, will appear here.'
-                        : 'Type a username above to find a collector.'}
-                </Text>
-            )}
-            {people.map((p) => (
-                <CollectorRow
-                    key={p.id}
-                    id={p.id}
-                    name={p.fullName || (p.handle ? `@${p.handle}` : 'Collector')}
-                    handle={p.handle}
-                    avatarUrl={p.avatarUrl}
-                    isPrivate={p.isPrivate}
-                />
-            ))}
-        </View>
-    )
+    const loading = !!isSignedIn && (following.isLoading || followers.isLoading || (loadAll && (!!moreFollowing || !!moreFollowers)))
+    return { people, loading, meId: me?.id, signedIn: !!isSignedIn }
 }
 
-function CollectorRow({
-    id,
-    name,
-    handle,
-    avatarUrl,
-    isPrivate,
-    detail,
-}: {
-    id: string
-    name: string
-    handle: string | null
-    avatarUrl: string | null
-    isPrivate: boolean
-    detail?: string
-}) {
+function CollectorRow({ id, name, handle, avatarUrl, isPrivate, detail }: CollectorRowData) {
     return (
         <TouchableOpacity
             accessibilityRole="button"
